@@ -4,12 +4,14 @@
 #include <time.h>
 using namespace std;
 
+#define NS_DIV 1000000000LL
+
 
 // source: https://code-examples.net/en/q/4bf1f79/benchmarking-system-calls-understanding-clock-gettime-latency-in-linux
 // Function to calculate time difference in nanoseconds
 long long timespec_diff_ns(struct timespec *t2, struct timespec *t1)
 {
-    return ((long long)(t2->tv_sec - t1->tv_sec) * 1000000000LL) +
+    return ((long long)(t2->tv_sec - t1->tv_sec) * NS_DIV) +
            (t2->tv_nsec - t1->tv_nsec);
 }
 
@@ -61,33 +63,39 @@ vector<double> multiply_matrices(const vector<double>& A, const vector<double>& 
 
 int main() {
 
-    measure_timing_overhead();
+    // measure_timing_overhead();
 
-    // auto start_time = chrono::high_resolution_clock::now();
+    struct timespec t0,t1,t0_boot,t1_boot;
+    clock_gettime(CLOCK_BOOTTIME, &t0_boot);
+    clock_gettime(CLOCK_MONOTONIC_RAW, &t0);
+
     
-    // int n = 512; // matrix size (change as needed)
+    int n = 512; // matrix size (change as needed)
 
-    // // allocate matrices in row-major 1D vectors
-    // vector<double> A(n*n), B(n*n), C(n*n, 0.0);
+    // allocate matrices in row-major 1D vectors
+    vector<double> A(n*n), B(n*n), C(n*n, 0.0);
 
-    // // initialize A and B with some values
-    // for (int i = 0; i < n; ++i) {
-    //     for (int j = 0; j < n; ++j) {
-    //         A[i*n + j] = (double)(i + j);
-    //         B[i*n + j] = (double)(i - j);
-    //     }
-    // }
+    // initialize A and B with some values
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < n; ++j) {
+            A[i*n + j] = (double)(i + j);
+            B[i*n + j] = (double)(i - j);
+        }
+    }
 
-    // C = multiply_matrices(A, B, n);
+    C = multiply_matrices(A, B, n);
 
-    // auto end_time = chrono::high_resolution_clock::now();
-    // chrono::duration<double> elapsed = end_time - start_time;
-    // cout << "Elapsed time: " << elapsed.count() << " seconds\n";
+    clock_gettime(CLOCK_MONOTONIC, &t1);
+    clock_gettime(CLOCK_BOOTTIME, &t1_boot);
 
-    // // print a checksum to avoid optimizing away the computation
-    // double checksum = 0.0;
-    // for (double v : C) checksum += v;
-    // cout << "Checksum: " << checksum << "\n";
+    // resolution for clocks different??
+    cout << "Elapsed time boot: " << (double)timespec_diff_ns(&t1_boot, &t0_boot) / NS_DIV << " seconds\n";
+    cout << "Elapsed time: " << (double)timespec_diff_ns(&t1, &t0)  / NS_DIV << " seconds\n";
+
+    // print a checksum to avoid optimizing away the computation
+    double checksum = 0.0;
+    for (double v : C) checksum += v;
+    cout << "Checksum: " << checksum << "\n";
     
    
     return 0;
