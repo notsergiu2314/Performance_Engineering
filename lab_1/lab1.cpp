@@ -3,17 +3,10 @@
 #include <time.h>
 #include <limits>
 #include <iomanip>
+// for output to .csv, plotting in separate python script
+#include <fstream> 
 
-#ifdef TIMING_TOOL_PAPI
-#include <papi.h>
-#endif
-
-using namespace std;
-
-#define NS_DIV 1000000000LL
-
-// Select exactly one:
-
+// Select exactly one timing tool:
 #define TIMING_TOOL_CLOCK_GETTIME
 // #define TIMING_TOOL_PAPI
 
@@ -26,6 +19,16 @@ using namespace std;
 #if defined(TIMING_TOOL_CLOCK_GETTIME) && defined(TIMING_TOOL_PAPI)
 #error "Only one timing tool can be selected"
 #endif
+
+#ifdef TIMING_TOOL_PAPI
+#include <papi.h>
+#endif
+
+// macros
+#define NS_DIV 1000000000LL
+
+// namespaces
+using namespace std;
 
 // gettime helper
 long long timespec_diff_ns(const struct timespec *t2,
@@ -86,12 +89,9 @@ int measure_timing_overhead()
     printf("Minimum latency: %lld ns\n", min_latency); printf("Maximum latency: %lld ns\n", max_latency);
     return 0;
 }
-
 #endif
 
-
 #ifdef TIMING_TOOL_PAPI
-
 struct Timer {
     long long start;
     long long end;
@@ -170,7 +170,6 @@ int measure_timing_overhead()
 
     return 0;
 }
-
 #endif
 
 // Matrix multiplication 
@@ -189,7 +188,6 @@ vector<double> multiply_matrices(const vector<double>& A, const vector<double>& 
 
     return C;
 }
-
 struct TimingStats {
     long long total_ns = 0;
     long long min_ns = numeric_limits<long long>::max();
@@ -201,7 +199,6 @@ struct TimingStats {
 
         if (elapsed_ns < min_ns)
             min_ns = elapsed_ns;
-
         if (elapsed_ns > max_ns)
             max_ns = elapsed_ns;
     }
@@ -212,22 +209,8 @@ struct TimingStats {
     }
 };
 
-
-int main()
+void benchmark_mm(const size_t n, const size_t iterations, ofstream& csv)
 {
-#ifdef TIMING_TOOL_PAPI
-    if (!initialize_papi()) {
-        return 1;
-    }
-#endif
-
-    // benchmark timing overhead
-    measure_timing_overhead();
-
-    // benchmark configuration
-    const int n = 512;
-    const int iterations = 10;
-
     cout << "\nMatrix multiplication benchmark\n";
     cout << "--------------------------------\n";
     cout << "Matrix size: " << n << " x " << n << "\n";
@@ -240,7 +223,6 @@ int main()
     vector<double> B(n * n);
     vector<double> C;
 
-
     // Initialize A and B
     for (int i = 0; i < n; ++i) {
         for (int j = 0; j < n; ++j) {
@@ -251,9 +233,7 @@ int main()
 
     // Benchmark
     TimingStats stats;
-
     double checksum = 0.0;
-
     for (int iteration = 0; iteration < iterations; ++iteration) {
 
         Timer timer;
@@ -283,34 +263,95 @@ int main()
              << " s)\n";
     }
 
-
     // Results
+    double average_ns = stats.average_ns(iterations);
+    long long minimum_ns = stats.min_ns;
+    long long maximum_ns = stats.max_ns;
+
     cout << "\n";
     cout << "Results: " << timing_tool_name() << "\n";
     cout << "--------------------------------\n";
-
     cout << fixed << setprecision(6);
 
     cout << "Average: "
-         << stats.average_ns(iterations)
+         << average_ns
          << " ns ("
-         << stats.average_ns(iterations) / NS_DIV
+         << average_ns / NS_DIV
          << " s)\n";
 
     cout << "Minimum: "
-         << stats.min_ns
+         << minimum_ns
          << " ns ("
          << static_cast<double>(stats.min_ns) / NS_DIV
          << " s)\n";
 
     cout << "Maximum: "
-         << stats.max_ns
+         << maximum_ns
          << " ns ("
          << static_cast<double>(stats.max_ns) / NS_DIV
          << " s)\n";
 
     cout << "\nChecksum: " << checksum << "\n";
 
+    // put results in csv file
+    
+    csv << n << ","
+        << iterations << ","
+        << average_ns << ","
+        << minimum_ns << ","
+        << maximum_ns << "\n";
+
+    // Make sure data is written immediately.
+    csv.flush();
+}
+
+int main()
+{
+#ifdef TIMING_TOOL_PAPI
+    if (!initialize_papi()) {
+        return 1;
+    }
+#endif
+
+    // benchmark timing overhead
+    measure_timing_overhead();
+
+    // open csv file for results
+    ofstream csv_file("matrix_benchmark.csv");
+    if (!csv_file.is_open()) {
+        cerr << "Error: could not open matrix_benchmark.csv\n";
+
+#ifdef TIMING_TOOL_PAPI
+        PAPI_shutdown();
+#endif
+        return 1;
+    }
+
+    // CSV header
+    csv_file << "matrix_size,"
+            << "iterations,"
+            << "average_ns,"
+            << "minimum_ns,"
+            << "maximum_ns\n";
+
+    // values for matrix size and num_iters
+    const size_t num_sizes = 9;
+    const size_t num_iters = 6;
+    const size_t matrix_sizes[num_sizes] = {2, 4, 8, 16, 32, 64, 128, 256, 512};
+    const size_t iters[num_iters] = {1, 10, 25, 50, 100, 150};
+
+    // test all sizes and iters
+    for (int i=0; i<num_iters; i++) {
+        for(int j=0; j<num_sizes; j++) {
+            benchmark_mm(matrix_sizes[j], iters[i], csv_file);
+        }
+    }
+
+    // cleanup
+    csv_file.close();
+
+    cout << "\nBenchmark results written to "
+         << "matrix_benchmark.csv\n";
 
 #ifdef TIMING_TOOL_PAPI
     PAPI_shutdown();
