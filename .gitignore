@@ -1,5 +1,6 @@
 # Visual Studio Code
 .vscode/*
+.vscode
 
 # Built Visual Studio Code Extensions
 *.vsix
@@ -50,3 +51,7 @@ tmp/*
 build/
 Build/
 build-*/
+
+# dependencies
+generated_deps/
+*.dep
