@@ -7,8 +7,8 @@
 #include <fstream> 
 
 // Select exactly one timing tool:
-#define TIMING_TOOL_CLOCK_GETTIME
-// #define TIMING_TOOL_PAPI
+// #define TIMING_TOOL_CLOCK_GETTIME
+#define TIMING_TOOL_PAPI
 
 #ifndef TIMING_TOOL_CLOCK_GETTIME
 #ifndef TIMING_TOOL_PAPI

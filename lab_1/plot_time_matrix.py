@@ -14,6 +14,7 @@ parser = argparse.ArgumentParser(
                     description='What the program does',
                     epilog='Text at the bottom of help')
 parser.add_argument('--opt-level', default="Ounknown")      # optimisation level string
+parser.add_argument('--timing-tool', default="unknown")      # timing tool string
 
 args = parser.parse_args()
 
@@ -57,4 +58,4 @@ for timing_type in ["average_ns", "minimum_ns", "maximum_ns"]:
     plt.legend(title="Iterations")
 
     plt.tight_layout()
-    plt.savefig(f"mm_{timing_type}.png")
+    plt.savefig(f"mm_{args.timing_tool}_{args.opt_level}_{timing_type}.png")
