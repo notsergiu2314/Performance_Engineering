@@ -1,0 +1,163 @@
+diff --color -ru -x '*.o' -x '*.mod' -x clover_leaf -x InputDecks -x 'clover.*' v5/kernels/advec_cell_kernel.f90 v6/kernels/advec_cell_kernel.f90
+--- a/kernels/advec_cell_kernel.f90	2026-09-17 14:45:05.723652743 +0200
++++ b/kernels/advec_cell_kernel.f90	2026-09-17 14:46:47.915127159 +0200
+@@ -90,7 +90,6 @@
+         !$OMP SIMD
+           DO j=x_min-2,x_max+2
+             pre_vol(j,k)=volume_s+(vol_flux_x(j+1,k  )-vol_flux_x(j,k)+vol_flux_y(j  ,k+1)-vol_flux_y(j,k))
+-            post_vol(j,k)=pre_vol(j,k)-(vol_flux_x(j+1,k  )-vol_flux_x(j,k))
+           ENDDO
+         ENDDO
+       !$OMP END DO
+@@ -100,7 +99,6 @@
+         !$OMP SIMD
+           DO j=x_min-2,x_max+2
+             pre_vol(j,k)=volume_s+vol_flux_x(j+1,k)-vol_flux_x(j,k)
+-            post_vol(j,k)=volume_s
+           ENDDO
+         ENDDO
+       !$OMP END DO
+@@ -182,7 +180,6 @@
+         !$OMP SIMD
+           DO j=x_min-2,x_max+2
+             pre_vol(j,k)=volume_s+(vol_flux_y(j  ,k+1)-vol_flux_y(j,k)+vol_flux_x(j+1,k  )-vol_flux_x(j,k))
+-            post_vol(j,k)=pre_vol(j,k)-(vol_flux_y(j  ,k+1)-vol_flux_y(j,k))
+           ENDDO
+         ENDDO
+       !$OMP END DO
+@@ -192,7 +189,6 @@
+         !$OMP SIMD
+           DO j=x_min-2,x_max+2
+             pre_vol(j,k)=volume_s+vol_flux_y(j  ,k+1)-vol_flux_y(j,k)
+-            post_vol(j,k)=volume_s
+           ENDDO
+         ENDDO
+       !$OMP END DO
+diff --color -ru -x '*.o' -x '*.mod' -x clover_leaf -x InputDecks -x 'clover.*' v5/kernels/advec_mom_kernel.f90 v6/kernels/advec_mom_kernel.f90
+--- a/kernels/advec_mom_kernel.f90	2026-09-17 14:45:05.724761574 +0200
++++ b/kernels/advec_mom_kernel.f90	2026-09-17 14:46:47.914739610 +0200
+@@ -80,46 +80,6 @@
+     volume_s=volume(x_min,y_min)
+     !$OMP PARALLEL
+ 
+-    IF(which_vel.EQ.1)THEN
+-    IF(mom_sweep.EQ.1)THEN ! x 1
+-      !$OMP DO
+-      DO k=y_min-2,y_max+2
+-      !$OMP SIMD
+-        DO j=x_min-2,x_max+2
+-          post_vol(j,k)= volume_s+vol_flux_y(j  ,k+1)-vol_flux_y(j,k)
+-        ENDDO
+-      ENDDO
+-    !$OMP END DO
+-    ELSEIF(mom_sweep.EQ.2)THEN ! y 1
+-      !$OMP DO
+-      DO k=y_min-2,y_max+2
+-      !$OMP SIMD
+-        DO j=x_min-2,x_max+2
+-          post_vol(j,k)= volume_s+vol_flux_x(j+1,k  )-vol_flux_x(j,k)
+-        ENDDO
+-      ENDDO
+-    !$OMP END DO
+-    ELSEIF(mom_sweep.EQ.3)THEN ! x 2
+-      !$OMP DO
+-      DO k=y_min-2,y_max+2
+-      !$OMP SIMD
+-        DO j=x_min-2,x_max+2
+-          post_vol(j,k)=volume_s
+-        ENDDO
+-      ENDDO
+-    !$OMP END DO
+-    ELSEIF(mom_sweep.EQ.4)THEN ! y 2
+-      !$OMP DO
+-      DO k=y_min-2,y_max+2
+-      !$OMP SIMD
+-        DO j=x_min-2,x_max+2
+-          post_vol(j,k)=volume_s
+-        ENDDO
+-      ENDDO
+-    !$OMP END DO
+-    ENDIF
+-    ENDIF
+-
+     IF(direction.EQ.1)THEN
+       IF(which_vel.EQ.1)THEN
+         !$OMP DO
+@@ -132,18 +92,35 @@
+           ENDDO
+         ENDDO
+         !$OMP END DO
++        IF(mom_sweep.EQ.1)THEN
++        !$OMP DO
++        DO k=y_min,y_max+1
++        !$OMP SIMD
++          DO j=x_min-1,x_max+2
++            ! Staggered cell mass post advection
++            node_mass_post(j,k)=0.25_8*(density1(j  ,k-1)*(volume_s+vol_flux_y(j,k-1+1)-vol_flux_y(j,k-1))                   &
++              +density1(j  ,k  )*(volume_s+vol_flux_y(j,k+1)-vol_flux_y(j,k))                   &
++              +density1(j-1,k-1)*(volume_s+vol_flux_y(j-1,k-1+1)-vol_flux_y(j-1,k-1))                   &
++              +density1(j-1,k  )*(volume_s+vol_flux_y(j-1,k+1)-vol_flux_y(j-1,k)))
++            node_mass_pre(j,k)=node_mass_post(j,k)-node_flux(j-1,k)+node_flux(j,k)
++          ENDDO
++        ENDDO
++        !$OMP END DO
++        ELSE
+         !$OMP DO
+         DO k=y_min,y_max+1
+         !$OMP SIMD
+           DO j=x_min-1,x_max+2
+             ! Staggered cell mass post advection
+-            node_mass_post(j,k)=0.25_8*(density1(j  ,k-1)*post_vol(j  ,k-1)                   &
+-              +density1(j  ,k  )*post_vol(j  ,k  )                   &
+-              +density1(j-1,k-1)*post_vol(j-1,k-1)                   &
+-              +density1(j-1,k  )*post_vol(j-1,k  ))
++            node_mass_post(j,k)=0.25_8*(density1(j  ,k-1)*volume_s                   &
++              +density1(j  ,k  )*volume_s                   &
++              +density1(j-1,k-1)*volume_s                   &
++              +density1(j-1,k  )*volume_s)
+             node_mass_pre(j,k)=node_mass_post(j,k)-node_flux(j-1,k)+node_flux(j,k)
+           ENDDO
+         ENDDO
++        !$OMP END DO
++        ENDIF
+       ENDIF
+ 
+       !$OMP DO PRIVATE(upwind,downwind,donor,dif,sigma,width,limiter,vdiffuw,vdiffdw,auw,adw,wind,advec_vel_s)
+@@ -197,17 +174,33 @@
+           ENDDO
+         ENDDO
+         !$OMP END DO
++        IF(mom_sweep.EQ.2)THEN
++        !$OMP DO
++        DO k=y_min-1,y_max+2
++        !$OMP SIMD
++          DO j=x_min,x_max+1
++            node_mass_post(j,k)=0.25_8*(density1(j  ,k-1)*(volume_s+vol_flux_x(j+1,k-1)-vol_flux_x(j,k-1))                     &
++              +density1(j  ,k  )*(volume_s+vol_flux_x(j+1,k)-vol_flux_x(j,k))                     &
++              +density1(j-1,k-1)*(volume_s+vol_flux_x(j-1+1,k-1)-vol_flux_x(j-1,k-1))                     &
++              +density1(j-1,k  )*(volume_s+vol_flux_x(j-1+1,k)-vol_flux_x(j-1,k)))
++            node_mass_pre(j,k)=node_mass_post(j,k)-node_flux(j,k-1)+node_flux(j,k)
++          ENDDO
++        ENDDO
++        !$OMP END DO
++        ELSE
+         !$OMP DO
+         DO k=y_min-1,y_max+2
+         !$OMP SIMD
+           DO j=x_min,x_max+1
+-            node_mass_post(j,k)=0.25_8*(density1(j  ,k-1)*post_vol(j  ,k-1)                     &
+-              +density1(j  ,k  )*post_vol(j  ,k  )                     &
+-              +density1(j-1,k-1)*post_vol(j-1,k-1)                     &
+-              +density1(j-1,k  )*post_vol(j-1,k  ))
++            node_mass_post(j,k)=0.25_8*(density1(j  ,k-1)*volume_s                     &
++              +density1(j  ,k  )*volume_s                     &
++              +density1(j-1,k-1)*volume_s                     &
++              +density1(j-1,k  )*volume_s)
+             node_mass_pre(j,k)=node_mass_post(j,k)-node_flux(j,k-1)+node_flux(j,k)
+           ENDDO
+         ENDDO
++        !$OMP END DO
++        ENDIF
+       ENDIF
+       !$OMP DO PRIVATE(upwind,donor,downwind,dif,sigma,width,limiter,vdiffuw,vdiffdw,auw,adw,wind,advec_vel_s)
+       DO k=y_min-1,y_max+1

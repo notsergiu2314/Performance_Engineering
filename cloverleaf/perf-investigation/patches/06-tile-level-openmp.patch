@@ -1,0 +1,168 @@
+diff --color -ru -x '*.o' -x '*.mod' -x clover_leaf -x InputDecks -x 'clover.*' v6/accelerate.f90 v7/accelerate.f90
+--- a/accelerate.f90	2026-09-17 14:46:47.796090918 +0200
++++ b/accelerate.f90	2026-09-17 14:53:49.202934333 +0200
+@@ -38,6 +38,7 @@
+   
+     
+     IF(use_fortran_kernels) THEN
++      !$OMP PARALLEL DO 
+       DO tile=1,tiles_per_chunk
+ 
+ 
+@@ -60,6 +61,7 @@
+ 
+       ENDDO
+     ELSEIF(use_C_kernels)THEN
++      !$OMP PARALLEL DO 
+       DO tile=1,tiles_per_chunk
+         CALL accelerate_kernel_c(chunk%tiles(tile)%t_xmin,                &
+           chunk%tiles(tile)%t_xmax,                  &
+diff --color -ru -x '*.o' -x '*.mod' -x clover_leaf -x InputDecks -x 'clover.*' v6/advection.f90 v7/advection.f90
+--- a/advection.f90	2026-09-17 14:46:47.796269084 +0200
++++ b/advection.f90	2026-09-17 14:53:49.199985489 +0200
+@@ -54,6 +54,7 @@
+     CALL update_halo(fields,2)
+ 
+     IF(profiler_on) kernel_time=timer()
++    !$OMP PARALLEL DO 
+     DO tile=1,tiles_per_chunk
+       CALL advec_cell_driver(tile,sweep_number,direction)
+     ENDDO
+@@ -72,6 +73,7 @@
+     IF(profiler_on) kernel_time=timer()
+   
+ 
++    !$OMP PARALLEL DO 
+     DO tile=1,tiles_per_chunk
+       CALL advec_mom_driver(tile,xvel,direction,sweep_number)
+       CALL advec_mom_driver(tile,yvel,direction,sweep_number)
+@@ -85,6 +87,7 @@
+ 
+     IF(profiler_on) kernel_time=timer()
+ 
++    !$OMP PARALLEL DO 
+     DO tile=1,tiles_per_chunk
+       CALL advec_cell_driver(tile,sweep_number,direction)
+     ENDDO
+@@ -102,6 +105,7 @@
+ 
+     IF(profiler_on) kernel_time=timer()
+ 
++    !$OMP PARALLEL DO 
+     DO tile=1,tiles_per_chunk
+       CALL advec_mom_driver(tile,xvel,direction,sweep_number)
+       CALL advec_mom_driver(tile,yvel,direction,sweep_number)
+diff --color -ru -x '*.o' -x '*.mod' -x clover_leaf -x InputDecks -x 'clover.*' v6/flux_calc.f90 v7/flux_calc.f90
+--- a/flux_calc.f90	2026-09-17 14:46:47.796992204 +0200
++++ b/flux_calc.f90	2026-09-17 14:53:49.210733610 +0200
+@@ -38,6 +38,7 @@
+ 
+ 
+     IF(use_fortran_kernels) THEN
++      !$OMP PARALLEL DO 
+       DO tile=1,tiles_per_chunk
+ 
+         CALL flux_calc_kernel(chunk%tiles(tile)%t_xmin,         &
+@@ -57,6 +58,7 @@
+ 
+       ENDDO
+     ELSEIF(use_C_kernels) THEN
++      !$OMP PARALLEL DO 
+       DO tile=1,tiles_per_chunk
+ 
+         CALL flux_calc_kernel_c(chunk%tiles(tile)%t_xmin,         &
+diff --color -ru -x '*.o' -x '*.mod' -x clover_leaf -x InputDecks -x 'clover.*' v6/PdV.f90 v7/PdV.f90
+--- a/PdV.f90	2026-09-17 14:46:47.795977094 +0200
++++ b/PdV.f90	2026-09-17 14:53:49.213615097 +0200
+@@ -55,6 +55,7 @@
+   
+     IF(use_fortran_kernels) THEN
+ 
++      !$OMP PARALLEL DO 
+       DO tile=1,tiles_per_chunk
+ 
+ 
+@@ -83,6 +84,7 @@
+       ENDDO
+   
+     ELSEIF(use_C_kernels) THEN
++      !$OMP PARALLEL DO 
+       DO tile=1,tiles_per_chunk
+ 
+ 
+@@ -121,6 +123,7 @@
+ 
+     IF(predict)THEN
+       IF(profiler_on) kernel_time=timer()
++      !$OMP PARALLEL DO 
+       DO tile=1,tiles_per_chunk
+         CALL ideal_gas(tile,.TRUE.)
+       ENDDO
+diff --color -ru -x '*.o' -x '*.mod' -x clover_leaf -x InputDecks -x 'clover.*' v6/timestep.f90 v7/timestep.f90
+--- a/timestep.f90	2026-09-17 14:46:47.797864476 +0200
++++ b/timestep.f90	2026-09-17 14:53:49.219230252 +0200
+@@ -57,6 +57,7 @@
+     small=0
+ 
+     IF(profiler_on) kernel_time=timer()
++    !$OMP PARALLEL DO 
+     DO tile = 1, tiles_per_chunk
+       CALL ideal_gas(tile,.FALSE.)
+     END DO
+diff --color -ru -x '*.o' -x '*.mod' -x clover_leaf -x InputDecks -x 'clover.*' v6/update_halo.f90 v7/update_halo.f90
+--- a/update_halo.f90	2026-09-17 14:46:47.797916534 +0200
++++ b/update_halo.f90	2026-09-17 14:53:49.205537686 +0200
+@@ -51,6 +51,7 @@
+ 
+ 
+       IF(use_fortran_kernels) THEN
++        !$OMP PARALLEL DO 
+         DO tile=1,tiles_per_chunk
+ 
+           CALL update_halo_kernel(chunk%tiles(tile)%t_xmin,          &
+@@ -81,6 +82,7 @@
+         ENDDO
+ 
+       ELSEIF(use_C_kernels) THEN
++        !$OMP PARALLEL DO 
+         DO tile=1,tiles_per_chunk
+ 
+           CALL update_halo_kernel_c(chunk%tiles(tile)%t_xmin,          &
+diff --color -ru -x '*.o' -x '*.mod' -x clover_leaf -x InputDecks -x 'clover.*' v6/update_tile_halo.f90 v7/update_tile_halo.f90
+--- a/update_tile_halo.f90	2026-09-17 14:46:47.797975395 +0200
++++ b/update_tile_halo.f90	2026-09-17 14:53:49.216408989 +0200
+@@ -42,6 +42,7 @@
+     ! Update Top Bottom - Real to Real
+ 
+ 
++    !$OMP PARALLEL DO PRIVATE(t_up,t_down,t_left,t_right)
+     DO tile=1,tiles_per_chunk
+       t_up   =chunk%tiles(tile)%tile_neighbours(TILE_TOP)
+       t_down =chunk%tiles(tile)%tile_neighbours(TILE_BOTTOM)
+@@ -143,6 +144,7 @@
+ 
+     ! Update Left Right - Ghost, Real, Ghost - > Real
+ 
++    !$OMP PARALLEL DO PRIVATE(t_up,t_down,t_left,t_right)
+     DO tile=1,tiles_per_chunk
+       t_left   =chunk%tiles(tile)%tile_neighbours(TILE_LEFT)
+       t_right  =chunk%tiles(tile)%tile_neighbours(TILE_RIGHT)
+diff --color -ru -x '*.o' -x '*.mod' -x clover_leaf -x InputDecks -x 'clover.*' v6/viscosity.f90 v7/viscosity.f90
+--- a/viscosity.f90	2026-09-17 14:46:47.798040868 +0200
++++ b/viscosity.f90	2026-09-17 14:53:49.208195611 +0200
+@@ -35,6 +35,7 @@
+ 
+ 
+     IF(use_fortran_kernels) THEN
++      !$OMP PARALLEL DO 
+       DO tile=1,tiles_per_chunk
+ 
+         CALL viscosity_kernel(chunk%tiles(tile)%t_xmin,                   &
+@@ -52,6 +53,7 @@
+ 
+       ENDDO
+     ELSEIF(use_C_kernels) THEN
++      !$OMP PARALLEL DO 
+       DO tile=1,tiles_per_chunk
+ 
+         CALL viscosity_kernel_c(chunk%tiles(tile)%t_xmin,                   &

@@ -1,0 +1,47 @@
+diff --color -ru -x '*.o' -x '*.mod' -x clover_leaf -x InputDecks -x 'clover.*' ref/kernels/advec_mom_kernel.f90 v1/kernels/advec_mom_kernel.f90
+--- a/kernels/advec_mom_kernel.f90	2026-09-17 14:20:54.439907185 +0200
++++ b/kernels/advec_mom_kernel.f90	2026-09-17 14:38:44.489994131 +0200
+@@ -78,13 +78,13 @@
+ 
+     !$OMP PARALLEL
+ 
++    IF(which_vel.EQ.1)THEN
+     IF(mom_sweep.EQ.1)THEN ! x 1
+       !$OMP DO
+       DO k=y_min-2,y_max+2
+       !$OMP SIMD
+         DO j=x_min-2,x_max+2
+           post_vol(j,k)= volume(j,k)+vol_flux_y(j  ,k+1)-vol_flux_y(j,k)
+-          pre_vol(j,k)=post_vol(j,k)+vol_flux_x(j+1,k  )-vol_flux_x(j,k)
+         ENDDO
+       ENDDO
+     !$OMP END DO
+@@ -94,7 +94,6 @@
+       !$OMP SIMD
+         DO j=x_min-2,x_max+2
+           post_vol(j,k)= volume(j,k)+vol_flux_x(j+1,k  )-vol_flux_x(j,k)
+-          pre_vol(j,k)=post_vol(j,k)+vol_flux_y(j  ,k+1)-vol_flux_y(j,k)
+         ENDDO
+       ENDDO
+     !$OMP END DO
+@@ -104,7 +103,6 @@
+       !$OMP SIMD
+         DO j=x_min-2,x_max+2
+           post_vol(j,k)=volume(j,k)
+-          pre_vol(j,k)=post_vol(j,k)+vol_flux_y(j  ,k+1)-vol_flux_y(j,k)
+         ENDDO
+       ENDDO
+     !$OMP END DO
+@@ -114,11 +112,11 @@
+       !$OMP SIMD
+         DO j=x_min-2,x_max+2
+           post_vol(j,k)=volume(j,k)
+-          pre_vol(j,k)=post_vol(j,k)+vol_flux_x(j+1,k  )-vol_flux_x(j,k)
+         ENDDO
+       ENDDO
+     !$OMP END DO
+     ENDIF
++    ENDIF
+ 
+     IF(direction.EQ.1)THEN
+       IF(which_vel.EQ.1)THEN

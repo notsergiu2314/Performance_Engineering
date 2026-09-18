@@ -1,0 +1,12 @@
+diff --color -ru -x '*.o' -x '*.mod' -x clover_leaf -x InputDecks -x 'clover.*' v1/PdV.f90 v2/PdV.f90
+--- a/PdV.f90	2026-09-17 14:38:35.695780823 +0200
++++ b/PdV.f90	2026-09-17 14:38:44.502193050 +0200
+@@ -133,7 +133,7 @@
+ 
+     IF ( predict ) THEN
+       IF(profiler_on) kernel_time=timer()
+-      CALL revert()
++      !CALL revert() ! dead: corrector PdV overwrites density1,energy1
+       IF(profiler_on) profiler%revert=profiler%revert+(timer()-kernel_time)
+     ENDIF
+ 

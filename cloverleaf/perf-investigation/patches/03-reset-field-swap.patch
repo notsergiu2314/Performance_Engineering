@@ -1,0 +1,31 @@
+diff --color -ru -x '*.o' -x '*.mod' -x clover_leaf -x InputDecks -x 'clover.*' v2/reset_field.f90 v3/reset_field.f90
+--- a/reset_field.f90	2026-09-17 14:38:35.746474926 +0200
++++ b/reset_field.f90	2026-09-17 14:39:07.227783877 +0200
+@@ -33,10 +33,26 @@
+     INTEGER :: tile
+ 
+     REAL(KIND=8) :: kernel_time,timer
++    REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: tmp
+ 
+     IF(profiler_on) kernel_time=timer()
+ 
+-    IF(use_fortran_kernels) THEN
++    IF(.TRUE.) THEN
++      DO tile=1,tiles_per_chunk
++        CALL MOVE_ALLOC(chunk%tiles(tile)%field%density0,tmp)
++        CALL MOVE_ALLOC(chunk%tiles(tile)%field%density1,chunk%tiles(tile)%field%density0)
++        CALL MOVE_ALLOC(tmp,chunk%tiles(tile)%field%density1)
++        CALL MOVE_ALLOC(chunk%tiles(tile)%field%energy0,tmp)
++        CALL MOVE_ALLOC(chunk%tiles(tile)%field%energy1,chunk%tiles(tile)%field%energy0)
++        CALL MOVE_ALLOC(tmp,chunk%tiles(tile)%field%energy1)
++        CALL MOVE_ALLOC(chunk%tiles(tile)%field%xvel0,tmp)
++        CALL MOVE_ALLOC(chunk%tiles(tile)%field%xvel1,chunk%tiles(tile)%field%xvel0)
++        CALL MOVE_ALLOC(tmp,chunk%tiles(tile)%field%xvel1)
++        CALL MOVE_ALLOC(chunk%tiles(tile)%field%yvel0,tmp)
++        CALL MOVE_ALLOC(chunk%tiles(tile)%field%yvel1,chunk%tiles(tile)%field%yvel0)
++        CALL MOVE_ALLOC(tmp,chunk%tiles(tile)%field%yvel1)
++      ENDDO
++    ELSEIF(use_fortran_kernels) THEN
+ 
+       DO tile=1,tiles_per_chunk
+ 

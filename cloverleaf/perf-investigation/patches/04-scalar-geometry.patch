@@ -1,0 +1,324 @@
+diff --color -ru -x '*.o' -x '*.mod' -x clover_leaf -x InputDecks -x 'clover.*' v3/kernels/accelerate_kernel.f90 v5/kernels/accelerate_kernel.f90
+--- a/kernels/accelerate_kernel.f90	2026-09-17 14:38:35.763231668 +0200
++++ b/kernels/accelerate_kernel.f90	2026-09-17 14:45:05.720669646 +0200
+@@ -50,30 +50,34 @@
+     REAL(KIND=8), DIMENSION(x_min-2:x_max+3 ,y_min-2:y_max+3) :: xvel1,yvel1
+ 
+     INTEGER               :: j,k
++    REAL(KIND=8) :: volume_s,xarea_s,yarea_s
+     REAL(KIND=8)          :: nodal_mass,stepbymass_s,halfdt
+ 
+     halfdt=0.5_8*dt
+ 
++    volume_s=volume(x_min,y_min)
++    xarea_s=xarea(x_min,y_min)
++    yarea_s=yarea(x_min,y_min)
+     !$OMP PARALLEL
+ 
+     !$OMP DO PRIVATE(j,k,stepbymass_s)
+     DO k=y_min,y_max+1
+     !$OMP SIMD
+       DO j=x_min,x_max+1
+-        stepbymass_s=halfdt/((density0(j-1,k-1)*volume(j-1,k-1)  &
+-          +density0(j  ,k-1)*volume(j  ,k-1)  &
+-          +density0(j  ,k  )*volume(j  ,k  )  &
+-          +density0(j-1,k  )*volume(j-1,k  )) &
++        stepbymass_s=halfdt/((density0(j-1,k-1)*volume_s  &
++          +density0(j  ,k-1)*volume_s  &
++          +density0(j  ,k  )*volume_s  &
++          +density0(j-1,k  )*volume_s) &
+           *0.25_8)
+ 
+-        xvel1(j,k)=xvel0(j,k)-stepbymass_s*(xarea(j  ,k  )*(pressure(j  ,k  )-pressure(j-1,k  ))    &
+-          +xarea(j  ,k-1)*(pressure(j  ,k-1)-pressure(j-1,k-1)))
+-        yvel1(j,k)=yvel0(j,k)-stepbymass_s*(yarea(j  ,k  )*(pressure(j  ,k  )-pressure(j  ,k-1))    &
+-          +yarea(j-1,k  )*(pressure(j-1,k  )-pressure(j-1,k-1)))
+-        xvel1(j,k)=xvel1(j,k)-stepbymass_s*(xarea(j  ,k  )*(viscosity(j  ,k  )-viscosity(j-1,k  )) &
+-          +xarea(j  ,k-1)*(viscosity(j  ,k-1)-viscosity(j-1,k-1)))
+-        yvel1(j,k)=yvel1(j,k)-stepbymass_s*(yarea(j  ,k  )*(viscosity(j  ,k  )-viscosity(j  ,k-1)) &
+-          +yarea(j-1,k  )*(viscosity(j-1,k  )-viscosity(j-1,k-1)))
++        xvel1(j,k)=xvel0(j,k)-stepbymass_s*(xarea_s*(pressure(j  ,k  )-pressure(j-1,k  ))    &
++          +xarea_s*(pressure(j  ,k-1)-pressure(j-1,k-1)))
++        yvel1(j,k)=yvel0(j,k)-stepbymass_s*(yarea_s*(pressure(j  ,k  )-pressure(j  ,k-1))    &
++          +yarea_s*(pressure(j-1,k  )-pressure(j-1,k-1)))
++        xvel1(j,k)=xvel1(j,k)-stepbymass_s*(xarea_s*(viscosity(j  ,k  )-viscosity(j-1,k  )) &
++          +xarea_s*(viscosity(j  ,k-1)-viscosity(j-1,k-1)))
++        yvel1(j,k)=yvel1(j,k)-stepbymass_s*(yarea_s*(viscosity(j  ,k  )-viscosity(j  ,k-1)) &
++          +yarea_s*(viscosity(j-1,k  )-viscosity(j-1,k-1)))
+       ENDDO
+     ENDDO
+   !$OMP END DO
+diff --color -ru -x '*.o' -x '*.mod' -x clover_leaf -x InputDecks -x 'clover.*' v3/kernels/advec_cell_kernel.f90 v5/kernels/advec_cell_kernel.f90
+--- a/kernels/advec_cell_kernel.f90	2026-09-17 14:38:35.763332588 +0200
++++ b/kernels/advec_cell_kernel.f90	2026-09-17 14:45:05.723652743 +0200
+@@ -72,12 +72,14 @@
+     REAL(KIND=8), DIMENSION(y_min-2:y_max+3) :: vertexdy
+ 
+     INTEGER :: j,k,upwind,donor,downwind,dif
++    REAL(KIND=8) :: volume_s
+ 
+     REAL(KIND=8) :: wind,sigma,sigmat,sigmav,sigmam,sigma3,sigma4
+     REAL(KIND=8) :: diffuw,diffdw,limiter
+     REAL(KIND=8) :: one_by_six=1.0_8/6.0_8
+     REAL(KIND=8) :: pre_mass_s,post_mass_s,post_ener_s,advec_vol_s
+ 
++    volume_s=volume(x_min,y_min)
+     !$OMP PARALLEL
+ 
+     IF(dir.EQ.g_xdir) THEN
+@@ -87,7 +89,7 @@
+         DO k=y_min-2,y_max+2
+         !$OMP SIMD
+           DO j=x_min-2,x_max+2
+-            pre_vol(j,k)=volume(j,k)+(vol_flux_x(j+1,k  )-vol_flux_x(j,k)+vol_flux_y(j  ,k+1)-vol_flux_y(j,k))
++            pre_vol(j,k)=volume_s+(vol_flux_x(j+1,k  )-vol_flux_x(j,k)+vol_flux_y(j  ,k+1)-vol_flux_y(j,k))
+             post_vol(j,k)=pre_vol(j,k)-(vol_flux_x(j+1,k  )-vol_flux_x(j,k))
+           ENDDO
+         ENDDO
+@@ -97,8 +99,8 @@
+         DO k=y_min-2,y_max+2
+         !$OMP SIMD
+           DO j=x_min-2,x_max+2
+-            pre_vol(j,k)=volume(j,k)+vol_flux_x(j+1,k)-vol_flux_x(j,k)
+-            post_vol(j,k)=volume(j,k)
++            pre_vol(j,k)=volume_s+vol_flux_x(j+1,k)-vol_flux_x(j,k)
++            post_vol(j,k)=volume_s
+           ENDDO
+         ENDDO
+       !$OMP END DO
+@@ -179,7 +181,7 @@
+         DO k=y_min-2,y_max+2
+         !$OMP SIMD
+           DO j=x_min-2,x_max+2
+-            pre_vol(j,k)=volume(j,k)+(vol_flux_y(j  ,k+1)-vol_flux_y(j,k)+vol_flux_x(j+1,k  )-vol_flux_x(j,k))
++            pre_vol(j,k)=volume_s+(vol_flux_y(j  ,k+1)-vol_flux_y(j,k)+vol_flux_x(j+1,k  )-vol_flux_x(j,k))
+             post_vol(j,k)=pre_vol(j,k)-(vol_flux_y(j  ,k+1)-vol_flux_y(j,k))
+           ENDDO
+         ENDDO
+@@ -189,8 +191,8 @@
+         DO k=y_min-2,y_max+2
+         !$OMP SIMD
+           DO j=x_min-2,x_max+2
+-            pre_vol(j,k)=volume(j,k)+vol_flux_y(j  ,k+1)-vol_flux_y(j,k)
+-            post_vol(j,k)=volume(j,k)
++            pre_vol(j,k)=volume_s+vol_flux_y(j  ,k+1)-vol_flux_y(j,k)
++            post_vol(j,k)=volume_s
+           ENDDO
+         ENDDO
+       !$OMP END DO
+diff --color -ru -x '*.o' -x '*.mod' -x clover_leaf -x InputDecks -x 'clover.*' v3/kernels/advec_mom_kernel.f90 v5/kernels/advec_mom_kernel.f90
+--- a/kernels/advec_mom_kernel.f90	2026-09-17 14:38:44.496338973 +0200
++++ b/kernels/advec_mom_kernel.f90	2026-09-17 14:45:05.724761574 +0200
+@@ -69,6 +69,7 @@
+     REAL(KIND=8), DIMENSION(y_min-2:y_max+2) :: celldy
+  
+     INTEGER :: j,k,mom_sweep
++    REAL(KIND=8) :: volume_s
+     INTEGER :: upwind,donor,downwind,dif
+     REAL(KIND=8) :: sigma,wind,width
+     REAL(KIND=8) :: vdiffuw,vdiffdw,auw,adw,limiter
+@@ -76,6 +77,7 @@
+ 
+     mom_sweep=direction+2*(sweep_number-1)
+ 
++    volume_s=volume(x_min,y_min)
+     !$OMP PARALLEL
+ 
+     IF(which_vel.EQ.1)THEN
+@@ -84,7 +86,7 @@
+       DO k=y_min-2,y_max+2
+       !$OMP SIMD
+         DO j=x_min-2,x_max+2
+-          post_vol(j,k)= volume(j,k)+vol_flux_y(j  ,k+1)-vol_flux_y(j,k)
++          post_vol(j,k)= volume_s+vol_flux_y(j  ,k+1)-vol_flux_y(j,k)
+         ENDDO
+       ENDDO
+     !$OMP END DO
+@@ -93,7 +95,7 @@
+       DO k=y_min-2,y_max+2
+       !$OMP SIMD
+         DO j=x_min-2,x_max+2
+-          post_vol(j,k)= volume(j,k)+vol_flux_x(j+1,k  )-vol_flux_x(j,k)
++          post_vol(j,k)= volume_s+vol_flux_x(j+1,k  )-vol_flux_x(j,k)
+         ENDDO
+       ENDDO
+     !$OMP END DO
+@@ -102,7 +104,7 @@
+       DO k=y_min-2,y_max+2
+       !$OMP SIMD
+         DO j=x_min-2,x_max+2
+-          post_vol(j,k)=volume(j,k)
++          post_vol(j,k)=volume_s
+         ENDDO
+       ENDDO
+     !$OMP END DO
+@@ -111,7 +113,7 @@
+       DO k=y_min-2,y_max+2
+       !$OMP SIMD
+         DO j=x_min-2,x_max+2
+-          post_vol(j,k)=volume(j,k)
++          post_vol(j,k)=volume_s
+         ENDDO
+       ENDDO
+     !$OMP END DO
+diff --color -ru -x '*.o' -x '*.mod' -x clover_leaf -x InputDecks -x 'clover.*' v3/kernels/calc_dt_kernel.f90 v5/kernels/calc_dt_kernel.f90
+--- a/kernels/calc_dt_kernel.f90	2026-09-17 14:38:35.763627784 +0200
++++ b/kernels/calc_dt_kernel.f90	2026-09-17 14:45:05.722471094 +0200
+@@ -79,6 +79,7 @@
+     INTEGER          :: small
+ 
+     INTEGER          :: j,k
++    REAL(KIND=8) :: volume_s,xarea_s,yarea_s
+ 
+     REAL(KIND=8)     :: div,dsx,dsy,dtut,dtvt,dtct,dtdivt,cc,dv1,dv2,jk_control
+ 
+@@ -86,6 +87,9 @@
+     dt_min_val = g_big
+     jk_control=1.1
+ 
++    volume_s=volume(x_min,y_min)
++    xarea_s=xarea(x_min,y_min)
++    yarea_s=yarea(x_min,y_min)
+     !$OMP PARALLEL
+ 
+     !$OMP DO PRIVATE(dsx,dsy,cc,dv1,dv2,div,dtct,dtut,dtvt,dtdivt) REDUCTION(MIN : dt_min_val)
+@@ -104,21 +108,21 @@
+ 
+         div=0.0
+ 
+-        dv1=(xvel0(j  ,k)+xvel0(j  ,k+1))*xarea(j  ,k)
+-        dv2=(xvel0(j+1,k)+xvel0(j+1,k+1))*xarea(j+1,k)
++        dv1=(xvel0(j  ,k)+xvel0(j  ,k+1))*xarea_s
++        dv2=(xvel0(j+1,k)+xvel0(j+1,k+1))*xarea_s
+ 
+         div=div+dv2-dv1
+ 
+-        dtut=dtu_safe*2.0_8*volume(j,k)/MAX(ABS(dv1),ABS(dv2),g_small*volume(j,k))
++        dtut=dtu_safe*2.0_8*volume_s/MAX(ABS(dv1),ABS(dv2),g_small*volume_s)
+ 
+-        dv1=(yvel0(j,k  )+yvel0(j+1,k  ))*yarea(j,k  )
+-        dv2=(yvel0(j,k+1)+yvel0(j+1,k+1))*yarea(j,k+1)
++        dv1=(yvel0(j,k  )+yvel0(j+1,k  ))*yarea_s
++        dv2=(yvel0(j,k+1)+yvel0(j+1,k+1))*yarea_s
+ 
+         div=div+dv2-dv1
+ 
+-        dtvt=dtv_safe*2.0_8*volume(j,k)/MAX(ABS(dv1),ABS(dv2),g_small*volume(j,k))
++        dtvt=dtv_safe*2.0_8*volume_s/MAX(ABS(dv1),ABS(dv2),g_small*volume_s)
+ 
+-        div=div/(2.0_8*volume(j,k))
++        div=div/(2.0_8*volume_s)
+ 
+         IF(div.LT.-g_small)THEN
+           dtdivt=dtdiv_safe*(-1.0_8/div)
+diff --color -ru -x '*.o' -x '*.mod' -x clover_leaf -x InputDecks -x 'clover.*' v3/kernels/flux_calc_kernel.f90 v5/kernels/flux_calc_kernel.f90
+--- a/kernels/flux_calc_kernel.f90	2026-09-17 14:38:35.763833893 +0200
++++ b/kernels/flux_calc_kernel.f90	2026-09-17 14:45:05.721199135 +0200
+@@ -45,7 +45,10 @@
+     REAL(KIND=8), DIMENSION(x_min-2:x_max+2,y_min-2:y_max+3) :: vol_flux_y
+ 
+     INTEGER :: j,k
++    REAL(KIND=8) :: xarea_s,yarea_s
+ 
++    xarea_s=xarea(x_min,y_min)
++    yarea_s=yarea(x_min,y_min)
+     !$OMP PARALLEL
+ 
+     ! Note that the loops calculate one extra flux than required, but this
+@@ -54,9 +57,9 @@
+     DO k=y_min,y_max+1
+     !$OMP SIMD
+       DO j=x_min,x_max+1
+-        vol_flux_x(j,k)=0.25_8*dt*xarea(j,k)                  &
++        vol_flux_x(j,k)=0.25_8*dt*xarea_s                  &
+           *(xvel0(j,k)+xvel0(j,k+1)+xvel1(j,k)+xvel1(j,k+1))
+-        vol_flux_y(j,k)=0.25_8*dt*yarea(j,k)                  &
++        vol_flux_y(j,k)=0.25_8*dt*yarea_s                  &
+           *(yvel0(j,k)+yvel0(j+1,k)+yvel1(j,k)+yvel1(j+1,k))
+       ENDDO
+     ENDDO
+diff --color -ru -x '*.o' -x '*.mod' -x clover_leaf -x InputDecks -x 'clover.*' v3/kernels/PdV_kernel.f90 v5/kernels/PdV_kernel.f90
+--- a/kernels/PdV_kernel.f90	2026-09-17 14:38:35.763097495 +0200
++++ b/kernels/PdV_kernel.f90	2026-09-17 14:45:05.719853557 +0200
+@@ -59,11 +59,15 @@
+     REAL(KIND=8), DIMENSION(x_min-2:x_max+3,y_min-2:y_max+3) :: volume_change
+ 
+     INTEGER :: j,k
++    REAL(KIND=8) :: volume_s,xarea_s,yarea_s
+ 
+     REAL(KIND=8)  :: recip_volume,energy_change,min_cell_volume
+     REAL(KIND=8)  :: right_flux,left_flux,top_flux,bottom_flux,total_flux
+     REAL(KIND=8)  :: volume_change_s
+ 
++    volume_s=volume(x_min,y_min)
++    xarea_s=xarea(x_min,y_min)
++    yarea_s=yarea(x_min,y_min)
+     !$OMP PARALLEL
+ 
+     IF(predict)THEN
+@@ -74,23 +78,23 @@
+       !$OMP SIMD
+         DO j=x_min,x_max
+ 
+-          left_flux=  (xarea(j  ,k  )*(xvel0(j  ,k  )+xvel0(j  ,k+1)                     &
++          left_flux=  (xarea_s*(xvel0(j  ,k  )+xvel0(j  ,k+1)                     &
+             +xvel0(j  ,k  )+xvel0(j  ,k+1)))*0.25_8*dt*0.5
+-          right_flux= (xarea(j+1,k  )*(xvel0(j+1,k  )+xvel0(j+1,k+1)                     &
++          right_flux= (xarea_s*(xvel0(j+1,k  )+xvel0(j+1,k+1)                     &
+             +xvel0(j+1,k  )+xvel0(j+1,k+1)))*0.25_8*dt*0.5
+-          bottom_flux=(yarea(j  ,k  )*(yvel0(j  ,k  )+yvel0(j+1,k  )                     &
++          bottom_flux=(yarea_s*(yvel0(j  ,k  )+yvel0(j+1,k  )                     &
+             +yvel0(j  ,k  )+yvel0(j+1,k  )))*0.25_8*dt*0.5
+-          top_flux=   (yarea(j  ,k+1)*(yvel0(j  ,k+1)+yvel0(j+1,k+1)                     &
++          top_flux=   (yarea_s*(yvel0(j  ,k+1)+yvel0(j+1,k+1)                     &
+             +yvel0(j  ,k+1)+yvel0(j+1,k+1)))*0.25_8*dt*0.5
+           total_flux=right_flux-left_flux+top_flux-bottom_flux
+ 
+-          volume_change_s=volume(j,k)/(volume(j,k)+total_flux)
++          volume_change_s=volume_s/(volume_s+total_flux)
+ 
+-          min_cell_volume=MIN(volume(j,k)+right_flux-left_flux+top_flux-bottom_flux &
+-            ,volume(j,k)+right_flux-left_flux                      &
+-            ,volume(j,k)+top_flux-bottom_flux)
++          min_cell_volume=MIN(volume_s+right_flux-left_flux+top_flux-bottom_flux &
++            ,volume_s+right_flux-left_flux                      &
++            ,volume_s+top_flux-bottom_flux)
+  
+-          recip_volume=1.0/volume(j,k)
++          recip_volume=1.0/volume_s
+ 
+           energy_change=(pressure(j,k)/density0(j,k)+viscosity(j,k)/density0(j,k))*total_flux*recip_volume
+ 
+@@ -110,23 +114,23 @@
+       !$OMP SIMD
+         DO j=x_min,x_max
+ 
+-          left_flux=  (xarea(j  ,k  )*(xvel0(j  ,k  )+xvel0(j  ,k+1)                     &
++          left_flux=  (xarea_s*(xvel0(j  ,k  )+xvel0(j  ,k+1)                     &
+             +xvel1(j  ,k  )+xvel1(j  ,k+1)))*0.25_8*dt
+-          right_flux= (xarea(j+1,k  )*(xvel0(j+1,k  )+xvel0(j+1,k+1)                     &
++          right_flux= (xarea_s*(xvel0(j+1,k  )+xvel0(j+1,k+1)                     &
+             +xvel1(j+1,k  )+xvel1(j+1,k+1)))*0.25_8*dt
+-          bottom_flux=(yarea(j  ,k  )*(yvel0(j  ,k  )+yvel0(j+1,k  )                     &
++          bottom_flux=(yarea_s*(yvel0(j  ,k  )+yvel0(j+1,k  )                     &
+             +yvel1(j  ,k  )+yvel1(j+1,k  )))*0.25_8*dt
+-          top_flux=   (yarea(j  ,k+1)*(yvel0(j  ,k+1)+yvel0(j+1,k+1)                     &
++          top_flux=   (yarea_s*(yvel0(j  ,k+1)+yvel0(j+1,k+1)                     &
+             +yvel1(j  ,k+1)+yvel1(j+1,k+1)))*0.25_8*dt
+           total_flux=right_flux-left_flux+top_flux-bottom_flux
+ 
+-          volume_change_s=volume(j,k)/(volume(j,k)+total_flux)
++          volume_change_s=volume_s/(volume_s+total_flux)
+ 
+-          min_cell_volume=MIN(volume(j,k)+right_flux-left_flux+top_flux-bottom_flux &
+-            ,volume(j,k)+right_flux-left_flux                      &
+-            ,volume(j,k)+top_flux-bottom_flux)
++          min_cell_volume=MIN(volume_s+right_flux-left_flux+top_flux-bottom_flux &
++            ,volume_s+right_flux-left_flux                      &
++            ,volume_s+top_flux-bottom_flux)
+  
+-          recip_volume=1.0/volume(j,k)
++          recip_volume=1.0/volume_s
+ 
+           energy_change=(pressure(j,k)/density0(j,k)+viscosity(j,k)/density0(j,k))*total_flux*recip_volume
+ 
