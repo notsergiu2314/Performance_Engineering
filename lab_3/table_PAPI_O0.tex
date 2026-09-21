@@ -1,0 +1,20 @@
+\begin{table}[ht]
+    \centering
+    \caption{Matrix multiplication execution time (PAPI, O0). Values are reported as average $\pm$ standard deviation over 100 iterations.}
+    \label{tab:mm-papi-o0}
+    \begin{tabular}{rcc}
+        \hline
+        $N$ & Time (ns) & Rel. std (\%) \\
+        \hline
+        2 & $(6.820 \pm 3.232) \times 10^{2}$ & 47.39 \\
+        4 & $(1.162 \pm 0.032) \times 10^{3}$ & 2.77 \\
+        8 & $(4.866 \pm 0.741) \times 10^{3}$ & 15.24 \\
+        16 & $(3.214 \pm 0.087) \times 10^{4}$ & 2.70 \\
+        32 & $(2.443 \pm 0.038) \times 10^{5}$ & 1.57 \\
+        64 & $(1.998 \pm 0.013) \times 10^{6}$ & 0.66 \\
+        128 & $(1.577 \pm 0.010) \times 10^{7}$ & 0.63 \\
+        256 & $(1.267 \pm 0.037) \times 10^{8}$ & 2.91 \\
+        512 & $(1.015 \pm 0.010) \times 10^{9}$ & 1.00 \\
+        \hline
+    \end{tabular}
+\end{table}
