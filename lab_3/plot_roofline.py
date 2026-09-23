@@ -91,10 +91,12 @@ ai_min = min(df["ai"].min() for df in results.values()) / 2
 ai_max = max(df["ai"].max() for df in results.values()) * 4
 ai = np.logspace(np.log10(ai_min), np.log10(ai_max), 500)
 
-ax.plot(ai, np.minimum(peak_system, ai * bandwidth) / 1e9, color="black", linewidth=2,
-        label=f"Roofline, {args.cores} cores ({peak_system / 1e9:.0f} GFLOPs/s, {args.bandwidth_gbs:g} GB/s)")
+# compute ceiling max cores
+# ax.plot(ai, np.minimum(peak_system, ai * bandwidth) / 1e9, color="black", linewidth=2,
+#         label=f"Roofline, {args.cores} cores ({peak_system / 1e9:.0f} GFLOPs/s, {args.bandwidth_gbs:g} GB/s)")
+# compute ceiling one core
 ax.plot(ai, np.minimum(peak_core, ai * bandwidth) / 1e9, color="black", linewidth=1.5, linestyle="--",
-        label=f"Compute ceiling, 1 core ({peak_core / 1e9:.1f} GFLOPs/s)")
+        label=f"Compute ceiling, 1 core ({peak_core / 1e9:.1f} GFLOPs/s, {args.bandwidth_gbs:g} GB/s)")
 
 # --- Attained performance: color = optimisation level, marker = timing tool ---
 colors = {opt: c for opt, c in zip(args.opt_levels, ["tab:blue", "tab:orange", "tab:green", "tab:red"])}
