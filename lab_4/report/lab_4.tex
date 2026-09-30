@@ -1,0 +1,217 @@
+\documentclass[a4paper,11pt]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{amsmath}
+\usepackage{listings}
+\usepackage{xcolor}
+
+\lstset{
+    language=C++,
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue!60!black},
+    commentstyle=\color{green!40!black},
+    numbers=left,
+    numberstyle=\tiny,
+    frame=single,
+    breaklines=true,
+    showstringspaces=false
+}
+
+\title{WMCS045-05 -- Lab Assignment \#4}
+\author{Jort Oosterveld}
+\date{2026-09-30}
+
+\begin{document}
+
+\maketitle
+
+\section{Squared Sums}
+
+\subsection{System}
+
+All measurements were taken on the system in Table~\ref{tab:system}. The
+benchmark was pinned to one core with \texttt{taskset}.
+
+\begin{table}[ht]
+    \centering
+    \caption{System used for the measurements.}
+    \label{tab:system}
+    \begin{tabular}{ll}
+        \hline
+        CPU & AMD Ryzen 7 5825U (Zen 3, family 25, model 80) \\
+        Cores / threads & 8 / 16 \\
+        Frequency & max. 4.55\,GHz (boost enabled), 4.50\,GHz assumed for cycle counts \\
+        Caches & L1d 32\,KiB and L2 512\,KiB per core, L3 16\,MiB shared \\
+        SIMD registers & 16 (AVX2, FMA3) \\
+        OS & Linux 7.0.0-31-generic \\
+        Governor & \texttt{performance} (\texttt{amd-pstate-epp}) \\
+        Compiler & g++ (GCC) 15.2.1 \\
+        Flags & \texttt{-std=c++17 -O2 -march=native} \\
+              & \texttt{-fno-tree-vectorize -ffp-contract=off} \\
+        \hline
+    \end{tabular}
+\end{table}
+
+The microarchitecture parameters of Zen 3 that matter for this exercise are
+listed in Table~\ref{tab:uarch}. They are taken from the AMD Software
+Optimization Guide for family 19h processors and the instruction tables of
+uops.info.
+
+\begin{table}[ht]
+    \centering
+    \caption{Relevant microarchitecture parameters of Zen 3 (scalar double precision).}
+    \label{tab:uarch}
+    \begin{tabular}{lccc}
+        \hline
+        Instruction & Latency (cycles) & Throughput (per cycle) & Execution units \\
+        \hline
+        \texttt{vaddsd} & 3 & 2 & FP2, FP3 \\
+        \texttt{vmulsd} & 3 & 2 & FP0, FP1 \\
+        \texttt{vfmadd231sd} & 4 & 2 & FP0, FP1 \\
+        \hline
+        \multicolumn{4}{l}{Dispatch width: 6 macro-ops per cycle} \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\subsection{Benchmark}
+
+The loop of \texttt{sqsum} is unrolled by a factor $U$ with one accumulator per unrolled statement, which breaks the dependency for the one accumulator.
+The complete benchmark program \texttt{loop\_unrolling.cpp} can be found in Listing~\ref{lst:full} in Appendix~\ref{app:code}.
+
+Two compiler flags are needed to measure what is intended.
+\texttt{-fno-tree-vectorize} keeps the loop scalar, and \texttt{-ffp-contract=off} keeps the separate multiply and add, otherwise GCC fuses them into an FMA by itself.
+
+As in the assignment, $n = 8192$ and \texttt{sqsum} is called 10000 times.
+This batch of 10000 calls is timed with
+\texttt{clock\_gettime(CLOCK\_MONOTONIC\_RAW)} and repeated 30 times per
+unrolling factor. Only the minimum (best case) of the 30 repetitions is reported, since
+disturbances by the operating system can only make a run slower.
+
+Hardware cycle counters are not accessible on this system
+(\texttt{perf\_event\_paranoid} = 4). The time per element is therefore
+converted to cycles with an assumed constant core frequency of 4.50\,GHz,
+the boost clock the core runs at with the \texttt{performance} governor
+while the benchmark is pinned to it. The cycle counts are therefore only as
+accurate as this assumption, the times are what was measured.
+
+\subsection{Results}
+
+Table~\ref{tab:results} shows the results (\texttt{loop\_unrolling.csv}).
+
+\begin{table}[ht]
+    \centering
+    \caption{Best case of 30 repetitions for the squared sum with unrolling
+    factor $U$, $n = 8192$, 10000 calls per repetition. The speed-up is
+    relative to the loop without unrolling.}
+    \label{tab:results}
+    \begin{tabular}{rcccc}
+        \hline
+        $U$ & $\mu$s / call & ns / element & cycles / element & speed-up \\
+        \hline
+        1  & 5.49 & 0.6705 & 3.017 & 1.00 \\
+        2  & 2.78 & 0.3388 & 1.525 & 1.98 \\
+        3  & 1.88 & 0.2297 & 1.034 & 2.92 \\
+        4  & 1.55 & 0.1888 & 0.850 & 3.55 \\
+        5  & 1.25 & 0.1532 & 0.689 & 4.38 \\
+        6  & 1.23 & 0.1498 & 0.674 & 4.48 \\
+        7  & 1.20 & 0.1464 & 0.659 & 4.58 \\
+        8  & 1.07 & 0.1306 & 0.587 & 5.13 \\
+        9  & 1.14 & 0.1390 & 0.625 & 4.82 \\
+        10 & 1.12 & 0.1365 & 0.614 & 4.91 \\
+        11 & 1.06 & 0.1300 & 0.585 & 5.16 \\
+        12 & 1.15 & 0.1404 & 0.632 & 4.78 \\
+        14 & 1.05 & 0.1280 & 0.576 & 5.24 \\
+        16 & 1.62 & 0.1982 & 0.892 & 3.38 \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\subsection{a) Optimal unrolling factor}
+
+Without unrolling, every addition has to wait for the previous one, so one
+element costs the latency of the loop-carried operation. Only the addition is
+part of this dependency chain, the multiplication depends on the loaded value
+alone. The measured 3.02 cycles per element for $U = 1$ match the latency of
+3 cycles of \texttt{vaddsd}.
+
+With $U$ accumulators there are $U$ independent chains, so the cost drops to
+$3 / U$ cycles per element until the throughput of the core becomes the
+limit. Zen 3 executes 2 additions and 2 multiplications per cycle, which is
+0.5 cycles per element. The chains stop being the bottleneck at
+\[
+    U_\text{opt} = \text{latency} \times \text{throughput} = 3 \times 2 = 6 .
+\]
+
+The measurements follow $3 / U$ up to $U = 3$ and then flatten out.
+after $U = 6$, there is no systematic gain anymore.
+All factors from 6 to 14 lie between 0.58 and 0.67 cycles per element.
+This agrees with the expected factor of 6, which is 4.5 times faster than the original loop.
+The theoretical 0.5 cycles per element is not reached.
+A likely reason is the dispatch width: the loop needs 3 macro-ops per element, a load, multiply and add.
+So 0.5 cycles per element would already use all 6 macro-ops per cycle that Zen 3 can dispatch, and the loop overhead comes on top.
+This also explains why $U = 8$ is clearly faster than $U = 6$ with 0.587 cycles per element.
+There is less loop overhead (shown in listings~\ref{lst:u6_asm} and~\ref{lst:u8_asm} when unrolling is done with a power of two, which gives an estimate of $(3 \cdot 8 + 2) / (6 \cdot 8) = 0.54$ cycles per element against $(3 \cdot 6 + 4) / (6 \cdot 6) = 0.61$ for $U = 6$.
+With the same estimate the overhead of 4 macro-ops is spread over more elements for
+larger factors, so $U = 11$ and $U = 14$ are as fast as $U = 8$.
+The differences between the factors 8 to 14 can be attributed to variations between runs.
+
+\begin{lstlisting}[caption={Loop overhead of compiled assembler with u=6}, label=lst:u6_asm]
+    leal   11(%rcx), %edx     
+    addq   $48, %rax          
+    addl   $6, %ecx           
+    cmpl   %edx, %esi         
+    jg     .L51                
+\end{lstlisting}
+
+\begin{lstlisting}[caption={Loop overhead of compiled assembler with u=8}, label=lst:u8_asm]
+    addq   $64, %rax          
+    cmpq   %rax, %rdx         
+    jne    .L80                 
+\end{lstlisting}
+
+\subsection{b) Fused-multiply-add}
+
+With FMA, the multiplication and addition are one instruction, so there are
+fewer 2 macro-ops per element instead of 3. The drawback is that the whole 4 cycles of FMA are dependent on each other, instead of the 3 from the addition.
+Without unrolling, FMA is therefore expected to be about $\frac{1}{3}$ slower.
+
+The throughput of FMA on Zen 3 is 2 per cycle, the same as for the separate
+multiply and add.
+But, more accumulators are needed to reach it, $4 \times 2 = 8$ instead of 6.
+For every unrolling factor below 8 the dependency chain of the FMA is still the bottleneck, so FMA is slower.
+
+FMA can only be better when the loop is unrolled by at least 8.
+The execution units then allow the same 0.5 cycles per element for both
+variants, but the multiply and add loop needs all 6 macro ops per cycle of
+the dispatch width to get there, which is the likely reason that it only
+reached 0.58 cycles per element in the measurements. With 2 macro ops per
+element FMA needs only 4 per cycle, so it could come closer to the limit.
+\\\\The relevant microarchitecture parameters are:
+\begin{itemize}
+    \item the latency of the addition compared to the latency of the FMA,
+    since this is the length of the loop-carried dependency chain,
+    \item the throughput (number of execution units) of addition,
+    multiplication and FMA, which sets the limit once the dependency is
+    broken,
+    \item the pipeline (dispatch) width in relation to the number of
+    macro-ops per element,
+    \item the number of registers, which limits the number of accumulators
+    (15 on this system).
+\end{itemize}
+
+\appendix
+
+\section{Benchmark source code}
+\label{app:code}
+
+Listing~\ref{lst:full} is the complete benchmark program
+\texttt{loop\_unrolling.cpp} used for question 1. It is compiled and run
+with \texttt{run\_benchmark.sh}, which pins it to one core with
+\texttt{taskset} and writes \texttt{loop\_unrolling.csv}.
+
+\lstinputlisting[caption={Complete benchmark program \texttt{loop\_unrolling.cpp}.}, label={lst:full}]{../loop_unrolling.cpp}
+
+\end{document}
