@@ -1,22 +1,50 @@
 \relax 
-\@writefile{toc}{\contentsline {section}{\numberline {1}Squared Sums}{1}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {1.1}System}{1}{}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces System used for the measurements.}}{1}{}\protected@file@percent }
-\newlabel{tab:system}{{1}{1}{}{}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces Relevant microarchitecture parameters of Zen 3 (scalar double precision).}}{1}{}\protected@file@percent }
-\newlabel{tab:uarch}{{2}{1}{}{}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {1.2}Benchmark}{1}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {1.3}Results}{2}{}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces Best case of 30 repetitions for the squared sum with unrolling factor $U$, $n = 8192$, 10000 calls per repetition. The speed-up is relative to the loop without unrolling.}}{2}{}\protected@file@percent }
-\newlabel{tab:results}{{3}{2}{}{}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {1.4}a) Optimal unrolling factor}{2}{}\protected@file@percent }
-\newlabel{lst:u6_asm}{{1}{3}{}{}{}}
-\@writefile{lol}{\contentsline {lstlisting}{\numberline {1}Loop overhead of compiled assembler with u=6}{3}{}\protected@file@percent }
-\newlabel{lst:u8_asm}{{2}{3}{}{}{}}
-\@writefile{lol}{\contentsline {lstlisting}{\numberline {2}Loop overhead of compiled assembler with u=8}{3}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {1.5}b) Fused-multiply-add}{3}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {A}Benchmark source code}{3}{}\protected@file@percent }
-\newlabel{app:code}{{A}{3}{}{}{}}
-\newlabel{lst:full}{{3}{3}{}{}{}}
-\@writefile{lol}{\contentsline {lstlisting}{\numberline {3}Complete benchmark program \texttt  {loop\_unrolling.cpp}.}{3}{}\protected@file@percent }
-\gdef \@abspage@last{5}
+\providecommand\hyper@newdestlabel[2]{}
+\providecommand\HyField@AuxAddToFields[1]{}
+\providecommand\HyField@AuxAddToCoFields[2]{}
+\@writefile{toc}{\contentsline {section}{\numberline {1}Squared Sums}{1}{section.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.1}System}{1}{subsection.1.1}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces System used for the measurements.}}{1}{table.1}\protected@file@percent }
+\newlabel{tab:system}{{1}{1}{System used for the measurements}{table.1}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces Relevant microarchitecture parameters of Zen 3 (scalar double precision).}}{1}{table.2}\protected@file@percent }
+\newlabel{tab:uarch}{{2}{1}{Relevant microarchitecture parameters of Zen 3 (scalar double precision)}{table.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.2}Benchmark}{1}{subsection.1.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.3}Results}{2}{subsection.1.3}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces Best case of 30 repetitions for the squared sum with unrolling factor $U$, $n = 8192$, 10000 calls per repetition. The speed-up is relative to the loop without unrolling.}}{2}{table.3}\protected@file@percent }
+\newlabel{tab:results}{{3}{2}{Best case of 30 repetitions for the squared sum with unrolling factor $U$, $n = 8192$, 10000 calls per repetition. The speed-up is relative to the loop without unrolling}{table.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.4}a) Optimal unrolling factor}{2}{subsection.1.4}\protected@file@percent }
+\newlabel{lst:u6_asm}{{1}{3}{Loop overhead of compiled assembler with u=6}{lstlisting.1}{}}
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {1}Loop overhead of compiled assembler with u=6}{3}{lstlisting.1}\protected@file@percent }
+\newlabel{lst:u8_asm}{{2}{3}{Loop overhead of compiled assembler with u=8}{lstlisting.2}{}}
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {2}Loop overhead of compiled assembler with u=8}{3}{lstlisting.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.5}b) Fused-multiply-add}{3}{subsection.1.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {2}Auto-Vectorization}{3}{section.2}\protected@file@percent }
+\newlabel{lst:matvec}{{3}{3}{Matrix-vector multiplication (\texttt {matvec.c})}{lstlisting.3}{}}
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {3}Matrix-vector multiplication (\texttt  {matvec.c}).}{3}{lstlisting.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.1}a) Did the compiler vectorize?}{4}{subsection.2.1}\protected@file@percent }
+\newlabel{lst:matvec-asm}{{4}{4}{Inner loop of \texttt {matvec} with \texttt {-O3 -march=native}}{lstlisting.4}{}}
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {4}Inner loop of \texttt  {matvec} with \texttt  {-O3 -march=native}.}{4}{lstlisting.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.2}b) Changes needed for auto-vectorization}{5}{subsection.2.2}\protected@file@percent }
+\newlabel{lst:matvec-fast}{{5}{5}{Inner loop of \texttt {matvec} with \texttt {-O3 -march=native -ffast-math} (from \texttt {objdump})}{lstlisting.5}{}}
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {5}Inner loop of \texttt  {matvec} with \texttt  {-O3 -march=native -ffast-math} (from \texttt  {objdump}).}{5}{lstlisting.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {3}Hardware Info}{6}{section.3}\protected@file@percent }
+\newlabel{section:hardware_info}{{3}{6}{Hardware Info}{section.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Jort Oosterveld}{6}{subsection.3.1}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {6}From lshw}{6}{lstlisting.6}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {7}From lscpu}{6}{lstlisting.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}Sergiu Preda}{6}{subsection.3.2}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {8}From lscpu}{6}{lstlisting.8}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {9}From lscpu --cache}{6}{lstlisting.9}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {A}Exercise 1: squared sum benchmark}{8}{appendix.A}\protected@file@percent }
+\newlabel{app:code}{{A}{8}{Exercise 1: squared sum benchmark}{appendix.A}{}}
+\newlabel{lst:full}{{10}{8}{Complete benchmark program \texttt {loop\_unrolling.cpp}}{lstlisting.10}{}}
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {10}Complete benchmark program \texttt  {loop\_unrolling.cpp}.}{8}{lstlisting.10}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {B}Exercise 2: matrix-vector program, compiler report and assembler}{9}{appendix.B}\protected@file@percent }
+\newlabel{app:matvec}{{B}{9}{Exercise 2: matrix-vector program, compiler report and assembler}{appendix.B}{}}
+\newlabel{lst:matvec-full}{{11}{9}{Complete program \texttt {matvec.c}}{lstlisting.11}{}}
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {11}Complete program \texttt  {matvec.c}.}{9}{lstlisting.11}\protected@file@percent }
+\newlabel{lst:matvec-report}{{12}{11}{Full GCC vectorization report (\texttt {-O3 -march=native})}{lstlisting.12}{}}
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {12}Full GCC vectorization report (\texttt  {-O3 -march=native}).}{11}{lstlisting.12}\protected@file@percent }
+\newlabel{lst:matvec-s}{{13}{11}{The \texttt {matvec} function in \texttt {matvec.s} (\texttt {-O3 -march=native})}{lstlisting.13}{}}
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {13}The \texttt  {matvec} function in \texttt  {matvec.s} (\texttt  {-O3 -march=native}).}{11}{lstlisting.13}\protected@file@percent }
+\gdef \@abspage@last{13}

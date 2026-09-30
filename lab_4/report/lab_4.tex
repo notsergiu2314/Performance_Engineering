@@ -4,26 +4,48 @@
 \usepackage[T1]{fontenc}
 \usepackage[margin=2.5cm]{geometry}
 \usepackage{amsmath}
+\usepackage{xcolor}
+\usepackage{hyperref}
+
+% code block style
 \usepackage{listings}
 \usepackage{xcolor}
 
-\lstset{
-    language=C++,
-    basicstyle=\ttfamily\small,
-    keywordstyle=\color{blue!60!black},
-    commentstyle=\color{green!40!black},
-    numbers=left,
-    numberstyle=\tiny,
-    frame=single,
-    breaklines=true,
-    showstringspaces=false
-}
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
 
-\title{WMCS045-05 -- Lab Assignment \#4}
-\author{Jort Oosterveld}
-\date{2026-09-30}
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,
+    breaklines=true,
+    captionpos=b,
+    keepspaces=true,
+    numbers=left,
+    numbersep=5pt,
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+    tabsize=2
+}
+\lstset{style=mystyle}
+
+% Settings
+\usepackage[sc]{titlesec}
+\newcommand{\comment}[1]{\noindent \textcolor{blue}{\textit{#1}} \par}
+
+% Header information
+\title{\Large{\sc{Performance Engineering}}\\[2mm] Lab 4}
+\author{Jort Oosterveld S5545781 \& Sergiu Preda S6778542 \\ Group 11}
 
 \begin{document}
+\setlength\parindent{0pt}
 
 \maketitle
 
@@ -153,7 +175,7 @@ The theoretical 0.5 cycles per element is not reached.
 A likely reason is the dispatch width: the loop needs 3 macro-ops per element, a load, multiply and add.
 So 0.5 cycles per element would already use all 6 macro-ops per cycle that Zen 3 can dispatch, and the loop overhead comes on top.
 This also explains why $U = 8$ is clearly faster than $U = 6$ with 0.587 cycles per element.
-There is less loop overhead (shown in listings~\ref{lst:u6_asm} and~\ref{lst:u8_asm} when unrolling is done with a power of two, which gives an estimate of $(3 \cdot 8 + 2) / (6 \cdot 8) = 0.54$ cycles per element against $(3 \cdot 6 + 4) / (6 \cdot 6) = 0.61$ for $U = 6$.
+There is less loop overhead (shown in Listings~\ref{lst:u6_asm} and~\ref{lst:u8_asm}) when unrolling is done with a power of two, which gives an estimate of $(3 \cdot 8 + 2) / (6 \cdot 8) = 0.54$ cycles per element against $(3 \cdot 6 + 4) / (6 \cdot 6) = 0.61$ for $U = 6$.
 With the same estimate the overhead of 4 macro-ops is spread over more elements for
 larger factors, so $U = 11$ and $U = 14$ are as fast as $U = 8$.
 The differences between the factors 8 to 14 can be attributed to variations between runs.
@@ -175,7 +197,9 @@ The differences between the factors 8 to 14 can be attributed to variations betw
 \subsection{b) Fused-multiply-add}
 
 With FMA, the multiplication and addition are one instruction, so there are
-fewer 2 macro-ops per element instead of 3. The drawback is that the whole 4 cycles of FMA are dependent on each other, instead of the 3 from the addition.
+2 macro-ops per element instead of 3. The drawback is that the whole FMA is
+now part of the loop-carried dependency chain, so its latency of 4 cycles
+replaces the 3 cycles of the addition.
 Without unrolling, FMA is therefore expected to be about $\frac{1}{3}$ slower.
 
 The throughput of FMA on Zen 3 is 2 per cycle, the same as for the separate
@@ -189,7 +213,8 @@ variants, but the multiply and add loop needs all 6 macro ops per cycle of
 the dispatch width to get there, which is the likely reason that it only
 reached 0.58 cycles per element in the measurements. With 2 macro ops per
 element FMA needs only 4 per cycle, so it could come closer to the limit.
-\\\\The relevant microarchitecture parameters are:
+
+The relevant microarchitecture parameters are:
 \begin{itemize}
     \item the latency of the addition compared to the latency of the FMA,
     since this is the length of the loop-carried dependency chain,
@@ -202,16 +227,266 @@ element FMA needs only 4 per cycle, so it could come closer to the limit.
     (15 on this system).
 \end{itemize}
 
+% ============================================================
+\section{Auto-Vectorization}
+% ============================================================
+
+This exercise was done on the system of Sergiu Preda (Intel Core i7-12700H,
+GCC 11.4.0 under WSL, see Section~\ref{section:hardware_info}). The processor
+supports AVX2 with FMA, so one 256-bit \texttt{ymm} register holds 4 doubles.
+AVX-512 is not available on it.
+
+The matrix is stored row-major. The implementation from the previous lab is
+shown in Listing~\ref{lst:matvec}, the complete program with the timing code
+is given in Appendix~\ref{app:matvec}.
+
+\begin{lstlisting}[language=C, caption={Matrix-vector multiplication (\texttt{matvec.c}).}, label={lst:matvec}]
+void matvec(const double * restrict A,
+            const double * restrict x,
+            double * restrict y,
+            int N)
+{
+    for (int i = 0; i < N; i++) {
+        double sum = 0.0;
+
+        for (int j = 0; j < N; j++) {
+            sum += A[(size_t)i * N + j] * x[j];
+        }
+
+        y[i] = sum;
+    }
+}
+\end{lstlisting}
+
+The inner loop over $j$ is the candidate for vectorization: it reads
+consecutive elements of one row of $A$ and of $\vec{x}$, so the compiler can
+load 4 elements at once. The outer loop over $i$ is not a candidate, its
+iterations are $N$ elements apart in $A$.
+
+\subsection{a) Did the compiler vectorize?}
+
+\subsubsection*{Compiler report}
+
+The program was compiled with the following flags to enable the vectorizer and AVX2, and print the vectorizer report.
+
+\begin{lstlisting}[language=bash]
+gcc -O3 -march=native -fopt-info-vec-optimized -fopt-info-vec-missed \
+    matvec.c -o matvec
+\end{lstlisting}
+
+The relevant lines of the report are given below, the full report is in
+Appendix~\ref{app:matvec}. Line 13 is the inner loop over $j$, line 10 the
+outer loop over $i$.
+
+\begin{lstlisting}[language={}]
+matvec.c:10:23: missed: couldn't vectorize loop
+matvec.c:14:21: missed: not vectorized: complicated access pattern.
+matvec.c:13:27: optimized: loop vectorized using 32 byte vectors
+matvec.c:13:27: optimized: loop vectorized using 16 byte vectors
+\end{lstlisting}
+
+So the inner loop is vectorized with 32-byte (AVX2) vectors, plus a 16-byte
+version for the remaining elements when $N$ is not a multiple of 4. The
+outer loop is not vectorized, which is expected.
+
+\subsubsection*{Assembler}
+
+The assembler was generated with
+
+\begin{lstlisting}[language=bash]
+gcc -O3 -march=native -S -masm=intel matvec.c -o matvec.s
+\end{lstlisting}
+
+Listing~\ref{lst:matvec-asm} shows the inner loop, the whole function is in
+Appendix~\ref{app:matvec}.
+
+\begin{lstlisting}[language={}, caption={Inner loop of \texttt{matvec} with \texttt{-O3 -march=native}.}, label={lst:matvec-asm}]
+.L7:
+    vmovupd      ymm5, YMMWORD PTR [rcx+rax]
+    vmulpd       ymm1, ymm5, YMMWORD PTR [rsi+rax]
+    add          rax, 32
+    vaddsd       xmm0, xmm0, xmm1
+    vunpckhpd    xmm2, xmm1, xmm1
+    vextractf128 xmm1, ymm1, 0x1
+    vaddsd       xmm0, xmm0, xmm2
+    vaddsd       xmm0, xmm0, xmm1
+    vunpckhpd    xmm1, xmm1, xmm1
+    vaddsd       xmm0, xmm0, xmm1
+    cmp          rax, r8
+    jne          .L7
+\end{lstlisting}
+
+We can see exactly what the report has told us before.
+Every iteration loads 4 elements of the row (\texttt{vmovupd} into \texttt{ymm5}) and multiplies them with 4 elements of
+$\vec{x}$ in one packed instruction (\texttt{vmulpd}). The addition is not
+packed, however: the 4 products are added to the scalar sum in
+\texttt{xmm0} one after the other with 4 \texttt{vaddsd}.
+
+% Floating-point
+% addition is not associative, and by default GCC keeps the order of the
+% additions from the source, so it cannot keep 4 partial sums in a vector
+% register. The loop is vectorized, but the sum is still a chain of dependent
+% scalar additions.
+
+\subsection{b) Changes needed for auto-vectorization}
+
+No change to the source was needed to get the inner loop vectorized, the
+code was already suitable for it, because The inner loop runs over the contiguous rows.
+The sum was already a local variable instead of \texttt{y[i]}, so the inner loop contains no stores.
+The \texttt{restrict} qualifiers make no difference for this loop, aliasing only matters when
+a store could overlap a later load. We checked this by removing
+\texttt{restrict}, the report and the generated code remained the same.
+
+\medskip
+The one change that does make a difference is allowing the compiler to
+reorder the additions.
+
+\begin{lstlisting}[language=bash]
+gcc -O3 -march=native -ffast-math matvec.c -o matvec_vec
+\end{lstlisting}
+
+With \texttt{-ffast-math} the inner loop becomes Listing~\ref{lst:matvec-fast}: one packed FMA per 4
+elements into the vector accumulator \texttt{ymm0}, which holds 4 partial
+sums that are added together once after the loop. The result can differ from
+the original in the last bits due to the order of rounding changing.
+
+\begin{lstlisting}[language={}, caption={Inner loop of \texttt{matvec} with \texttt{-O3 -march=native -ffast-math} (from \texttt{objdump}).}, label={lst:matvec-fast}]
+    vmovupd      ymm3, YMMWORD PTR [rcx+rax]
+    vfmadd231pd  ymm0, ymm3, YMMWORD PTR [rsi+rax]
+    add          rax, 32
+    cmp          rax, r8
+    jne          .L7
+\end{lstlisting}
+
+
+% ============================================================
+\newpage
+\section{Hardware Info}
+\label{section:hardware_info}
+% ============================================================
+
+\subsection{Jort Oosterveld}
+
+Type of computer: Laptop \\
+Operating system: Ubuntu 24.04.4 LTS \\
+Kernel version: Linux 7.0.0-31-generic \\
+Hardware Model: Acer Aspire AG15-42P \\
+Graphics: AMD Radeon Graphics
+
+\begin{lstlisting}[caption=From lshw]
+description: Computer
+width: 64 bits
+capabilities: smp vsyscall32
+*-core
+     description: Motherboard
+     physical id: 0
+   *-memory
+        description: System memory
+        physical id: 0
+        size: 15GiB
+   *-cpu
+        product: AMD Ryzen 7 5825U with Radeon Graphics
+        vendor: Advanced Micro Devices [AMD]
+        physical id: 1
+        bus info: cpu@0
+        version: 25.80.0
+        size: 3629MHz
+        capacity: 4547MHz
+        width: 64 bits
+\end{lstlisting}
+
+\begin{lstlisting}[caption=From lscpu]
+$ lscpu --cache
+
+NAME ONE-SIZE ALL-SIZE WAYS TYPE        LEVEL SETS  PHY-LINE COHERENCY-SIZE
+L1d       32K     256K    8 Data            1   64         1             64
+L1i       32K     256K    8 Instruction     1   64         1             64
+L2       512K       4M    8 Unified         2 1024         1             64
+L3        16M      16M   16 Unified         3 16384        1             64
+\end{lstlisting}
+
+\subsection{Sergiu Preda}
+
+Type of computer: Laptop \\
+Operating system: Windows 11 with WSL Ubuntu 22.04 LTS \\
+Kernel version: Linux 6.18.33.2-microsoft-standard-WSL2 \\
+Hardware Model: ASUS ROG TUF F15 \\
+Memory: 7.6GiB
+
+\begin{lstlisting}[caption=From lscpu]
+Model name:            12th Gen Intel(R) Core(TM) i7-12700H
+Flags:                 ... avx2 ...
+\end{lstlisting}
+
+\begin{lstlisting}[caption=From lscpu --cache]
+$ lscpu --cache
+NAME ONE-SIZE ALL-SIZE WAYS TYPE        LEVEL  SETS PHY-LINE COHERENCY-SIZE
+L1d       48K     480K   12 Data            1    64        1             64
+L1i       32K     320K    8 Instruction     1    64        1             64
+L2       1.3M    12.5M   10 Unified         2  2048        1             64
+L3        24M      24M   12 Unified         3 32768        1             64
+\end{lstlisting}
+
+For additional microarchitecture information, the following sources
+were used:
+
+\begin{itemize}
+    \item uops.info instruction latency and throughput database: \url{https://uops.info/}
+    \item Agner Fog instruction tables: \url{https://www.agner.org/optimize/instruction_tables.pdf}
+\end{itemize}
+
+
+% -----------------------------------------------
+% appendix
+% -----------------------------------------------
+\newpage
 \appendix
 
-\section{Benchmark source code}
+\section{Exercise 1: squared sum benchmark}
 \label{app:code}
 
 Listing~\ref{lst:full} is the complete benchmark program
-\texttt{loop\_unrolling.cpp} used for question 1. It is compiled and run
-with \texttt{run\_benchmark.sh}, which pins it to one core with
-\texttt{taskset} and writes \texttt{loop\_unrolling.csv}.
+\texttt{loop\_unrolling.cpp}. It is compiled and run with
+\texttt{run\_benchmark.sh}, which pins it to one core with \texttt{taskset}
+and writes \texttt{loop\_unrolling.csv}.
 
-\lstinputlisting[caption={Complete benchmark program \texttt{loop\_unrolling.cpp}.}, label={lst:full}]{../loop_unrolling.cpp}
+\lstinputlisting[language=C++, caption={Complete benchmark program \texttt{loop\_unrolling.cpp}.}, label={lst:full}]{../loop_unrolling.cpp}
+
+\section{Exercise 2: matrix-vector program, compiler report and assembler}
+\label{app:matvec}
+
+Listing~\ref{lst:matvec-full} is the complete program \texttt{matvec.c}
+with the timing code. The vectorization report in
+Listing~\ref{lst:matvec-report} was produced before the include of
+\texttt{time.h} was added, so its line numbers are one lower than in
+Listing~\ref{lst:matvec-full}. Listing~\ref{lst:matvec-s} is the
+\texttt{matvec} function from the assembler output \texttt{matvec.s}
+(\texttt{-O3 -march=native -S -masm=intel}).
+
+\lstinputlisting[language=C, caption={Complete program \texttt{matvec.c}.}, label={lst:matvec-full}]{../matvec.c}
+
+\begin{lstlisting}[language={}, caption={Full GCC vectorization report (\texttt{-O3 -march=native}).}, label={lst:matvec-report}]
+$ gcc -O3 -march=native -fopt-info-vec-optimized -fopt-info-vec-missed matvec.c -o matvec
+matvec.c:10:23: missed: couldn't vectorize loop
+matvec.c:14:21: missed: not vectorized: complicated access pattern.
+matvec.c:13:27: optimized: loop vectorized using 32 byte vectors
+matvec.c:13:27: optimized: loop vectorized using 16 byte vectors
+matvec.c:10:23: missed: couldn't vectorize loop
+matvec.c:14:21: missed: not vectorized: complicated access pattern.
+matvec.c:13:27: optimized: loop vectorized using 32 byte vectors
+matvec.c:38:23: optimized: loop vectorized using 32 byte vectors
+matvec.c:35:26: optimized: loop vectorized using 32 byte vectors
+matvec.c:25:27: missed: statement clobbers memory: A_21 = malloc (33554432);
+matvec.c:26:27: missed: statement clobbers memory: x_23 = malloc (16384);
+matvec.c:27:27: missed: statement clobbers memory: y_25 = malloc (16384);
+matvec.c:40:14: missed: statement clobbers memory: __builtin_memset (y_25, 0, 16384);
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:112:10: missed: statement clobbers memory: __printf_chk (1, "Result y[0] = %f\n", _12);
+matvec.c:49:5: missed: statement clobbers memory: free (A_21);
+matvec.c:50:5: missed: statement clobbers memory: free (x_23);
+matvec.c:51:5: missed: statement clobbers memory: free (y_25);
+/usr/include/x86_64-linux-gnu/bits/stdio2.h:105:10: missed: statement clobbers memory: __builtin_fwrite ("Memory allocation failed.\n", 1, 26, stderr.0_4);
+\end{lstlisting}
+
+\lstinputlisting[language={}, firstline=7, lastline=126, caption={The \texttt{matvec} function in \texttt{matvec.s} (\texttt{-O3 -march=native}).}, label={lst:matvec-s}]{../matvec.s}
 
 \end{document}
