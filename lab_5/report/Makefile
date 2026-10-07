@@ -1,5 +1,5 @@
 # Build the assignment report: make (pdf), make clean
-REPORT = lab_4
+REPORT = lab_5
 
 .PHONY: all clean
 

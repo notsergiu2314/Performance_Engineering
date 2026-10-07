@@ -1,0 +1,30 @@
+\relax 
+\providecommand\hyper@newdestlabel[2]{}
+\providecommand\HyField@AuxAddToFields[1]{}
+\providecommand\HyField@AuxAddToCoFields[2]{}
+\@writefile{toc}{\contentsline {section}{\numberline {1}Information Exchange analysis of a cache-blocked matrix-vector multiply}{1}{section.1}\protected@file@percent }
+\newlabel{lst:matvec_cb}{{1}{1}{Matrix-vector multiplication: cache-blocked implementation}{lstlisting.1}{}}
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {1}Matrix-vector multiplication: cache-blocked implementation.}{1}{lstlisting.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {2}Cachegrind}{2}{section.2}\protected@file@percent }
+\newlabel{lst:bash_script_matvec}{{2}{2}{Script running the blocked matrix-vector multiply under Cachegrind for a range of block sizes}{lstlisting.2}{}}
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {2}Script running the blocked matrix-vector multiply under Cachegrind for a range of block sizes.}{2}{lstlisting.2}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces L1D cache misses for different block sizes with $N=8192$ (large enough that the vector does not fit in L1D), measured on Sergiu's system, see Section~\ref {section:hardware_info}.}}{3}{table.1}\protected@file@percent }
+\newlabel{tab:cache_misses}{{1}{3}{L1D cache misses for different block sizes with $N=8192$ (large enough that the vector does not fit in L1D), measured on Sergiu's system, see Section~\ref {section:hardware_info}}{table.1}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces L1D cache misses as a function of block size $B$ for $N=8192$.}}{3}{figure.1}\protected@file@percent }
+\newlabel{fig:cache_misses}{{1}{3}{L1D cache misses as a function of block size $B$ for $N=8192$}{figure.1}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {3}Memory allocation overhead}{3}{section.3}\protected@file@percent }
+\newlabel{lst:c_benchmark}{{3}{3}{Benchmark for the overhead of a \texttt {malloc}/\texttt {free} pair (\texttt {benchmark\_malloc.cpp}, statistics bookkeeping omitted)}{lstlisting.3}{}}
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {3}Benchmark for the overhead of a \texttt  {malloc}/\texttt  {free} pair (\texttt  {benchmark\_malloc.cpp}, statistics bookkeeping omitted).}{3}{lstlisting.3}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces Time per \texttt  {malloc}/\texttt  {free} pair for different allocation sizes, $10^6$ pairs per size. ``Per-pair raw'' includes the timer overhead; ``per-pair mean'' and ``per-pair median'' have the 20~ns median timer overhead subtracted.}}{5}{table.2}\protected@file@percent }
+\newlabel{tab:malloc_overhead}{{2}{5}{Time per \texttt {malloc}/\texttt {free} pair for different allocation sizes, $10^6$ pairs per size. ``Per-pair raw'' includes the timer overhead; ``per-pair mean'' and ``per-pair median'' have the 20~ns median timer overhead subtracted}{table.2}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Time per malloc/free pair versus allocation size. Batch measurement takes the average of all iterations, and per-pair statistics have the timer overhead subtracted.}}{6}{figure.2}\protected@file@percent }
+\newlabel{fig:malloc_overhead}{{2}{6}{Time per malloc/free pair versus allocation size. Batch measurement takes the average of all iterations, and per-pair statistics have the timer overhead subtracted}{figure.2}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4}Hardware Info}{6}{section.4}\protected@file@percent }
+\newlabel{section:hardware_info}{{4}{6}{Hardware Info}{section.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}Jort Oosterveld}{6}{subsection.4.1}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {4}From lshw}{6}{lstlisting.4}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {5}From lscpu}{6}{lstlisting.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}Sergiu Preda}{7}{subsection.4.2}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {6}From lscpu}{7}{lstlisting.6}\protected@file@percent }
+\@writefile{lol}{\contentsline {lstlisting}{\numberline {7}From lscpu --cache}{7}{lstlisting.7}\protected@file@percent }
+\gdef \@abspage@last{7}
