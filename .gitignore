@@ -20,6 +20,9 @@ tmp/*
 *.o
 *.obj
 
+# fortran compiler modules
+*.mod
+
 # Precompiled Headers
 *.gch
 *.pch
@@ -46,6 +49,8 @@ tmp/*
 *.exe
 *.out
 *.app
+# cloverleaf exe
+clover_leaf 
 
 # Build directories
 build/

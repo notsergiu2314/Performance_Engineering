@@ -1,0 +1,7 @@
+# KERNELS RANKS THREADS [DECK]
+# ranks*threads should equal the physical cores of one node (8 here); SMT is
+# not used because the code is memory-bandwidth-bound. Edit for the cluster node.
+fortran 1 8
+c       1 8
+fortran 8 1
+c       8 1

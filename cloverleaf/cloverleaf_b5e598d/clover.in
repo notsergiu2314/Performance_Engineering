@@ -1,29 +1,20 @@
 *clover
 
-    # 2D explosion / shockwave visualization
+ state 1 density=0.2 energy=1.0
+ state 2 density=1.0 energy=2.5 geometry=rectangle xmin=0.0 xmax=5.0 ymin=0.0 ymax=2.0
 
-    x_cells=400
-    y_cells=400
+ x_cells=960
+ y_cells=960
 
-    xmin=0.0
-    xmax=10.0
-    ymin=0.0
-    ymax=10.0
+ xmin=0.0
+ ymin=0.0
+ xmax=10.0
+ ymax=10.0
 
-    # Run long enough for the shockwave to propagate
-    initial_timestep=0.001
-    end_time=1.0
-
-    # Background
-    state 1 density=1.0 energy=1.0
-
-    # Hot, dense central "explosive" region
-    state 2 density=10.0 energy=50.0 geometry=circle xmin=5.0 ymin=5.0 radius=0.5
-
-    # Write VTK every 10 timesteps
-    visit_frequency=10
-
-    # Some console progress
-    summary_frequency=20
+ initial_timestep=0.04
+ timestep_rise=1.5
+ max_timestep=0.04
+ end_step=87
+ test_problem 2
 
 *endclover
