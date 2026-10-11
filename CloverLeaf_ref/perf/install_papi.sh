@@ -8,7 +8,6 @@ PREFIX="${PAPI_DIR:-$HOME/opt/papi}"
 TAG="${PAPI_TAG:-papi-7-1-0-t}"
 SRC="$HOME/src/papi"
 
-module purge
 module load GCC/12.1.0
 
 mkdir -p "$(dirname "$SRC")"

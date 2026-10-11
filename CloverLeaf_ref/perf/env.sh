@@ -17,9 +17,13 @@ if ! type module > /dev/null 2>&1; then
   done
 fi
 
-module purge
-module load GCC/12.1.0
-module load OpenMPI
+# No `module purge`: on HAICGU's hierarchical module tree it can unload the
+# module that puts the software tree on MODULEPATH ("GCC/12.1.0 is unknown").
+if ! module load GCC/12.1.0; then
+  echo "env.sh: GCC/12.1.0 not found, trying the default GCC" >&2
+  module load GCC || true
+fi
+module load OpenMPI || true
 
 # PAPI: prefer a site module, fall back to a private install made with
 # perf/install_papi.sh.
