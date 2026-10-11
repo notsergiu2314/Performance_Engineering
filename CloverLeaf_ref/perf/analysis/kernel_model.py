@@ -115,7 +115,7 @@ _cell_l1_s1 = Loop(("volume", "vol_flux_x", "vol_flux_y"), ("pre_vol", "post_vol
                    "sweep 1; post_vol is stored but never read in advec_cell")
 _cell_l1_s2 = Loop(("volume", "vol_flux"), ("pre_vol", "post_vol"), 2, "sweep 2")
 _cell_l2 = Loop(("vol_flux", "pre_vol", "density1", "energy1"), ("mass_flux", "ener_flux"), 31,
-                "upwind/limiter with data-dependent (gather) indexing and no omp simd: check bin/vec_*.txt")
+                "upwind/limiter with data-dependent (gather) indexing and no omp simd: check bin/vec_report.txt")
 _cell_l3 = Loop(("density1", "energy1", "pre_vol", "mass_flux", "ener_flux", "vol_flux"),
                 ("pre_mass", "post_mass", "post_ener", "advec_vol", "density1", "energy1"), 10,
                 "pre_mass/post_mass/post_ener/advec_vol are temporaries stored to memory")
@@ -134,7 +134,7 @@ _mom_l1 = Loop(("mass_flux",), ("node_flux",), 4)
 _mom_l2 = Loop(("density1", "post_vol"), ("node_mass_post",), 8)
 _mom_l3 = Loop(("node_mass_post", "node_flux"), ("node_mass_pre",), 2)
 _mom_l4 = Loop(("node_flux", "node_mass_pre", "vel1"), ("mom_flux",), 18,
-               "upwind/limiter with data-dependent (gather) indexing and no omp simd: check bin/vec_*.txt")
+               "upwind/limiter with data-dependent (gather) indexing and no omp simd: check bin/vec_report.txt")
 _mom_l5 = Loop(("vel1", "node_mass_pre", "mom_flux", "node_mass_post"), ("vel1",), 4)
 ADVEC_MOM = Kernel("advec_mom", "Momentum Advection", 4, variants=[
     (0.5, [_mom_l0_s1, _mom_l1, _mom_l2, _mom_l3, _mom_l4, _mom_l5]),

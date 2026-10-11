@@ -20,8 +20,7 @@ mv clover_leaf "$BIN/clover_papi"
 
 # Vectorisation report for the C kernels, same flags as the Makefile (GNU).
 mpicc -O3 -march=native -funroll-loops -fopenmp -c kernels/*_kernel_c.c \
-  -fopt-info-vec-optimized="$BIN/vec_optimized.txt" \
-  -fopt-info-vec-missed="$BIN/vec_missed.txt"
+  -fopt-info-vec-all="$BIN/vec_report.txt"
 make clean
 
 {
@@ -30,7 +29,7 @@ make clean
   echo "git:       $(git rev-parse HEAD) ($(git rev-parse --abbrev-ref HEAD))"
   echo "dirty:     $(git status --porcelain | wc -l) changed files"
   echo "PAPI_DIR:  $PAPI_DIR"
-  module -t list 2>&1 | sed 's/^/module:    /'
+  (set +u; module -t list 2>&1) | sed 's/^/module:    /'
   mpicc --version | head -1 | sed 's/^/mpicc:     /'
   mpif90 --version | head -1 | sed 's/^/mpif90:    /'
 } > "$BIN/build_info.txt"

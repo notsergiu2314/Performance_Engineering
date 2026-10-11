@@ -1,7 +1,7 @@
 # Performance engineering of CloverLeaf_ref on HAICGU (Kunpeng 920)
 
 Branch `project`, based on `b5e598d` (the commit named in the work plan).
-Baseline = unmodified C kernels (`use_c_kernels`), GCC 12.1 `-O3 -march=native
+Baseline = unmodified C kernels (`use_c_kernels`), GCC 14.1.0 (HAICGU default module) `-O3 -march=native
 -funroll-loops -fopenmp`, plus `-g` for perf annotate.
 
 ## What is in here
@@ -27,6 +27,9 @@ mkdir -p perf/results
 . perf/env.sh && command -v papi_avail || \
   srun -p cn-ib -N 1 -t 00:30:00 bash perf/install_papi.sh   # only if no PAPI module
 srun -p cn-ib -N 1 -t 00:20:00 bash perf/build.sh            # build on a compute node
+
+# smoke test first (about a minute)
+srun -p cn-ib -N 1 bash perf/smoke.sh
 
 # M1 - initial profiling
 sbatch perf/jobs/m1_baseline.sbatch   # internal timers, 1..128 threads, MPI layouts
@@ -96,7 +99,7 @@ drop below 2200/B to 2800/B seconds (≈ 9–11 s at 250 GB/s).
   `advec_vol` in `advec_cell`; loop fusion would keep them in registers.
 - `calc_dt` writes `dt_min` and re-reads it for the reduction: fuse the loops.
 - Upwind loops (`advec_cell` loop 2, `advec_mom` loop 4) use data-dependent
-  indices and have no `omp simd`: check `perf/bin/vec_missed.txt` and the
+  indices and have no `omp simd`: check `perf/bin/vec_report.txt` and the
   annotated assembly from `m1_perf`.
 - Write-allocate evasion (Laukemann et al. 2023, cited in the course
   tutorial) is relevant if the DDR counters show write-allocate traffic.

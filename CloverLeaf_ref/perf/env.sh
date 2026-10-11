@@ -1,6 +1,5 @@
 # Environment for building and running on HAICGU (source it: `. perf/env.sh`).
-# Module names follow https://haicgu.github.io/usage.html; check `module avail`
-# if a load fails and adjust the versions here (and only here).
+# If a load fails, check `module avail` / `module spider` and adjust here only.
 
 PERF_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export PERF_ROOT
@@ -19,10 +18,9 @@ fi
 
 # No `module purge`: on HAICGU's hierarchical module tree it can unload the
 # module that puts the software tree on MODULEPATH ("GCC/12.1.0 is unknown").
-if ! module load GCC/12.1.0; then
-  echo "env.sh: GCC/12.1.0 not found, trying the default GCC" >&2
-  module load GCC || true
-fi
+# The default GCC on HAICGU is 14.1.0 (GCC/12.1.0 from the usage page does
+# not exist on the cn-* nodes); the PAPI module is built for the same GCC.
+module load GCC || true
 module load OpenMPI || true
 
 # PAPI: prefer a site module, fall back to a private install made with

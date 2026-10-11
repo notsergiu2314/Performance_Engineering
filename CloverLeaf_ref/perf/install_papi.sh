@@ -8,7 +8,7 @@ PREFIX="${PAPI_DIR:-$HOME/opt/papi}"
 TAG="${PAPI_TAG:-papi-7-1-0-t}"
 SRC="$HOME/src/papi"
 
-module load GCC/12.1.0
+module load GCC
 
 mkdir -p "$(dirname "$SRC")"
 [ -d "$SRC" ] || git clone https://github.com/icl-utk-edu/papi.git "$SRC"
