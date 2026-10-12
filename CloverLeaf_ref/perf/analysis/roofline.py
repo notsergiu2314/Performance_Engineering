@@ -60,6 +60,22 @@ def times_from_papi(run_dir):
     return dict(times), run["cells"], run["steps"], "kernel"
 
 
+BUS_LINE_BYTES = 64   # one BUS_ACCESS = one 64 B line transfer (calibrated on
+                      # the pure copy kernels reset_field/revert, see README)
+
+
+def bus_bytes_from_papi(run_dir):
+    """Bytes crossing the core's L2 <-> L3/memory interface per kernel, from the
+    BUS_ACCESS counter (event set 'stall'), summed over threads and ranks."""
+    tot = defaultdict(float)
+    for f in Path(run_dir).glob("papi_prof_*.csv"):
+        with open(f, newline="") as fh:
+            for r in csv.DictReader(fh):
+                if "BUS_ACCESS" in r:
+                    tot[r["region"]] += float(r["BUS_ACCESS"]) * BUS_LINE_BYTES
+    return dict(tot)
+
+
 def table(times, model, bw, peak):
     rows = []
     for name, t in sorted(times.items(), key=lambda kv: -kv[1]):
@@ -113,8 +129,9 @@ def plot(rows, args, out):
             ax.text(x1, level * 1.1, f"{label} {level:.0f}", ha="right", va="bottom",
                     color=ink2, fontsize=8)
 
-    ax.set_xlabel("Arithmetic intensity (flop/byte, analytic model"
-                  + (", with write-allocate)" if args.wa else ", no write-allocate)"))
+    traffic = ("measured L2-bus traffic" if args.bus_bytes else
+               "analytic model" + (", with write-allocate" if args.wa else ", no write-allocate"))
+    ax.set_xlabel(f"Arithmetic intensity (flop/byte, {traffic})")
     ax.set_ylabel("Performance (GFLOP/s)")
     ax.grid(True, which="major", color=grid, lw=0.6)
     for side in ("top", "right"):
@@ -163,6 +180,9 @@ def main():
     ap.add_argument("--div", type=float, help="vector divide GFLOP/s (extra ceiling)")
     ap.add_argument("--wa", type=int, default=1, choices=(0, 1),
                     help="count write-allocate traffic (default 1)")
+    ap.add_argument("--bus-bytes", action="store_true",
+                    help="use measured BUS_ACCESS x 64 B instead of the analytic bytes "
+                         "(needs --papi-dir of the 'stall' event set)")
     ap.add_argument("--plot", help="output figure (.pdf/.png)")
     ap.add_argument("--title")
     args = ap.parse_args()
@@ -174,6 +194,20 @@ def main():
         times, cells, steps, level = times_from_papi(args.papi_dir)
         model = kernel_model.per_kernel(cells, steps, args.wa)
 
+    ratio = {}
+    if args.bus_bytes:
+        if not args.papi_dir:
+            sys.exit("--bus-bytes needs --papi-dir (a run of the 'stall' event set)")
+        bus = bus_bytes_from_papi(args.papi_dir)
+        if not bus:
+            sys.exit("no BUS_ACCESS column in that run: use .../stall/<config>")
+        print("traffic = BUS_ACCESS x 64 B: L2 <-> L3/DRAM transfers incl. write-allocate and "
+              "write-backs (an upper bound of DRAM traffic)")
+        for name, (flops, nbytes) in list(model.items()):
+            if name in bus and nbytes:
+                ratio[name] = bus[name] / nbytes
+                model[name] = (flops, bus[name])
+
     rows = table(times, model, args.bw, args.peak)
     print(f"cells={cells} steps={steps} wa={args.wa} bw={args.bw} GB/s peak={args.peak} GFLOP/s")
     print(f"{level:20s} {'time_s':>8s} {'AI':>6s} {'GB/s':>7s} {'%STREAM':>8s} "
@@ -182,6 +216,9 @@ def main():
         print(f"{r['name']:20s} {r['time']:8.3f} {r['ai']:6.3f} {r['gbs']:7.1f} "
               f"{100 * r['bw_frac']:7.0f}% {r['gflops']:8.2f} {r['attain']:8.1f} "
               f"{100 * r['frac']:7.0f}%")
+    if ratio:
+        print("\nmeasured / analytic-model traffic:  "
+              + "  ".join(f"{n}={r:.2f}" for n, r in sorted(ratio.items(), key=lambda kv: -kv[1])))
     missing = sorted(set(model) - set(times))
     if missing:
         print("no time measured for:", ", ".join(missing))

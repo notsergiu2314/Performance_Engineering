@@ -48,6 +48,7 @@ done
 run_clover "$PERF_ROOT/bin/clover_base" "$DECK" 1x128 "$OUT/overhead_base/1x128"
 
 for d in "$OUT"/*/*/; do
+  case "$d" in */overhead_base/*) continue ;; esac
   echo "=== $d"
   python3 "$PERF_ROOT/analysis/papi_summary.py" "$d"
 done > "$OUT/summary.txt" 2>&1

@@ -19,6 +19,9 @@ gcc $FLAGS "$SRC" -o "$OUT/peak_flops" -lm
 gcc $FLAGS -S "$SRC" -o "$OUT/peak_flops.s"
 # The vector kernels must use fmla/fmul/fdiv on v*.2d registers:
 grep -cE 'fmla\s+v[0-9]+\.2d' "$OUT/peak_flops.s" | sed 's/^/fmla .2d instructions: /' | tee "$OUT/asm_check.txt"
+# Inner loop of the 8-accumulator FMA kernels, for the report (and to check that
+# vacc has fmla only, while vfma needs extra register copies):
+for k in vacc_8 vfma_8; do awk -v k="^$k:" '$0 ~ k, /ret/' "$OUT/peak_flops.s" > "$OUT/asm_$k.txt"; done
 
 for t in 1 32 64 128; do
   OMP_NUM_THREADS=$t "$OUT/peak_flops" > "$OUT/peak_${t}.csv"

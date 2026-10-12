@@ -26,6 +26,7 @@
 typedef float64x2_t vd;
 static inline vd v_set(double x)            { return vdupq_n_f64(x); }
 static inline vd v_fma(vd x, vd m, vd a)    { return vfmaq_f64(a, x, m); }
+static inline vd v_acc(vd acc, vd m, vd a)  { return vfmaq_f64(acc, m, a); }
 static inline vd v_mul(vd x, vd m)          { return vmulq_f64(x, m); }
 static inline vd v_div(vd b, vd x)          { return vdivq_f64(b, x); }
 static inline double v_sum(vd v)            { return vgetq_lane_f64(v, 0) + vgetq_lane_f64(v, 1); }
@@ -34,6 +35,7 @@ static inline double v_sum(vd v)            { return vgetq_lane_f64(v, 0) + vget
 typedef double vd __attribute__((vector_size(16)));
 static inline vd v_set(double x)            { vd v = {x, x}; return v; }
 static inline vd v_fma(vd x, vd m, vd a)    { return x * m + a; }
+static inline vd v_acc(vd acc, vd m, vd a)  { return acc + m * a; }
 static inline vd v_mul(vd x, vd m)          { return x * m; }
 static inline vd v_div(vd b, vd x)          { return b / x; }
 static inline double v_sum(vd v)            { return v[0] + v[1]; }
@@ -46,6 +48,15 @@ static __attribute__((unused)) double vfma_##N(long it, double mv, double av) { 
   for (long i = 0; i < it; i++) {                                             \
     _Pragma("GCC unroll 16")                                                  \
     for (int k = 0; k < N; k++) acc[k] = v_fma(acc[k], m, a);                 \
+  }                                                                           \
+  double s = 0; for (int k = 0; k < N; k++) s += v_sum(acc[k]); return s;     \
+}                                                                             \
+static __attribute__((unused)) double vacc_##N(long it, double mv, double av) {                       \
+  vd acc[N], m = v_set(mv), a = v_set(av);                                    \
+  for (int k = 0; k < N; k++) acc[k] = v_set(1.0 + k);                        \
+  for (long i = 0; i < it; i++) {                                             \
+    _Pragma("GCC unroll 16")                                                  \
+    for (int k = 0; k < N; k++) acc[k] = v_acc(acc[k], m, a);                 \
   }                                                                           \
   double s = 0; for (int k = 0; k < N; k++) s += v_sum(acc[k]); return s;     \
 }                                                                             \
@@ -101,6 +112,11 @@ typedef struct {
 static const bench benches[] = {
   ROW(vfma, 1, 2, 2, 1), ROW(vfma, 2, 2, 2, 1), ROW(vfma, 4, 2, 2, 1),
   ROW(vfma, 8, 2, 2, 1), ROW(vfma, 12, 2, 2, 1), ROW(vfma, 16, 2, 2, 1),
+  /* vacc: the accumulator is the FMLA destination (no register copies), the
+     real peak-FMA kernel. vfma keeps the chain on the multiplicand, which
+     forces a copy of the addend per FMA; it is kept to show that effect. */
+  ROW(vacc, 1, 2, 2, 1), ROW(vacc, 2, 2, 2, 1), ROW(vacc, 4, 2, 2, 1),
+  ROW(vacc, 8, 2, 2, 1), ROW(vacc, 12, 2, 2, 1), ROW(vacc, 16, 2, 2, 1),
   ROW(sfma, 1, 1, 2, 1), ROW(sfma, 4, 1, 2, 1), ROW(sfma, 8, 1, 2, 1),
   ROW(sfma, 16, 1, 2, 1),
   ROW(vmul, 1, 2, 1, 1), ROW(vmul, 8, 2, 1, 1), ROW(vmul, 16, 2, 1, 1),
