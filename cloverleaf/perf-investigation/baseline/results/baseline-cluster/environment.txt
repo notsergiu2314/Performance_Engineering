@@ -1,0 +1,23 @@
+date:        2026-10-12T10:01:55+00:00
+host:        cn15.guoehi.cluster   cpus: 128
+slurm:       job 34733 on cn15
+binary:      /home/joosterveld/cloverleaf/perf-investigation/baseline/../../cloverleaf_b5e598d/clover_leaf  (8453c8339ef0)
+git:         n/a
+mpirun:      mpirun (Open MPI) 5.0.3  args: --map-by slot:PE=<threads> --bind-to core --report-bindings
+single rank: --bind-to none --report-bindings
+omp:         OMP_PROC_BIND=close OMP_PLACES=cores OMP_DYNAMIC=false
+reps:        5
+matrix:      /home/joosterveld/cloverleaf/perf-investigation/baseline/matrix.cluster
+compiler:    GNU Fortran (GCC) 14.1.0
+  Architecture:                         aarch64
+  CPU(s):                               128
+  Model name:                           TaiShan-v110
+  Thread(s) per core:                   1
+  Socket(s):                            2
+  CPU(s) scaling MHz:                   100%
+  L3 cache:                             128 MiB (4 instances)
+  NUMA node(s):                         4
+  NUMA node0 CPU(s):                    0-31
+  NUMA node1 CPU(s):                    32-63
+  NUMA node2 CPU(s):                    64-95
+  NUMA node3 CPU(s):                    96-127
