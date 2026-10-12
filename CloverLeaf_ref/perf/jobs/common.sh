@@ -28,7 +28,8 @@ run_clover() {
       # One rank per NUMA domain (ranks=4) or per socket (ranks=2), each
       # with its threads pinned inside that domain.
       local unit=numa; [ "$ranks" -eq 2 ] && unit=package
-      mpirun -np "$ranks" --map-by "ppr:1:$unit:PE=$threads" --bind-to core \
+      # OUTER_PREFIX (e.g. "perf stat -a -e ...") wraps the whole mpirun, not each rank.
+      ${OUTER_PREFIX:-} mpirun -np "$ranks" --map-by "ppr:1:$unit:PE=$threads" --bind-to core \
         -x OMP_NUM_THREADS -x OMP_PLACES -x OMP_PROC_BIND -x PROF_DIR -x PROF_EVENTS \
         "$@" "$bin" > stdout.txt 2>&1
     fi
