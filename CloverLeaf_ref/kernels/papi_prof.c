@@ -44,6 +44,9 @@ static char           event_names[PROF_MAX_EVENTS][PAPI_MAX_STR_LEN];
 static thread_state  *states;
 static int            nthreads_seen;
 static __thread thread_state *my_state;
+static int            dbg;   /* PROF_DEBUG=1: trace initialisation on stderr */
+
+#define DBG(...) do { if (dbg) { fprintf(stderr, "[papi_prof] " __VA_ARGS__); fputc(10, stderr); } } while (0)
 
 static unsigned long prof_thread_id(void)
 {
@@ -58,6 +61,7 @@ static void prof_dump(void)
   int t, r, e;
 
   if (!enabled) return;
+  DBG("dump at exit");
   snprintf(path, sizeof(path), "%s/papi_prof_%d.csv", dir ? dir : ".", (int) getpid());
   f = fopen(path, "w");
   if (!f) { perror("[papi_prof] fopen"); return; }
@@ -83,12 +87,18 @@ static void prof_init(void)
   char *list, *tok, *save = NULL;
   int test = PAPI_NULL, code, ret;
 
+  dbg = getenv("PROF_DEBUG") != NULL;
+  DBG("init: thread %lu of %d, events=\"%s\"", prof_thread_id(),
+      omp_get_num_threads(), env ? env : "(default)");
   ret = PAPI_library_init(PAPI_VER_CURRENT);
+  DBG("PAPI_library_init -> %d", ret);
   if (ret != PAPI_VER_CURRENT) {
     fprintf(stderr, "[papi_prof] PAPI_library_init failed (%d), profiling disabled\n", ret);
     return;
   }
-  if ((ret = PAPI_thread_init(prof_thread_id)) != PAPI_OK) {
+  ret = PAPI_thread_init(prof_thread_id);
+  DBG("PAPI_thread_init -> %d", ret);
+  if (ret != PAPI_OK) {
     fprintf(stderr, "[papi_prof] PAPI_thread_init: %s, profiling disabled\n", PAPI_strerror(ret));
     return;
   }
@@ -138,13 +148,25 @@ static thread_state *prof_thread_state(void)
   s = my_state = &states[slot];
   s->state = -1;
   s->eventset = PAPI_NULL;
+  DBG("slot %d: omp thread %d starting counters", slot, omp_get_thread_num());
 
   if (nevents > 0) {
-    PAPI_register_thread();
-    if (PAPI_create_eventset(&s->eventset) != PAPI_OK) return NULL;
+    int ret = PAPI_register_thread();
+    DBG("slot %d: PAPI_register_thread -> %d", slot, ret);
+    if ((ret = PAPI_create_eventset(&s->eventset)) != PAPI_OK) {
+      DBG("slot %d: PAPI_create_eventset failed: %s", slot, PAPI_strerror(ret));
+      return NULL;
+    }
     for (e = 0; e < nevents; e++)
-      if (PAPI_add_event(s->eventset, event_codes[e]) != PAPI_OK) return NULL;
-    if (PAPI_start(s->eventset) != PAPI_OK) return NULL;
+      if ((ret = PAPI_add_event(s->eventset, event_codes[e])) != PAPI_OK) {
+        DBG("slot %d: add %s failed: %s", slot, event_names[e], PAPI_strerror(ret));
+        return NULL;
+      }
+    if ((ret = PAPI_start(s->eventset)) != PAPI_OK) {
+      DBG("slot %d: PAPI_start failed: %s", slot, PAPI_strerror(ret));
+      return NULL;
+    }
+    DBG("slot %d: counting", slot);
   }
   s->state = 1;
   return s;
