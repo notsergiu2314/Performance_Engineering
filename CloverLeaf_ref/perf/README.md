@@ -29,7 +29,7 @@ mkdir -p perf/results
 srun -p cn-ib -N 1 -t 00:20:00 bash perf/build.sh            # build on a compute node
 
 # smoke test first (about a minute)
-srun -p cn-ib -N 1 bash perf/smoke.sh
+sbatch perf/smoke.sh               # then: cat perf/results/smoke_<jobid>.log
 
 # M1 - initial profiling
 sbatch perf/jobs/m1_baseline.sbatch   # internal timers, 1..128 threads, MPI layouts
@@ -40,6 +40,10 @@ sbatch perf/jobs/m1_papi.sbatch       # PAPI per kernel, several event sets
 sbatch perf/jobs/m2_stream.sbatch     # memory ceiling
 sbatch perf/jobs/m2_peak.sbatch       # compute ceilings
 ```
+
+**Run everything with `sbatch`, not `srun bash ...`:** a second MPI program started inside one
+`srun` step hangs in `MPI_Init` on HAICGU (seen with the PAPI build, 2026-10-12). `srun` is fine for
+non-MPI commands (`lscpu`, `build.sh`).
 
 The jobs only need `--exclusive` nodes and are independent, so all five can
 be queued at once. Every run directory holds `meta.txt`, `clover.in`,
