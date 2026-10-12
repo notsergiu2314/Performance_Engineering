@@ -1,0 +1,11 @@
+# Measured ceilings. STREAM: results/m2_stream_*; peak_flops: results/m2_peak_34752 (vacc = FMA, accumulator in the FMLA destination).
+name,value,unit,note
+dram_1thread,14.9,GB/s,STREAM triad 1 thread
+dram_domain,67.2,GB/s,STREAM triad 32 threads = 1 NUMA domain
+dram_node_best,266.7,GB/s,STREAM triad 128 threads best of 10 (4 x 67)
+dram_node_median,135.5,GB/s,STREAM triad 128 threads median of 10 (default THP)
+fma_core,10.4,GFLOP/s,vacc 8 chains 1 thread (4.0 flop/cycle at 2.6 GHz)
+fma_node,1329.8,GFLOP/s,vacc 8 chains 128 threads
+mul_node,664.9,GFLOP/s,vmul 8 chains 128 threads
+div_core,0.19,GFLOP/s,vdiv 2 lanes 1 thread
+div_node,24.6,GFLOP/s,vdiv 2 lanes 128 threads
