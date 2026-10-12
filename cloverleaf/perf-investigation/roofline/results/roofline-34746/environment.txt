@@ -1,0 +1,31 @@
+date:        2026-10-12T12:12:11+00:00
+host:        cn18.guoehi.cluster   cpus: 128
+slurm:       job 34746 on cn18
+profile:     haicgu (Theoretical constants for a HAICGU TaiShan 2280 node (2 x Kunpeng 920-6426, TaiShan v110 ARMv8.2, 128-bit NEON). Only used for the "theoretical" rows in machine.csv. GHZ=2.6 FLOP_PER_CYCLE=8            FP/SIMD pipes x 2 FP64 lanes x 2 (FMA); verify with peak_fma CORES_PER_SOCKET=64 SOCKETS=2 NUMA_PER_SOCKET=2           NUMA domains of 32 cores MEM_CHANNELS_PER_SOCKET=8 MEM_MTS=2666                DDR4-2666 -> 8 x 2666e6 x 8 B = 170.6 GB/s per socket MEM_BUS_BYTES=8 STREAM_SITE_TRIAD_GBS=140   )
+cc:          gcc (gcc (GCC) 14.1.0)  cflags: -O3 -march=native -funroll-loops -fopenmp -ffp-contract=fast
+membw:       ARRAY_ELEMS=134217728 (1024 MiB/array) NTIMES=20
+peak_fma:    FMA_ITERS=400000000
+mpirun:      mpirun (Open MPI) 5.0.3  single rank: --bind-to none --report-bindings
+omp:         OMP_PROC_BIND=close OMP_DYNAMIC=false (OMP_PLACES per matrix line)
+reps:        3
+matrix:      matrix.peak
+  Architecture:                         aarch64
+  CPU(s):                               128
+  Model name:                           TaiShan-v110
+  Thread(s) per core:                   1
+  Socket(s):                            2
+  CPU(s) scaling MHz:                   100%
+  CPU max MHz:                          2600.0000
+  CPU min MHz:                          200.0000
+  L2 cache:                             64 MiB (128 instances)
+  L3 cache:                             128 MiB (4 instances)
+  NUMA node(s):                         4
+  NUMA node0 CPU(s):                    0-31
+  NUMA node1 CPU(s):                    32-63
+  NUMA node2 CPU(s):                    64-95
+  NUMA node3 CPU(s):                    96-127
+  available: 4 nodes (0-3)
+  node 0 size: 32376 MB
+  node 1 size: 32715 MB
+  node 2 size: 32668 MB
+  node 3 size: 32698 MB

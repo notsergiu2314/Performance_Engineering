@@ -25,8 +25,14 @@ baseline results (`../baseline/results/baseline-cluster`), not from this job.
   the raw runs and adds the theoretical rows from `machine.<profile>.env`.
 - `src/membw.c`: copy, scale, add, triad and a pure read, OpenMP, first-touch init, best of
   NTIMES. Bytes counted the STREAM way (copy/scale 16 B, add/triad 24 B, read 8 B per
-  element, no write-allocate). `src/peak_fma.c`: 32 independent FMA chains per thread.
-- `matrix.machine` (HAICGU node), `matrix.laptop` (8-core smoke test). Lines are
+  element, no write-allocate). `src/peak_fma.c`: 12 independent FMA chains per thread on
+  native-width vectors held in named variables, written in the accumulate form
+  `v = v + v*x`. Two earlier versions under-reported Kunpeng 920 at 2.4 FLOP/cycle: an
+  `acc[]` array, and then the form `v*x + y`, which GCC compiles to `fmla` with `y` loaded
+  into the destination plus a copy back, two SIMD register moves per FMA that share the
+  FMA pipes. `build.log` now contains the hot loop so this can be checked on any build.
+- `matrix.machine` (HAICGU node), `matrix.peak` (FMA peak only, one minute, layered on a
+  full run with a second `--machine`), `matrix.laptop` (8-core smoke test). Lines are
   `KIND THREADS PLACES SCOPE`; PLACES is an `OMP_PLACES` value (`{0}` one core, `{0}:32`
   NUMA domain 0, `{0}:64` socket 0, `cores` all), SCOPE is `core|numa|socket|node`.
 - `machine.haicgu.env`, `machine.laptop.env`: GHz, FLOP/cycle, cores, memory channels.
@@ -61,10 +67,12 @@ doubles = 1 GiB per array), `NTIMES` (20), `FMA_ITERS` (4e8), `REPS` (3), `OUT_D
   118 MB; with 64 ranks it is 1.8 MB per rank against 0.5 MB L2 per core and 32 MB L3 per
   32-core NUMA domain, so some reuse between consecutive sweeps of one kernel is possible
   and the model is an upper bound on DRAM traffic.
-- `--write-allocate` counts 16 B per stored element (read-for-ownership). GCC emits no
-  non-temporal stores for these loops on either architecture, so hardware traffic is the
-  write-allocate figure; the measured STREAM ceilings are rescaled the same way
-  (copy/scale x1.5, add/triad x4/3) so both sides use the same accounting.
+- `--write-allocate` counts 16 B per stored element (read-for-ownership) and rescales the
+  measured STREAM ceilings the same way (copy/scale x1.5, add/triad x4/3). On the Kunpeng
+  920 this is refuted by the data: the rescaled copy ceiling would be 396 GB/s, above the
+  341 GB/s bus limit, so the core does not fetch lines for these streaming stores
+  (write-streaming) and the plain accounting is the right one there. Keep the flag for
+  machines where copy x1.5 stays below the bus limit.
 - FLOP counts are per element on the common path and carry maybe +-30%. For a
   memory-bound section an error in FLOPs moves the point along a line parallel to the
   bandwidth roof, so its distance to that roof (`frac_bw_roof`) is unaffected.
@@ -76,18 +84,27 @@ doubles = 1 GiB per array), `NTIMES` (20), `FMA_ITERS` (4e8), `REPS` (3), `OUT_D
 ## Verification checklist
 
 Machine (cluster):
-- `peak_fma` node within ~10% of `peak_flops` theoretical (2662 GFLOP/s = 128 x 2.6 GHz x
-  8 FLOP/cycle) and `implied_ghz` about 2.6. If it comes out at 4 FLOP/cycle the core has
-  one FMA pipe: fix `FLOP_PER_CYCLE` in `machine.haicgu.env`, not the code. `build.log`
-  must report vector FMA instructions.
-- `stream_triad` node against the site's quoted 140 GB/s; socket about half of node, NUMA
-  about a quarter; everything below the theoretical 341 GB/s; `read` >= `copy`; spread
-  across reps under 5% (the `note` column).
+- `peak_fma`: measured 10.40 GFLOP/s per core and 1329 GFLOP/s per node (job 34746,
+  cn18, spread 0.0%), i.e. exactly 4 FLOP/cycle at 2.6 GHz: the Kunpeng 920 core retires
+  one 128-bit FP64 FMA per cycle, not two as first assumed. `machine.haicgu.env` carries
+  `FLOP_PER_CYCLE=4`, so the theoretical node peak is 1331 GFLOP/s and `implied_ghz`
+  reads 2.6. `build.log` must report vector FMA instructions and its hot-loop listing
+  must be `fmla` only, no `mov v..16b` between them (jobs 34735/34739 had 2 moves per
+  FMA and reported 6.2 GFLOP/s per core). The site's own HPL (722 GFLOP/s at 8x16,
+  "not optimised") is 54% of this peak.
+- `stream_triad` node: measured 263 GB/s on cn15 (job 34735), 77% of the theoretical
+  341 GB/s, with socket 132 and NUMA 65.5 GB/s, i.e. exactly half and a quarter; copy 264,
+  read 296 GB/s; spread across reps under 1%. The site's quoted 140 GB/s is far too low
+  and is drawn only as a reference line.
 
 Model:
 - Revert and Reset are pure copies and must sit near the STREAM copy ceiling in the
   bandwidth figure. Well above it: bytes over-counted or cache reuse. Well below: time
-  the model does not see (fork/join, imbalance, NUMA misplacement).
+  the model does not see (fork/join, imbalance, NUMA misplacement). On the cluster
+  (64x2, 3840^2) they reach 84% and 92% of STREAM copy, so the model and the ceilings
+  agree. Momentum and cell advection in Fortran reach 99% of STREAM triad, which is
+  consistent with some L2/L3 reuse between the sweeps of one kernel (per-rank arrays are
+  1.8 MB at 64 ranks): treat those two as at the bandwidth roof.
 - Fortran and C points of one section share the same AI; their vertical gap is the
   per-section C/Fortran ratio and must match `summary.md`.
 - "Kernels only" vs "Whole step" shows the halo/other share.

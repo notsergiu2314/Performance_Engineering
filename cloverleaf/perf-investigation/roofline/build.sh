@@ -20,4 +20,8 @@ vec=$(objdump -d "$BIN_DIR/peak_fma" | grep -cE '\bfmla\b|vfmadd[0-9]+[ps]d.*(ym
 sca=$(objdump -d "$BIN_DIR/peak_fma" | grep -cE '\bfmadd\b|vfmadd[0-9]+sd' || true)
 echo "peak_fma: $vec vector FMA, $sca scalar FMA instructions" | tee -a "$log"
 [ "$vec" -gt 0 ] || die "peak_fma has no vector FMA instructions; check CFLAGS=$CFLAGS (see $log)"
+# Keep the outlined OpenMP body (the hot loop) in the log so the code can be checked
+# without an aarch64 objdump at hand.
+{ echo; echo "---- peak_fma hot loop (main._omp_fn.*) ----"
+  objdump -d --no-show-raw-insn "$BIN_DIR/peak_fma" | awk '/<main\._omp_fn/{p=1} p&&/^$/{exit} p' ; } >> "$log"
 echo "binaries in $BIN_DIR, log in $log"

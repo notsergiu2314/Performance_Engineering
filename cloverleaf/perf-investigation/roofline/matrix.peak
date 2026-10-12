@@ -1,0 +1,6 @@
+# FMA peak only (about one minute); use after a change to src/peak_fma.c:
+#   sbatch machine.sbatch matrix.peak   then   roofline.py --machine <full>/machine.csv --machine <peak>/machine.csv
+peak_fma 128 cores   node
+peak_fma 64  {0}:64  socket
+peak_fma 32  {0}:32  numa
+peak_fma 1   {0}     core

@@ -39,19 +39,19 @@ C relative to Fortran (best wall, ratio > 1 means C slower)
 
 | section | clover_bm16_short_fortran_r64_t2 | clover_bm16_short_c_r64_t2 |
 | --- | --- | --- |
-| Timestep           |  | |
-| Ideal Gas          |  | |
-| Viscosity          |  | |
-| PdV                |  | |
-| Revert             |  | |
-| Acceleration       |  | |
-| Fluxes             |  | |
-| Cell Advection     |  | |
-| Momentum Advection |  | |
-| Reset              |  | |
-| Self Halo Exchange |  | |
-| MPI Halo Exchange  |  | |
-| Total              |  | |
+| Timestep           | 0.53 (6%) | 0.67 (6%) |
+| Ideal Gas          | 0.41 (4%) | 0.50 (4%) |
+| Viscosity          | 0.34(4%) | 0.36 (3%) |
+| PdV                | 1.17(13%) | 1.32 (12%) |
+| Revert             | 0.19(2%) | 0.19 (2%) |
+| Acceleration       | 0.55(6%) | 0.56 (5%) |
+| Fluxes             | 0.40(4%) | 0.38 (3%) |
+| Cell Advection     | 1.78(19%) | 2.43 (22%) |
+| Momentum Advection | 3.39(36%) | 4.22 (38%) |
+| Reset              | 0.34(4%) | 0.33 (3%) |
+| Self Halo Exchange | 0.00(0%) | 0.00 (0%) |
+| MPI Halo Exchange  | 0.19(2%) | 0.23 (2%) |
+| Total              | 9.31(100%) | 11.23 (100%) |
 
 ## Performance critical kernels
 From the initial benchmarking, we have observed that 
@@ -169,7 +169,10 @@ laptop `.venv/bin/python roofline.py --machine results/roofline-<jobid>/machine.
 --results ../baseline/results/baseline-cluster` (add `--write-allocate` for hardware bytes).
 
 ```bash
-rsync --exclude='clover.out' --exclude='results/' --exclude='bin/' ~/Performance_Engineering/cloverleaf/ guoehi-dev:~cloverleaf/
+rsync -r --exclude='clover.out' --exclude='results/' --exclude='bin/' ~/Performance_Engineering/cloverleaf/ guoehi-dev:~/cloverleaf/
+```
+
+```bash
 cd ~/cloverleaf/perf-investigation/roofline && sbatch machine.sbatch
 ```
 
@@ -177,11 +180,113 @@ cd ~/cloverleaf/perf-investigation/roofline && sbatch machine.sbatch
 roofline.py --machine results/roofline-<jobid>/machine.csv --results ../baseline/results/baseline-cluster
 ```
 
-Laptop smoke test (2026-10-12): FMA peak 379 GFLOP/s at 8 threads (all-core 3.0 GHz,
-theoretical 576 at 4.5 GHz), bandwidth copy 19 / triad 21 / read 30 GB/s. The pipeline
-runs end to end on `baseline-laptop`, but at 960^2 two arrays fit in the 16 MB L3, so
-most sections sit above the measured bandwidth roof there; only the cluster run at
-3840^2 is meaningful.
+To combine results for partial runs:
+```bash
+python roofline.py --machine results/roofline-<old>/machine.csv --machine results/roofline-<newjob>/machine.csv --results ../baseline/results/baseline-cluster
+```
+
+Cluster ceilings (job 34735, cn15, 2026-10-12): STREAM-style triad 263 GB/s per node
+(77% of the 341 GB/s theoretical), 132 per socket, 65.5 per NUMA domain, 13 per core;
+copy 264, read 296 GB/s; spread under 1%. The site's quoted 140 GB/s is wrong by ~2x.
+FP64 peak, settled by job 34746 (cn18, `matrix.peak`): 10.40 GFLOP/s per core, 332.5
+per NUMA domain, 664.7 per socket, 1329 per node, spread 0.0% and identical per thread
+at every scale. That is exactly 4 FLOP/cycle at 2.6 GHz: the Kunpeng 920 (TaiShan v110)
+core retires one 128-bit FP64 FMA per cycle, half of the 8 FLOP/cycle first assumed.
+`machine.haicgu.env` now has `FLOP_PER_CYCLE=4` (theoretical 1331 GFLOP/s per node,
+99.9% reached). Two earlier runs (34735, 34739) reported 6.2 GFLOP/s per core: the
+disassembly showed GCC 14 compiling `v = v*x + y` to `fmla` with `y` moved into the
+destination and the result moved back, two SIMD moves per FMA on the same pipes.
+`peak_fma.c` uses the accumulate form `v = v + v*x` since, and `build.sh` writes the
+hot loop into `build.log`. The site's own STREAM (141 GB/s, 80M elements, no pinning)
+is half of ours; its HPL (722 GFLOP/s at 8x16, "not optimised") is 54% of the peak.
+Ridge point of the node: 1329 / 263 = 5.1 FLOP/B; every CloverLeaf section has AI <= 1,
+so the compute roof plays no role.
+
+Roofline findings (bm16_short, 64x2, best rep; `roofline/results/roofline_bm16_short.*`):
+the Fortran step runs at 232 GB/s of modelled traffic = 88% of STREAM triad; momentum
+and cell advection are at 99%, PdV 87%, the copy kernels Revert/Reset at 84%/92% of
+STREAM copy. Fortran is bandwidth-bound: the only lever is fewer bytes (dead stores
+post_vol/pre_vol, work arrays, sweep fusion; cf. the `patches/` series). The C kernels
+run the same traffic 20-28% slower in the advection kernels (72-80% of the roof) and
+40% slower in Timestep/Ideal Gas, which is an instruction-side deficit (the advection
+flux sweeps have no `omp simd` and data-dependent indexing), so C has headroom to catch
+Fortran before byte reduction is needed.
+
+Laptop smoke test (2026-10-12): FMA peak 386 GFLOP/s at 8 threads (all-core 3.1 GHz),
+64 GFLOP/s on one core at 4.0 GHz; bandwidth copy 19 / triad 21 / read 30 GB/s. The
+pipeline runs end to end on `baseline-laptop`, but at 960^2 two arrays fit in the 16 MB
+L3, so most sections sit above the measured bandwidth roof there; only the cluster run
+at 3840^2 is meaningful.
+
+## FLOP and byte analysis per kernel (kernel_model.py, 3840^2, one time step)
+
+Method: one row per loop nest in the C kernels (the Fortran kernels have the same loop
+structure), counting the distinct arrays each sweep streams (8 B/element, stencil
+neighbours count once, 1-D arrays ignored) and the floating-point operations per element
+on the common path. Arrays are 118 MB each at 3840^2, so every sweep comes from DRAM.
+Reproduce with `python3 -I roofline/kernel_model.py --x 3840 --y 3840 --audit`.
+
+| section | sweeps/step | GFLOP/step | GB/step | AI FLOP/B | % of bytes | achieved, Fortran / C (% of STREAM) |
+|---|---|---|---|---|---|---|
+| Momentum Advection | 24 | 1.95 | 10.16 | 0.19 | 41.0 | 99 / 80 |
+| Cell Advection | 6 | 1.15 | 5.31 | 0.22 | 21.4 | 99 / 72 |
+| PdV | 2 | 1.18 | 3.07 | 0.39 | 12.4 | 87 / 77 |
+| Timestep (calc_dt) | 2 | 0.66 | 1.18 | 0.56 | 4.8 | 73 / 58 |
+| Acceleration | 1 | 0.56 | 1.18 | 0.48 | 4.8 | 71 / 69 |
+| Ideal Gas | 2 | 0.32 | 0.94 | 0.34 | 3.8 | 76 / 62 |
+| Fluxes | 2 | 0.18 | 0.94 | 0.19 | 3.8 | 78 / 82 |
+| Reset | 4 | 0 | 0.94 | 0 | 3.8 | 92 / 94 (vs copy) |
+| Viscosity | 1 | 0.61 | 0.59 | 1.03 | 2.4 | 58 / 55 |
+| Revert | 2 | 0 | 0.47 | 0 | 1.9 | 84 / 84 (vs copy) |
+| **Total** | 46 | 6.61 | 24.79 | 0.27 | 100 | 88 / 73 |
+
+Every kernel has AI <= 1 FLOP/B against a ridge point of 5.1 FLOP/B (1329 GFLOP/s /
+263 GB/s), i.e. the whole code is firmly memory-bound; the
+FLOP counts (+-30%) only matter for the vertical position of the points, not for the
+distance to the bandwidth roof.
+
+Per kernel (reads / writes are distinct arrays per sweep, calls per step in brackets):
+
+- **Momentum advection** [4 calls: xvel and yvel for each sweep direction], 6 sweeps per
+  call. pre/post_vol over the whole (X+5)(Y+5) array: 3r/2w, 2-4 flop; node_flux 1r/1w,
+  4 flop; node_mass_post 2r/1w, 8 flop; node_mass_pre 2r/1w, 2 flop; mom_flux 3r/1w,
+  10 flop on the cheap path, 26 with the limiter (upwind indexing, no `omp simd`);
+  velocity update 4r/1w, 4 flop. Dominant because of volume, not arithmetic: 10.2 GB per
+  step for 1.9 GFLOP. Waste visible in the counts: `pre_vol` is written and never read
+  (dead store, 1 of the 5 arrays of sweep A), and the xvel and yvel calls of the same
+  sweep recompute identical pre/post_vol, node_flux, node_mass_post and node_mass_pre
+  (only mom_flux and the update depend on the velocity), so 4 of the 6 sweeps run twice
+  for nothing: ~3.3 GB of the 10.2 are repeat work.
+- **Cell advection** [2 calls, one per direction], 3 sweeps per call. pre/post_vol over
+  (X+5)(Y+5): 3r/2w (sweep 1) or 2r/2w (sweep 2), 2-6 flop, `post_vol` never read (dead
+  store); flux sweep 4r/2w over (X+3)Y, 21 flop cheap / 51 with both limiters (upwind
+  indexing, no `omp simd`); update sweep 6r/6w, 10 flop, writes four work arrays
+  (pre_mass, post_mass, post_ener, advec_vol) that are only consumed inside the same
+  iteration, so 4 of its 6 stores are avoidable.
+- **PdV** [2: predictor + corrector], one fused sweep: 9 (predictor) / 11 (corrector)
+  reads, 3 writes (energy1, density1, volume_change = work_array1 which is only reused
+  in-iteration), ~40 flop (4 face fluxes of 3 add + 4 mul, 4 divisions). The predictor
+  reads xvel0/yvel0 twice in the same expression and `min_cell_volume` is dead code
+  (eliminated by the compiler).
+- **Timestep / calc_dt** [1], 8r/1w, ~44 flop (6 div, 1 sqrt, min/max chain), then a
+  second sweep re-reads dt_min for the min reduction (1r, 0.12 GB) that could be fused.
+- **Acceleration** [1], one fused node sweep (X+1)(Y+1), 8r/2w, ~38 flop
+  (nodal mass 8, 4 velocity updates of ~7).
+- **Ideal gas** [2: density0/energy0 in timestep, density1/energy1 after the PdV
+  predictor, plus one extra call per summary], 2r/2w, ~11 flop incl. 1 div and 1 sqrt.
+- **Fluxes** [1], two face sweeps, 3r/1w each, 6 flop.
+- **Viscosity** [1], 4r/1w (pressure 5-point, velocities 2x2), ~41 flop incl. ~6 div on
+  the common path; highest AI of the code (1.0) and still memory-bound.
+- **Reset** [1] four copies and **Revert** [1] two copies: 0 flop, 1.4 GB per step of
+  pure copying. Reset could be removed by pointer-swapping the 0/1 field pairs; Revert
+  exists only because the PdV predictor writes density1/energy1 that the corrector then
+  overwrites (cf. patches 02 and 03 in `patches/`).
+
+Byte-reduction potential that the counts expose (per step, out of 24.8 GB): dead stores
+`pre_vol`/`post_vol` 1.6 GB; repeated advec_mom sweeps 3.3 GB; advec_cell intermediate
+work arrays 1.9 GB; Reset/Revert copies 1.4 GB; calc_dt reduction re-read 0.1 GB.
+Together ~8 GB, i.e. about a third of the traffic, which at the measured 263 GB/s is
+worth ~30 ms of the 107 ms Fortran step.
 
 ## TODO
 

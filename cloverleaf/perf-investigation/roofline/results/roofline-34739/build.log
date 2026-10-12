@@ -1,0 +1,7 @@
+date:   2026-10-12T11:52:39+00:00
+host:   cn15.guoehi.cluster
+cc:     gcc (gcc (GCC) 14.1.0)
+cflags: -O3 -march=native -funroll-loops -fopenmp -ffp-contract=fast
+built:  membw
+built:  peak_fma
+peak_fma: 84 vector FMA, 0 scalar FMA instructions

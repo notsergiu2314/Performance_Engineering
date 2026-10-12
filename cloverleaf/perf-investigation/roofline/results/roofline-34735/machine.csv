@@ -28,10 +28,10 @@ stream_triad,1,core,12.968,GB/s,measured,"best of 3, spread 0.8%"
 stream_triad,32,numa,65.529,GB/s,measured,"best of 3, spread 0.2%"
 stream_triad,64,socket,132.112,GB/s,measured,"best of 3, spread 0.3%"
 stream_triad,128,node,262.859,GB/s,measured,"best of 3, spread 0.1%"
-peak_flops,1,core,20.8,GFLOP/s,theoretical,1 x 2.6 GHz x 8 FLOP/cycle
-peak_flops,32,numa,665.6,GFLOP/s,theoretical,32 x 2.6 GHz x 8 FLOP/cycle
-peak_flops,64,socket,1331.2,GFLOP/s,theoretical,64 x 2.6 GHz x 8 FLOP/cycle
-peak_flops,128,node,2662.4,GFLOP/s,theoretical,128 x 2.6 GHz x 8 FLOP/cycle
+peak_flops,1,core,10.4,GFLOP/s,theoretical,1 x 2.6 GHz x 4 FLOP/cycle
+peak_flops,32,numa,332.8,GFLOP/s,theoretical,32 x 2.6 GHz x 4 FLOP/cycle
+peak_flops,64,socket,665.6,GFLOP/s,theoretical,64 x 2.6 GHz x 4 FLOP/cycle
+peak_flops,128,node,1331.2,GFLOP/s,theoretical,128 x 2.6 GHz x 4 FLOP/cycle
 dram_bw,32,numa,85.3,GB/s,theoretical,4 ch x 2666 MT/s x 8 B
 dram_bw,64,socket,170.6,GB/s,theoretical,8 ch x 2666 MT/s x 8 B
 dram_bw,128,node,341.2,GB/s,theoretical,16 ch x 2666 MT/s x 8 B

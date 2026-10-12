@@ -88,14 +88,18 @@ def pick_cases(results_dir, deck, kernels, tags):
     return chosen
 
 
-def ceilings(machine_csv, scope, write_allocate):
-    """Return {name: (GB/s or GFLOP/s, label)} for the chosen scope."""
+def ceilings(machine_csvs, scope, write_allocate):
+    """Return {name: GB/s or GFLOP/s} for the chosen scope. Later files override earlier
+    rows with the same (quantity, source), so a partial rerun (matrix.peak) can be layered
+    on a full machine.csv."""
     c = {}
-    for r in read_csv(machine_csv):
-        if r["scope"] != scope:
-            continue
-        key = (r["quantity"], r["source"])
-        c[key] = fl(r["value"])
+    for machine_csv in machine_csvs:
+        for r in read_csv(machine_csv):
+            if r["scope"] != scope:
+                continue
+            key = (r["quantity"], r["source"])
+            c[key] = fl(r["value"])
+    machine_csv = machine_csvs[-1]
     out = {}
     if ("peak_fma", "measured") in c:
         out["peak_measured"] = c[("peak_fma", "measured")]
@@ -122,7 +126,8 @@ def ceilings(machine_csv, scope, write_allocate):
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0],
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--machine", required=True, help="machine.csv from machine.sh")
+    ap.add_argument("--machine", required=True, action="append",
+                    help="machine.csv from machine.sh; may be repeated, later files override earlier rows")
     ap.add_argument("--results", required=True, help="baseline OUT_DIR (results.csv, profiler.csv, <tag>/)")
     ap.add_argument("--deck", default="clover_bm16_short.in")
     ap.add_argument("--kernels", default="fortran,c", help="comma list; fastest layout per kernel set")
@@ -145,7 +150,7 @@ def main():
     prof = defaultdict(dict)
     for r in read_csv(results_dir / "profiler.csv"):
         prof[(r["tag"], r["rep"])][r["section"]] = fl(r["time"])
-    ceil = ceilings(Path(a.machine), a.scope, a.write_allocate)
+    ceil = ceilings([Path(m) for m in a.machine], a.scope, a.write_allocate)
 
     points = []   # dicts, one per (case, section)
     for case in cases:
