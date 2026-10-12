@@ -4,6 +4,26 @@
 
 In this project, we focus on the C kernels of the cloverleaf_ref implementation. The reason for this, is time constraints. We are not familiar with FORTRAN, so focussing on only optimizing the C kernels saves time. The C kernels are ported from FORTRAN with the same structure, so optimizations made to these kernels could be ported back in the future without much difficulty.
 
+We have chosen to benchmark on the `clover_bm_short.in` input deck. Our initial base benchmarking was done across the following input decks:
+
+- `clover_bm_short.in`
+- `clover_bm16_short.in`
+- `clover_bm.in`
+
+`clover_bm16_short.in` proved the best for benchmarking, since execution time was short enough to efficiently benchmark different parralellization configurations, while being long enough to measure computation performance instead of parralellization overhead. It generally produced consistent results with a low spread. This deck will be used in the rest of the performance analysis for determining the optimal configuration, identifying the performance-critical kernels, and finally for the benchmark comparison between the baseline and the modified kernels.
+
+For verifying correctness of the results, the `clover_bm.in` deck is run once for the best configuration, and its results are compared to the reference using the built-in functionality from cloverleaf.
+
+## Baseline Benchmark
+
+The baseline benchmark was done on the `clover_bm_short.in` deck, and was run for both the FORTRAN and C kernels for completeness. We will solely be focussing on improving the C kernel performance for this project.
+
+The results can be seen in the table below:
+
+## Performance critical kernels
+From the initial benchmarking, we have observed that 
+
+
 ## Running on cluster
 
 Cluster: HAICGU, Goethe University Frankfurt (https://haicgu.github.io/).
@@ -102,6 +122,6 @@ differ on Kunpeng 920 (different compiler version, NEON instead of AVX2).
 ## TODO
 
 - run base benchmark on cluster
-- determine best paralellism parameters
+- determine best parralellism parameters
 - Identify performance-critical kernels
 - 

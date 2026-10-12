@@ -9,6 +9,16 @@
 : "${OUT_DIR:=$PWD/results}"
 : "${MPIRUN:=mpirun}"                # launcher executable (e.g. a full path from a module)
 : "${MPIRUN_ARGS:=--report-bindings}" # extra flags; bindings are logged to rep<i>.log
+# Placement for a single rank. OpenMPI refuses "--map-by slot:PE=N --bind-to
+# core" when N spans more than one package (1x128 on a two-socket node), so a
+# lone rank is left unbound and the OpenMP runtime pins one thread per core
+# over the whole node instead (OMP_PLACES=cores then lists every core the
+# process may use). For this case --report-bindings is printed by MPI_Init
+# rather than by mpirun, and libgomp has already pinned the main thread to
+# place 0 by then, so the log says "rank 0 bound to ... core 0". That is the
+# main thread only; the worker threads sit on their own cores (verify with
+# OMP_DISPLAY_AFFINITY=true, forwarded through MPIRUN_ARGS="-x OMP_DISPLAY_AFFINITY").
+: "${SINGLE_RANK_PLACEMENT:=--bind-to none}"
 : "${OMP_PROC_BIND:=close}"          # pin threads to the cores mpirun hands each rank
 : "${OMP_PLACES:=cores}"
 : "${OMP_DYNAMIC:=false}"            # never let the runtime shrink the team
@@ -31,15 +41,24 @@ make_deck() {
   grep -q "^ $kw" "$dst" || die "failed to insert $kw into $dst (no *endclover line?)"
 }
 
-# launch RANKS THREADS BIN  -- runs the binary in the current directory.
+# placement RANKS THREADS -> prints the mpirun mapping/binding flags.
 # Each rank is bound to THREADS consecutive cores (--map-by slot:PE=THREADS),
 # and the OpenMP runtime pins one thread per core inside that set. This gives
-# the same placement for 1xN, Nx1 and hybrid layouts on one or many nodes.
+# the same placement for Nx1 and hybrid layouts on one or many nodes. A single
+# rank (pure OpenMP) uses $SINGLE_RANK_PLACEMENT, see above.
+placement() {
+  local ranks=$1 threads=$2
+  if [ "$ranks" -eq 1 ]; then echo "$SINGLE_RANK_PLACEMENT"
+  else echo "--map-by slot:PE=$threads --bind-to core"; fi
+}
+
+# launch RANKS THREADS BIN  -- runs the binary in the current directory.
 # Stdin is /dev/null so mpirun cannot consume a caller's input stream.
 launch() {
   local ranks=$1 threads=$2 bin=$3
   export OMP_NUM_THREADS=$threads OMP_PROC_BIND OMP_PLACES OMP_DYNAMIC
-  "$MPIRUN" -np "$ranks" --map-by "slot:PE=$threads" --bind-to core \
+  # shellcheck disable=SC2046  # placement flags and MPIRUN_ARGS are word-split on purpose
+  "$MPIRUN" -np "$ranks" $(placement "$ranks" "$threads") \
     -x OMP_NUM_THREADS -x OMP_PROC_BIND -x OMP_PLACES -x OMP_DYNAMIC \
     $MPIRUN_ARGS "$bin" < /dev/null
 }

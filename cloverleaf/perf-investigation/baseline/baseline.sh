@@ -10,6 +10,7 @@
 #   CLOVER_BIN   path to clover_leaf           DECK_DIR     directory with the .in decks
 #   REPS         repetitions per case (5)      OUT_DIR      where results go
 #   MPIRUN       launcher executable           MPIRUN_ARGS  extra mpirun flags
+#   SINGLE_RANK_PLACEMENT  mpirun placement flags for 1-rank cases (--bind-to none)
 #   OMP_PROC_BIND / OMP_PLACES / OMP_DYNAMIC   thread pinning (close / cores / false)
 set -euo pipefail
 here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
@@ -26,6 +27,7 @@ mkdir -p "$OUT_DIR"
   echo "binary:      $CLOVER_BIN  ($(md5sum "$CLOVER_BIN" | cut -c1-12))"
   echo "git:         $(git -C "$(dirname "$CLOVER_BIN")" rev-parse --short HEAD 2>/dev/null || echo n/a)"
   echo "mpirun:      $("$MPIRUN" --version 2>/dev/null | head -1)  args: --map-by slot:PE=<threads> --bind-to core $MPIRUN_ARGS"
+  echo "single rank: $SINGLE_RANK_PLACEMENT $MPIRUN_ARGS"
   echo "omp:         OMP_PROC_BIND=$OMP_PROC_BIND OMP_PLACES=$OMP_PLACES OMP_DYNAMIC=$OMP_DYNAMIC"
   echo "reps:        $REPS"
   echo "matrix:      $matrix"
