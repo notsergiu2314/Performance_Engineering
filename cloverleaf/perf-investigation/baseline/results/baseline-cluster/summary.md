@@ -32,6 +32,7 @@ C relative to Fortran (best wall, ratio > 1 means C slower)
 | clover_bm16_short.in | 8 | 16 | 10.431 | 12.464 | 1.195 |
 
 Profiler split of best repetition (seconds, % of wall); sections under 1% omitted
+
 | section | clover_bm16_short_fortran_r1_t128 | clover_bm16_short_c_r1_t128 | clover_bm16_short_fortran_r2_t64 | clover_bm16_short_c_r2_t64 | clover_bm16_short_fortran_r4_t32 | clover_bm16_short_c_r4_t32 | clover_bm16_short_fortran_r8_t16 | clover_bm16_short_c_r8_t16 | clover_bm16_short_fortran_r16_t8 | clover_bm16_short_c_r16_t8 | clover_bm16_short_fortran_r32_t4 | clover_bm16_short_c_r32_t4 | clover_bm16_short_fortran_r64_t2 | clover_bm16_short_c_r64_t2 | clover_bm16_short_fortran_r128_t1 | clover_bm16_short_c_r128_t1 |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | Timestep | 0.54 (4%) | 1.07 (5%) | 0.54 (4%) | 0.89 (5%) | 0.49 (5%) | 0.84 (6%) | 0.50 (5%) | 0.72 (6%) | 0.57 (6%) | 0.74 (6%) | 0.57 (6%) | 0.73 (6%) | 0.53 (6%) | 0.67 (6%) | 0.53 (6%) | 0.72 (6%) |

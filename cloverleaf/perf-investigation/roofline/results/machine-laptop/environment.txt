@@ -1,0 +1,24 @@
+date:        2026-10-12T12:48:41+02:00
+host:        jort-Aspire-AG15-42P   cpus: 16
+profile:     laptop (Theoretical constants for the laptop (AMD Ryzen 7 5825U, Zen 3, 8 cores, 2 x DDR4-3200). GHZ=4.5 FLOP_PER_CYCLE=16           FMA units x 4 FP64 lanes (AVX2) x 2 CORES_PER_SOCKET=8 SOCKETS=1 NUMA_PER_SOCKET=1 MEM_CHANNELS_PER_SOCKET=2 MEM_MTS=3200 MEM_BUS_BYTES=8 )
+cc:          gcc-13 (gcc-13 (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0)  cflags: -O3 -march=native -funroll-loops -fopenmp -ffp-contract=fast
+membw:       ARRAY_ELEMS=67108864 (512 MiB/array) NTIMES=10
+peak_fma:    FMA_ITERS=400000000
+mpirun:      mpirun (Open MPI) 4.1.6  single rank: --bind-to none --report-bindings
+omp:         OMP_PROC_BIND=close OMP_DYNAMIC=false (OMP_PLACES per matrix line)
+reps:        2
+matrix:      matrix.laptop
+  Architecture:                            x86_64
+  CPU(s):                                  16
+  Model name:                              AMD Ryzen 7 5825U with Radeon Graphics
+  Thread(s) per core:                      2
+  Socket(s):                               1
+  CPU(s) scaling MHz:                      57%
+  CPU max MHz:                             4547.9458
+  CPU min MHz:                             410.9590
+  L2 cache:                                4 MiB (8 instances)
+  L3 cache:                                16 MiB (1 instance)
+  NUMA node(s):                            1
+  NUMA node0 CPU(s):                       0-15
+  available: 1 nodes (0)
+  node 0 size: 15332 MB

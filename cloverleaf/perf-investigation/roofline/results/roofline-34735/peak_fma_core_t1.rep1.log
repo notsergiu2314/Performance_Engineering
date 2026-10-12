@@ -1,0 +1,9 @@
+[cn15.guoehi.cluster:1213972] Rank 0 is not bound (or bound to all available processors)
+gflops_total=6.16
+gflops_per_thread=6.16
+implied_ghz=0.770
+threads=1
+iters=400000000
+nacc=32
+time_s=4.155
+checksum=6.421673e+01

@@ -64,3 +64,6 @@ generated_deps/
 # other
 # *.png
 # *.csv
+# CloverLeaf roofline microbenchmark binaries
+cloverleaf/perf-investigation/roofline/bin/
+__pycache__/

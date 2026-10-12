@@ -1,0 +1,5 @@
+# Smoke test on the 8-core laptop (Ryzen 7 5825U). KIND THREADS PLACES SCOPE
+membw    8 cores node
+membw    1 {0}   core
+peak_fma 8 cores node
+peak_fma 1 {0}   core

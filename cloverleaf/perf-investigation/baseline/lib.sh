@@ -52,15 +52,16 @@ placement() {
   else echo "--map-by slot:PE=$threads --bind-to core"; fi
 }
 
-# launch RANKS THREADS BIN  -- runs the binary in the current directory.
+# launch RANKS THREADS BIN [ARGS...]  -- runs the binary in the current directory.
 # Stdin is /dev/null so mpirun cannot consume a caller's input stream.
 launch() {
   local ranks=$1 threads=$2 bin=$3
+  shift 3
   export OMP_NUM_THREADS=$threads OMP_PROC_BIND OMP_PLACES OMP_DYNAMIC
   # shellcheck disable=SC2046  # placement flags and MPIRUN_ARGS are word-split on purpose
   "$MPIRUN" -np "$ranks" $(placement "$ranks" "$threads") \
     -x OMP_NUM_THREADS -x OMP_PROC_BIND -x OMP_PLACES -x OMP_DYNAMIC \
-    $MPIRUN_ARGS "$bin" < /dev/null
+    $MPIRUN_ARGS "$bin" "$@" < /dev/null
 }
 
 # parse_out FILE -> prints: wall grind first_step qa_pct passed kernels_reported

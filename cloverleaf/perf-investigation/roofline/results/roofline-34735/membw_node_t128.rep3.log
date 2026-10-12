@@ -1,0 +1,11 @@
+[cn15.guoehi.cluster:1212647] Rank 0 is not bound (or bound to all available processors)
+copy_gbs=262.789
+scale_gbs=261.002
+add_gbs=261.577
+triad_gbs=262.760
+read_gbs=295.496
+n=134217728
+ntimes=20
+threads=128
+array_mib=1024
+checksum=4.781876e+31

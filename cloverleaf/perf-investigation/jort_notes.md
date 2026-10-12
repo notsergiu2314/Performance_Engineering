@@ -18,7 +18,40 @@ For verifying correctness of the results, the `clover_bm.in` deck is run once fo
 
 The baseline benchmark was done on the `clover_bm_short.in` deck, and was run for both the FORTRAN and C kernels for completeness. We will solely be focussing on improving the C kernel performance for this project.
 
-The results can be seen in the table below:
+The results can be seen in the tables below:
+
+### Parralellism results
+
+C relative to Fortran (best wall, ratio > 1 means C slower)
+
+| deck | ranks | thr | fortran_s | c_s | c/fortran |
+|---|---|---|---|---|---|
+| clover_bm16_short.in | 1 | 128 | 13.708 | 21.942 | 1.601 |
+| clover_bm16_short.in | 128 | 1 | 9.636 | 11.626 | 1.207 |
+| clover_bm16_short.in | 16 | 8 | 9.455 | 11.456 | 1.212 |
+| clover_bm16_short.in | 2 | 64 | 13.552 | 16.566 | 1.222 |
+| clover_bm16_short.in | 32 | 4 | 9.435 | 11.390 | 1.207 |
+| clover_bm16_short.in | 4 | 32 | 10.635 | 13.051 | 1.227 |
+| clover_bm16_short.in | 64 | 2 | 9.314 | 11.233 | 1.206 |
+| clover_bm16_short.in | 8 | 16 | 10.431 | 12.464 | 1.195 |
+
+### Kernel results (for r=64, t=2)
+
+| section | clover_bm16_short_fortran_r64_t2 | clover_bm16_short_c_r64_t2 |
+| --- | --- | --- |
+| Timestep           |  | |
+| Ideal Gas          |  | |
+| Viscosity          |  | |
+| PdV                |  | |
+| Revert             |  | |
+| Acceleration       |  | |
+| Fluxes             |  | |
+| Cell Advection     |  | |
+| Momentum Advection |  | |
+| Reset              |  | |
+| Self Halo Exchange |  | |
+| MPI Halo Exchange  |  | |
+| Total              |  | |
 
 ## Performance critical kernels
 From the initial benchmarking, we have observed that 
@@ -118,6 +151,37 @@ C 6.4 s in both 1x8 and 8x1; C is ~20 % slower, almost all of it in Cell
 Advection (+42 %) and Momentum Advection (+23 %). Both pass QA at 4e-12 %.
 Full tables in `baseline/results/summary.md`. Expect the C/Fortran ratio to
 differ on Kunpeng 920 (different compiler version, NEON instead of AVX2).
+
+## Roofline model (perf-investigation/roofline/)
+
+Ceilings are measured on the node (`machine.sbatch`: STREAM-style copy/scale/add/triad/read
+and an FP64 FMA peak at core / NUMA / socket / node scope) next to the theoretical lines
+(8 x DDR4-2666 = 170.6 GB/s per socket, 341 GB/s per node; 2.6 GHz x 8 FLOP/cycle x 128 =
+2662 GFLOP/s). Points are one per profiler section for the fastest bm16_short layout of
+each kernel set, with FLOPs and DRAM bytes per step from `kernel_model.py` (one row per
+loop nest, audited against the C kernels; 24.8 GB and 6.6 GFLOP per step at 3840^2,
+AI 0.27 FLOP/B, momentum advection 41% of the bytes). See the README there for the
+recipe, the assumptions and the verification checklist.
+
+Recipe: rsync the tree, `cd perf-investigation/roofline && sbatch machine.sbatch` on
+guoehi-dev, copy `~/clover-runs/roofline-<jobid>` into `roofline/results/`, then on the
+laptop `.venv/bin/python roofline.py --machine results/roofline-<jobid>/machine.csv
+--results ../baseline/results/baseline-cluster` (add `--write-allocate` for hardware bytes).
+
+```bash
+rsync --exclude='clover.out' --exclude='results/' --exclude='bin/' ~/Performance_Engineering/cloverleaf/ guoehi-dev:~cloverleaf/
+cd ~/cloverleaf/perf-investigation/roofline && sbatch machine.sbatch
+```
+
+```bash
+roofline.py --machine results/roofline-<jobid>/machine.csv --results ../baseline/results/baseline-cluster
+```
+
+Laptop smoke test (2026-10-12): FMA peak 379 GFLOP/s at 8 threads (all-core 3.0 GHz,
+theoretical 576 at 4.5 GHz), bandwidth copy 19 / triad 21 / read 30 GB/s. The pipeline
+runs end to end on `baseline-laptop`, but at 960^2 two arrays fit in the 16 MB L3, so
+most sections sit above the measured bandwidth roof there; only the cluster run at
+3840^2 is meaningful.
 
 ## TODO
 

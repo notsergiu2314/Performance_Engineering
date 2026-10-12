@@ -1,0 +1,10 @@
+# Machine ceilings for one HAICGU compute node (2 x Kunpeng 920, 64 cores/socket,
+# 4 NUMA domains of 32 cores, no SMT). KIND THREADS PLACES SCOPE; PLACES is an
+# OMP_PLACES value, core numbering from lscpu: NUMA0 = 0-31, socket 0 = 0-63.
+membw    128 cores   node
+membw    64  {0}:64  socket
+membw    32  {0}:32  numa
+membw    1   {0}     core
+peak_fma 128 cores   node
+peak_fma 64  {0}:64  socket
+peak_fma 1   {0}     core
