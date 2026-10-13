@@ -16,6 +16,9 @@ gcc -O3 -mcpu=native -fopenmp "$SRC/openmp_ex2.c" -o "$OUT/parallel_matvec"
 
 # Run with max threads and large enough matrix/vector
 export OMP_NUM_THREADS=128
+export OMP_PLACES=cores
+export OMP_PROC_BIND=spread
+
 M=32768
 N=32768
 ITERS=100
