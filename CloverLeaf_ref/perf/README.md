@@ -35,7 +35,7 @@ only. Baseline build: GCC 14.1.0 (HAICGU default module) `-O3 -march=native -fun
 | `microbench/` | `nothp.c` (THP off per process tree), `peak_flops.c` (FMA/mul/div ceilings), `membw.c` + `peak_fma.c` (jort STREAM-style and FMA ceilings) |
 | `roofline/` | jort ceilings harness (`machine.sbatch`, `machine.sh`, `build.sh`) and `roofline.py` (per-section roofline; `--hw` mode for hardware bytes) |
 | `analysis/` | `clover_profile.py`, `papi_summary.py`, `ddrc_summary.py`, `stream_summary.py`, `stream_ddrc.py`, `kernel_model.py`, `plan_bytes.py`, `roofline.py` (sergiu per-kernel roofline) |
-| `archive/` | committed results: `baseline/` (jobs 34729, 34733 = `baseline-cluster`, laptop), `roofline/` (jobs 34735/34739/34746, `roofline_bm16_short.*`), `m3/` (correctness baseline, M3 summaries once run), `jort_notes.md` |
+| `archive/` | committed results: `baseline/` (jobs 34729, 34733 = `baseline-cluster`, laptop), `roofline/` (jobs 34735/34739/34746, `roofline_bm16_short.*`), `m3/` (correctness baseline; M3 jobs 34795 stream+DDRC, 34796 correctness, 34797 baseline, 34798 PAPI: summaries, `results.csv`, `profiler.csv`, hardware roofline), `jort_notes.md` |
 | `results/` | job output, not tracked; copy summaries into `archive/` and aggregated rows into `../../report/data/` |
 
 The Fortran patch series of the jort branch (`patches/01`–`06`, unmeasured) was dropped; its
@@ -45,6 +45,10 @@ swap; 06 → tile-level parallelism (time only); 04 (scalar geometry) is valid o
 meshes only and is not planned.
 
 ## Runbook (HAICGU, from `CloverLeaf_ref/`)
+
+All four M3 jobs ran on 2026-10-13 (smoke 34794; `m3_stream_ddrc` 34795, `m3_correctness` 34796,
+`m3_baseline` 34797, `m3_papi` 34798); their summaries are in `archive/m3/` and the aggregated
+rows in `../../report/data/`. Rerun them after every optimisation; `STREAM_HW_GBS=266.5`.
 
 ```bash
 mkdir -p perf/results
@@ -109,6 +113,24 @@ NOTHP=../bin/nothp REPS=1 ./baseline.sh matrix.laptop`.
    with/without write-allocate byte models) before they are used on CloverLeaf.
 7. **Placement**: `busiest_over_mean` ≈ 1.00 for every multi-rank and THP-off case.
 
+## M3 baseline in short (jobs 34795–34798, details in the report)
+
+* **Hardware ceiling = counted STREAM triad: 266.5 GB/s.** The DDR controllers count 1.04× the
+  bytes STREAM counts and 0.74× the write-allocate model, in all 20 STREAM runs and in `membw`:
+  a streaming store does not read the line first on this CPU. DIMM clock not readable without
+  root (EDAC: 16 × registered DDR4 8 GB); 266.5 GB/s needs ≥ 2082 MT/s, DDR4-2666 is consistent.
+* **64×2 C: 11.25 s median (spread 0.7 %), 2.83 TB, 250 GB/s = 94 % of the ceiling.** 32×4 11.40 s,
+  128×1 11.7 s, 4×32 12.8–13.0 s, 1×128 13.3 s THP off / 26.9 s THP on (busiest controller
+  group 1.66× mean; 1.00 everywhere else). THP off changes nothing for ≥ 4 ranks.
+* **The C/Fortran gap is a byte gap:** Fortran 64×2 9.33 s, 2.36 TB, 252 GB/s (95 %). Both
+  saturate the DRAM; C moves 20 % more bytes. C reads = 1.34× the model's demand reads (its
+  stores pay a read-for-ownership on ~70 % of the written volume), Fortran 1.15× (~40 %).
+* Correctness gate: `clover_bm.in` deviation reproduced 7 of 7 (C 0.5726209E-02 %, Fortran
+  0.1787088E-01 %, tol 1e-6 %) at every layout. PAPI build 11.30 s vs base 11.34 s at 64×2.
+* Plan (`analysis/plan_bytes.py`, floor at 266.5 GB/s): five byte changes −29 % (floor 10.5 → 7.4 s);
+  new sixth lever: streaming stores, bound −23 % alone, −41 % on top. Time-only items pay off only
+  after the bytes shrink.
+
 ## M1/M2 results in short (details in the report)
 
 * Memory-bound everywhere: AI 0.21 flop/B (write-allocate) against a 5 flop/B ridge.
@@ -116,6 +138,6 @@ NOTHP=../bin/nothp REPS=1 ./baseline.sh matrix.laptop`.
   STREAM triad 263–267 GB/s per node (pinned / best), 67 GB/s per NUMA domain.
 * Transparent huge pages (512 MB on 64 KB base pages) unbalance 1×128 runs: 23 s vs 13.5 s
   with THP off; 4 or more ranks avoid the problem (first touch per domain).
-* jort sweep: 64×2 fastest, C 11.23 s / Fortran 9.31 s; C 17–20 % slower than Fortran at
-  equal bytes (advection sweeps not vectorised, `sqrt` kernels scalar).
+* jort sweep: 64×2 fastest, C 11.23 s / Fortran 9.31 s. (M1 attributed the C penalty to
+  vectorisation "at equal bytes"; the M3 counters show it is bytes, see above.)
 * Analytic model within 1–5 % of the measured DRAM traffic (2.80 TB vs 2.83–2.94 TB).

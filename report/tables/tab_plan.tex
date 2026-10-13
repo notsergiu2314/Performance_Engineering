@@ -3,15 +3,16 @@
 change & B/cell & DRAM & cumulative & floor \\
  & (WA) & bytes & bytes & (s) \\
 \midrule
-advec\_mom: direction-only helper loops once per sweep & 1906 & $-12.8\%$ & $-12.8\%$ & 6.87 \\
-advec\_cell: keep 4 temporaries in registers & 2058 & $-5.9\%$ & $-18.7\%$ & 7.42 \\
-drop dead stores post\_vol / pre\_vol & 2090 & $-4.4\%$ & $-21.6\%$ & 7.54 \\
-Reset/Revert copies by pointer swap & 2042 & $-6.6\%$ & $-28.2\%$ & 7.37 \\
-calc\_dt: fuse the min reduction & 2162 & $-1.1\%$ & $-29.3\%$ & 7.80 \\
-all byte changes together & 1546 & $-29.3\%$ & $-29.3\%$ & 5.58 \\
-nowait between independent worksharing loops & \multicolumn{4}{l}{time only: 12.5 \% of cycles in gomp barrier (perf, 1x128)} \\
--fno-math-errno for the sqrt kernels & \multicolumn{4}{l}{time only: calc\_dt, ideal\_gas, viscosity run scalar (0 \% NEON)} \\
-omp simd / restructured upwind indexing in advection flux sweeps & \multicolumn{4}{l}{time only: C 20-28 \% slower than Fortran at equal bytes} \\
-tile-level parallelism (jort patch 06) & \multicolumn{4}{l}{time only: fork/join per tile per kernel} \\
+advec\_mom: direction-only helper loops once per sweep & 1906 & $-12.8\%$ & $-12.8\%$ & 9.17 \\
+advec\_cell: keep 4 temporaries in registers & 2058 & $-5.9\%$ & $-18.7\%$ & 9.90 \\
+drop dead stores post\_vol / pre\_vol & 2090 & $-4.4\%$ & $-21.6\%$ & 10.06 \\
+Reset/Revert copies by pointer swap & 2042 & $-6.6\%$ & $-28.2\%$ & 9.83 \\
+calc\_dt: fuse the min reduction & 2162 & $-1.1\%$ & $-29.3\%$ & 10.41 \\
+all byte changes together & 1546 & $-29.3\%$ & $-29.3\%$ & 7.44 \\
+streaming stores (no read-for-ownership), upper bound & 1688 & $-22.8\%$ & $-41.4\%$ & 8.13 \\
+nowait between independent worksharing loops & \multicolumn{4}{p{5.6cm}}{time only: 12.5 \% of cycles in gomp barrier (perf, 1x128)} \\
+-fno-math-errno for the sqrt kernels & \multicolumn{4}{p{5.6cm}}{time only: calc\_dt, ideal\_gas, viscosity run scalar (0 \% NEON)} \\
+omp simd / restructured upwind indexing in advection flux sweeps & \multicolumn{4}{p{5.6cm}}{time only: only after the byte reductions: at 64x2 both C and Fortran run at 94-95 \% of the hardware ceiling} \\
+tile-level parallelism (jort patch 06) & \multicolumn{4}{p{5.6cm}}{time only: fork/join per tile per kernel} \\
 \bottomrule
 \end{tabular}

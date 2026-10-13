@@ -143,19 +143,21 @@ belong to the same run.
 \begin{itemize}
   \item \emph{Correctness of the code under instrumentation:} all runs, with and without PAPI, pass the quality check.
   \item \emph{Overhead:} the PAPI build needs 521--523\,s on one core against 528\,s for the plain build, i.e.\ no
-        measurable overhead; at 128 threads the difference is inside the run-to-run noise.
+        measurable overhead; at 128 threads the difference is inside the run-to-run noise (M3, 64$\times$2: 11.30\,s
+        instrumented against 11.34\,s plain, job 34798).
   \item \emph{Timers vs.\ PAPI:} the per-kernel PAPI times add up to 523\,s on one core (wall clock of that run:
         522\,s), and the kernel shares agree with the internal profiler within one percentage point
         (e.g.\ \kernel{advec\_mom} 28.5\% vs.\ 28.1\%).
   \item \emph{Counters vs.\ counters:} \texttt{MEM\_ACCESS} equals \texttt{PAPI\_L1\_DCA}, and
         loads$+$stores equal L1D accesses, in every kernel. The cycle counter gives 2.59\,GHz on one core.
-  \item \emph{Memory counters vs.\ a known byte count:} STREAM moves a known number of bytes. Its DDR-controller
-        total (7.43\,G counts) matches the expected traffic with write-allocate if one count is 32\,B
-        (238\,GB vs.\ 234\,GB, 2\% difference; 224\,GB for the timed loops alone plus initialisation and
-        result check); we use this unit throughout. The M1 analysis of the other branch had argued the
-        opposite (a write-allocate read on top of the 267\GBs{} triad would exceed the 341\GBs{} bus of
-        DDR4-2666); the job \texttt{m3\_stream\_ddrc} repeats the calibration on a best-case, THP-off run and
-        records the DIMM speed to close the point (Section~\ref{sec:bw}).
+  \item \emph{Memory counters vs.\ a known byte count:} STREAM moves a known number of bytes. The job
+        \texttt{m3\_stream\_ddrc} (10 THP-off and 10 default repetitions of STREAM at 128 threads, plus three
+        runs of our own triad kernel, each under the DDR-controller counters) finds 1.04$\times$ the bytes STREAM
+        counts itself (24\,B per triad element) at 32\,B per count, and 0.74$\times$ the write-allocate model, in
+        every repetition and for both codes. One count is 32\,B, and a pure streaming store does \emph{not} read the
+        line first on this CPU (Section~\ref{sec:bw}). This supersedes the M1 calibration of the other branch,
+        which had read write-allocate into a single THP-default run; the M1 argument of this branch (a
+        write-allocate read on top of the 267\GBs{} triad would exceed the 341\GBs{} bus) was right.
   \item \emph{Correctness gate for the optimisations:} the long deck \texttt{clover\_bm.in} (960$^2$ cells,
         2955 steps, test problem 3, the shock crosses every chunk boundary) does \emph{not} pass CloverLeaf's
         0.001\% threshold on this system even with the unmodified code: the reported deviation is the same at
@@ -257,21 +259,27 @@ than the 4$\times$32 hybrid configuration (13.0\,s, speed-up 41, spread $<$3\%) 
 The scaling study above stops at four ranks. The layout sweep of the other branch (Table~\ref{tab:m3base},
 Figure~\ref{fig:m3layouts}) continues it to 8, 16, 32, 64 and 128 ranks on the same node and deck: every
 layout with eight or more ranks lands within 4\% of each other, the spread drops below 1\%, and 64$\times$2
-is the fastest for the C kernels (11.3\,s median, against 13.0\,s for 4$\times$32 and 13.5\,s for
-1$\times$128 with THP off). The reason is the one of Section~\ref{sec:thp}: with many ranks every rank
-first-touches only its own quarter-domain of data, so the DRAM traffic is balanced without any
-change to the system, and the halo exchange of a 3840$^2$ mesh is cheap (2\% of the step at 64$\times$2).
-We therefore take \textbf{64$\times$2 with the C kernels} as the baseline for every optimisation, and report
-1$\times$128, 4$\times$32, 32$\times$4 and 128$\times$1, each with THP on and off, next to it. The Fortran
-kernels run the same layouts for reference: they are 17--20\% faster than C at every stable layout, and the
-gap sits in the advection kernels and the \texttt{sqrt} kernels (Section~\ref{sec:roof}).
+is the fastest for the C kernels. The M3 baseline job (34797, five repetitions per case, every repetition under
+the DDR-controller counters) confirms it: 64$\times$2 runs in 11.25\,s (median, spread 0.7\%), 32$\times$4
+in 11.40\,s, 128$\times$1 in 11.7\,s, 4$\times$32 in 12.8--13.0\,s and 1$\times$128 in 13.3\,s with THP off
+(26.9\,s with THP on, spread 67\%). The counters show the mechanism of Section~\ref{sec:thp} directly: the
+busiest controller group carries 1.66$\times$ the mean in the 1$\times$128 default run and 1.00$\times$ in every
+other case, THP on or off, because with four or more ranks every rank first-touches only its own part of the
+mesh. Switching THP off therefore changes nothing for the multi-rank layouts (within 1\%) and the baseline
+needs no change to the system; the halo exchange of a 3840$^2$ mesh costs 2\% of the step at 64$\times$2.
+We take \textbf{64$\times$2 with the C kernels, THP as installed} as the baseline for every optimisation, and
+report 1$\times$128, 4$\times$32, 32$\times$4 and 128$\times$1, each with THP on and off, next to it. The
+Fortran kernels run the same layouts for reference and are 17--20\% faster than C at every stable layout. The
+counters explain the whole gap: the Fortran build moves 2.36\,TB against 2.83\,TB for the C build at
+64$\times$2 ($-17\%$), and both run at 250--252\GBs{}, i.e.\ 94--95\% of the hardware ceiling of
+Section~\ref{sec:bw}. The gap is a byte gap, not an instruction gap (Section~\ref{sec:model}).
 
 \begin{table}[t]
   \centering\small
   \input{tables/tab_m3_baseline.tex}
-  \caption{M3 baseline layouts, bm3840, median of 5 (min--max), with the DRAM bytes of the DDR-controller
-    counters and the resulting hardware bandwidth where measured. Rows marked with job 34733 are the M1
-    sweep (THP on, no counters) and are replaced by the \texttt{m3\_baseline} job.}
+  \caption{M3 baseline layouts, bm3840, job 34797: median of 5 (min--max), the DRAM bytes of the DDR-controller
+    counters (median over the repetitions), the resulting hardware bandwidth and its share of the 266.5\GBs{}
+    hardware STREAM ceiling, and the load of the busiest controller group relative to the mean.}
   \label{tab:m3base}
 \end{table}
 
@@ -338,20 +346,26 @@ One core sustains 15\GBs{}; one NUMA domain saturates at 67\GBs{} with 32 thread
 with the number of domains (2 domains: 134\GBs{}). The best full-node result, 267\GBs{}, is four times
 the single-domain value and 78\% of the theoretical 341\GBs{}. With 96 or 128 threads, however, the typical
 result is only 110--135\GBs{}, while the best runs reach 151 and 267\GBs{}: the same sensitivity to
-placement and scheduling as in CloverLeaf. We take \textbf{267\GBs{}} as the memory ceiling and 67\GBs{} per NUMA domain as the unit
-for balanced placements.
+placement and scheduling as in CloverLeaf. The M3 calibration run (THP off, 10 repetitions) reproduces the
+best value in every repetition (265.6--266.5\GBs{}). We take \textbf{266.5\GBs{}} as the memory ceiling and
+67\GBs{} per NUMA domain as the unit for balanced placements.
 
 \paragraph{Hardware bytes.}
 \label{sec:bw}
-STREAM counts 24\,B per element for triad (two reads, one write); with write-allocate the hardware moves 32\,B,
-so the \emph{hardware} ceiling is $4/3$ of the counted one, 356\GBs{} if the counters confirm write-allocate on
-a best-case run. That number exceeds the 341\GBs{} theoretical bus of DDR4-2666, which is why the M1 analysis
-of the other branch rejected write-allocate on this CPU. The job \texttt{m3\_stream\_ddrc} runs STREAM with THP
-off under the DDR-controller counters and records the DIMM speed; its result goes into
-\texttt{data/ceilings.csv} (\texttt{dram\_node\_hw}, \texttt{wa\_ratio}, \texttt{dimm\_mts\_min}). From M3 on,
-\emph{all} bandwidth figures are hardware bytes (DDR-controller counts $\times$ 32\,B) over wall clock, against
-that hardware ceiling, so that the utilisation of the application and of STREAM are measured the same way.
-\todo{fill in once m3\_stream\_ddrc has run: write-allocate ratio, hardware ceiling, DIMM speed.}
+STREAM counts 24\,B per element for triad (two reads, one write); if the hardware read every line before
+overwriting it (write-allocate) it would move 32\,B, and the \emph{hardware} ceiling would be $4/3$ of the
+counted one, 356\GBs{}, more than the 341\GBs{} theoretical bus of DDR4-2666. The job \texttt{m3\_stream\_ddrc}
+(34795) settles this: with the whole STREAM process modelled (initialisation, 20 timed iterations, validation)
+the DDR controllers count $1.04\times$ the no-write-allocate bytes and $0.74\times$ the write-allocate bytes,
+in all 10 THP-off and 10 default repetitions and in the three runs of our own triad kernel ($1.02\times$). A
+streaming store on this CPU does not read the line first, so the hardware triad ceiling \emph{is} the counted one,
+\textbf{266.5\GBs{}} (\texttt{dram\_node\_hw}), 78\% of the bus. The DIMM speed itself is not readable without
+root (DMI and \texttt{dmidecode} refused; EDAC lists 16 registered DDR4 modules of 8\,GB without their clock),
+but 266.5\GBs{} over 16 channels requires at least 2082\,MT/s, so DDR4-2666 is consistent and nothing faster
+is needed to explain the measurement. From M3 on, \emph{all} bandwidth figures are hardware bytes
+(DDR-controller counts $\times$ 32\,B) over wall clock, against this ceiling, so that the utilisation of the
+application and of STREAM are measured the same way. The application, unlike STREAM, \emph{does} pay for its
+stores: see the validation paragraph of Section~\ref{sec:model}.
 
 \begin{figure}[t]
   \centering
@@ -389,7 +403,17 @@ i.e.\ an intensity of 0.21\,flop/B.
 The model predicts 2.80\,TB of DRAM traffic for bm3840. The DDR-controller counters measure 2.83\,TB
 (1$\times$128, THP off), 2.87\,TB (4$\times$32) and 2.94\,TB (1$\times$128 default): 1\%, 2\% and 5\%
 above the model. The measured read:write ratio of 2.6--2.9 matches the model as well.
-The write-allocate version of the model is the right one; this CPU does read lines before overwriting them.
+The M3 baseline confirms it at 64$\times$2 (job 34797): 2.83\,TB, 1\% above the model, in all five repetitions
+and with THP on or off. The read/write split tells more. The counters see 2.05\,TB of reads and 0.77\,TB of
+writes; the model has 1.53\,TB of demand reads, 0.64\,TB of writes and, with write-allocate, 2.17\,TB of reads.
+The measured reads are $1.34\times$ the demand reads: the C build's stores \emph{do} cause a read of the line
+first, for about 70\% of the written volume, although a pure streaming store does not on this CPU
+(Section~\ref{sec:bw}). The write-allocate version of the model is therefore the right one for the C kernels as
+they stand. The Fortran build moves 1.76\,TB of reads and 0.60\,TB of writes (2.36\,TB): the same writes within
+6\%, but only $1.15\times$ the demand reads, i.e.\ about 40\% of its written volume comes back as reads. The
+compiler-generated Fortran loops avoid most of the read-for-ownership traffic that the C loops pay, and this
+0.47\,TB is the whole C/Fortran gap at equal bandwidth (Section~\ref{sec:m3base}). Which loops differ is the
+first question of M3.
 For the pure-copy kernels \kernel{revert} and \kernel{reset\_field} the bus-access counter agrees with the
 write-allocate model within 4\% and 35\%. We note that the core-level bus counter overestimates DRAM traffic by
 about 1.8$\times$ for stencil kernels because it also counts L3 hits.
@@ -420,16 +444,16 @@ The conclusions are:
   \item \textbf{Whole application:} the default 1$\times$128 run attains 25\GFs{} (46\% of the 55\GFs{}
         attainable at this intensity), the run with THP disabled 43\GFs{} (\textbf{78\%}), and the 4$\times$32
         run 44\GFs{} (80\%).
-  \item \textbf{Floor:} at the measured byte count and the best STREAM bandwidth the 87 steps cannot
-        take less than \textbf{10.5\,s}; the best measured time at four ranks is 13.0\,s, and 11.3\,s at
-        64$\times$2 (Section~\ref{sec:m3base}). The remaining headroom at the current traffic is thus
-        1.1--1.2$\times$; larger gains need fewer bytes. With the hardware ceiling of Section~\ref{sec:bw}
-        the floor moves to $2.83\,\mathrm{TB}/b_\mathrm{hw}$ (7.9\,s at 356\GBs{}); the per-section roofline
-        of the other branch, which divides \emph{modelled} bytes without write-allocate by the
-        \emph{counted} STREAM triad, puts the Fortran advection kernels at 99\% of that roof and the C ones
-        at 72--80\%, consistent with the counter view here. Note that the Fortran build runs the same deck
-        in 9.3\,s at 64$\times$2, below the 10.5\,s floor derived from the C build's traffic, so the Fortran
-        build must move fewer hardware bytes; the M3 baseline job measures both.
+  \item \textbf{Floor:} at the measured 2.83\,TB and the hardware ceiling of 266.5\GBs{} the 87 steps cannot
+        take less than \textbf{10.6\,s} (10.5\,s for the model's 2.80\,TB). The 64$\times$2 baseline runs in
+        11.25\,s, at \textbf{94\%} of that floor (250\GBs{} sustained over the whole run, start-up included);
+        32$\times$4 and 128$\times$1 reach 92--95\%, 4$\times$32 84\% and 1$\times$128 with THP off 80\%
+        (Table~\ref{tab:m3base}). The per-section roofline of the other branch, rerun in hardware-byte mode
+        (\texttt{perf/roofline/roofline.py --hw}, archived with job 34797), puts both advection categories,
+        PdV, Ideal Gas and Fluxes of the C build at 94--102\% of the roof, Acceleration at 83\% and the
+        \texttt{sqrt} kernels (Timestep, Viscosity) at 63--66\%. There is no headroom at the current traffic:
+        every gain needs fewer bytes. The Fortran build runs the same deck in 9.33\,s because it moves 2.36\,TB
+        (its floor is 8.8\,s; it also sits at 95\%).
 \end{itemize}
 
 % =============================================================================
@@ -445,14 +469,22 @@ verified with the DDR-controller counters. Both branches had arrived at the same
 Fortran patch series of the other branch (unmeasured) was dropped and its two extra ideas folded in:
 Reset and Revert as pointer swaps of the field pairs ($-6.6\%$, missing from the M1 plan), and tile-level
 parallelism as a candidate against the barrier overhead. Together the byte changes remove 29\% of the
-hardware traffic, which at the hardware ceiling is worth about 2.3\,s of the 11.3\,s baseline; the
-instruction-side items are worth up to the 17--20\% gap to Fortran at equal bytes.
+modelled traffic, which at the 266.5\GBs{} hardware ceiling lowers the floor from 10.5 to 7.4\,s, i.e.\ about
+3\,s of the 11.25\,s baseline if the kernels stay at 94\% of the roof. The M3 counters add a sixth lever that
+neither branch had: the C stores pay a read-for-ownership that a streaming store on this CPU does not, and that
+the Fortran build largely avoids (Section~\ref{sec:model}); turning the kernels' full-line stores into
+streaming stores (non-temporal stores, or store sequences the core recognises as streaming) is bounded by
+the no-write-allocate model at $-23\%$ on its own and $-41\%$ on top of the five byte changes (last byte row of
+Table~\ref{tab:plan}). The instruction-side items cannot pay off at 64$\times$2 while the DRAM is 94\% busy;
+they become relevant once the bytes have shrunk, and the C/Fortran comparison no longer motivates them.
 
 \begin{table}[t]
   \centering\small
   \input{tables/tab_plan.tex}
   \caption{Planned optimisations of the C kernels and their predicted effect on DRAM traffic (write-allocate
-    model, bm3840, 87 steps; floor at the hardware STREAM ceiling). Cumulative = all byte changes up to that row.}
+    model, bm3840, 87 steps; floor at the 266.5\GBs{} hardware STREAM ceiling; measured baseline 2.83\,TB,
+    11.25\,s). Cumulative = all byte changes up to that row; for the streaming-store bound, cumulative = on top
+    of all five.}
   \label{tab:plan}
 \end{table}
 
@@ -469,12 +501,16 @@ instruction-side items are worth up to the 17--20\% gap to Fortran at equal byte
         used to predict the effect of optimisations.
   \item The largest single inefficiency of the baseline was not in the kernels but in memory placement:
         transparent huge pages unbalance the NUMA domains and cost a factor 1.7 in pure-OpenMP runs.
-  \item At the current traffic the code is within 1.2$\times$ of the memory-bound floor; further speed-up
-        has to come from moving fewer bytes and from fewer barriers.
-  \item The M3 baseline is the C kernels at 64 ranks $\times$ 2 threads (11.3\,s, spread 1\%), compared with
-        1$\times$128, 4$\times$32, 32$\times$4 and 128$\times$1 with THP on and off; all bandwidths are
-        hardware bytes from the DDR-controller counters; the correctness gate is the reproduction of the
-        \texttt{clover\_bm.in} baseline deviation.
+  \item At 64$\times$2 the C build sustains 250\GBs{}, 94\% of the 266.5\GBs{} hardware ceiling, over the
+        whole run; there is no headroom at the current traffic and every further speed-up has to come from
+        moving fewer bytes.
+  \item The hardware ceiling is the counted STREAM triad: a streaming store does not read the line first on
+        this CPU. The C kernels' stores nevertheless do (reads $1.34\times$ the demand reads), and the Fortran
+        build avoids most of that: its 17\% fewer hardware bytes are the whole 20\% C/Fortran gap.
+  \item The M3 baseline is the C kernels at 64 ranks $\times$ 2 threads (11.25\,s, spread 0.7\%, THP as
+        installed), compared with 1$\times$128, 4$\times$32, 32$\times$4 and 128$\times$1 with THP on and off
+        (job 34797); all bandwidths are hardware bytes from the DDR-controller counters; the correctness gate,
+        reproduction of the \texttt{clover\_bm.in} baseline deviation, held 7 of 7 at every layout (job 34796).
 \end{itemize}
 
 \bibliographystyle{plain}

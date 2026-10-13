@@ -325,11 +325,11 @@ def tab_plan():
              r"change & B/cell & DRAM & cumulative & floor \\",
              r" & (WA) & bytes & bytes & (s) \\", r"\midrule"]
     for r in rows("plan.csv"):
-        if r["kind"] == "bytes":
+        if r["kind"].startswith("bytes"):
             lines.append(f"{esc(r['change'])} & {r['bytes_per_cell_wa']} & ${float(r['delta_pct']):+.1f}\\%$ & "
                          f"${float(r['cumulative_delta_pct']):+.1f}\\%$ & {r['floor_s'] or '--'} \\\\")
         else:
-            lines.append(f"{esc(r['change'])} & \\multicolumn{{4}}{{l}}{{time only: {esc(r['rationale'])}}} \\\\")
+            lines.append(f"{esc(r['change'])} & \\multicolumn{{4}}{{p{{5.6cm}}}}{{time only: {esc(r['rationale'])}}} \\\\")
     lines += [r"\bottomrule", r"\end{tabular}"]
     tex("tab_plan.tex", "\n".join(lines) + "\n")
 
@@ -339,9 +339,9 @@ def m3_rows():
 
 
 def tab_m3_baseline():
-    lines = [r"\begin{tabular}{llllrrrrl}", r"\toprule",
-             r"kernels & layout & THP & wall (s) & DRAM & bandwidth & busiest/ & vs.\ hw & source \\",
-             r" & & & median (min--max) & (TB) & (GB/s) & mean & roof (\%) & \\", r"\midrule"]
+    lines = [r"\begin{tabular}{llllrrrr}", r"\toprule",
+             r"kernels & layout & THP & wall (s) & DRAM & bandwidth & busiest/ & vs.\ hw \\",
+             r" & & & median (min--max) & (TB) & (GB/s) & mean & roof (\%) \\", r"\midrule"]
     hw = C.get("dram_node_hw")
     for r in m3_rows():
         med = float(r["median_s"])
@@ -349,8 +349,8 @@ def tab_m3_baseline():
         bw = f"{float(r['hw_GBs']):.0f}" if r["hw_GBs"] else "--"
         bus = f"{float(r['busiest_over_mean']):.2f}" if r["busiest_over_mean"] else "--"
         roof = f"{100 * float(r['hw_GBs']) / hw:.0f}" if (r["hw_GBs"] and hw) else "--"
-        lines.append(f"{r['kernels']} & {r['layout']} & {r['thp']} & {med:.1f} ({float(r['min_s']):.1f}--{float(r['max_s']):.1f}) & "
-                     f"{dram} & {bw} & {bus} & {roof} & {esc(r['source'])} \\\\")
+        lines.append(f"{r['kernels']} & {r['layout']} & {r['thp']} & {med:.2f} ({float(r['min_s']):.2f}--{float(r['max_s']):.2f}) & "
+                     f"{dram} & {bw} & {bus} & {roof} \\\\")
     lines += [r"\bottomrule", r"\end{tabular}"]
     tex("tab_m3_baseline.tex", "\n".join(lines) + "\n")
 
@@ -374,18 +374,18 @@ def fig_m3_layouts():
         lo = [float(r["median_s"]) - float(r["min_s"]) for r in sel.values()]
         hi = [float(r["max_s"]) - float(r["median_s"]) for r in sel.values()]
         ax.bar(x, y, width, color=col, label=lab, yerr=[lo, hi], capsize=2, error_kw=dict(lw=0.8, ecolor=INK2))
-        for xi, yi in zip(x, y):
-            ax.text(xi, yi + 0.4, f"{yi:.1f}", ha="center", va="bottom", fontsize=6, color=INK)
+        for xi, yi, h in zip(x, y, hi):
+            ax.text(xi, yi + h + 0.5, f"{yi:.1f}", ha="center", va="bottom", fontsize=5.5, color=INK, rotation=90)
     hw = C.get("dram_node_hw")
     floor = APP_BYTES_MODEL / ((hw or BW_NODE * 4 / 3) * 1e9)
-    ax.axhline(floor, color=INK2, lw=1, ls="--")
-    ax.text(-0.55, floor + 0.4, f"memory floor {floor:.1f} s", ha="left", fontsize=7, color=INK2)
+    ax.axhline(floor, color=INK2, lw=1, ls="--", label=f"C memory floor {floor:.1f} s")
+    ax.set_ylim(0, 1.3 * max(float(r["max_s"]) for r in data))
     ax.set_xticks(xs)
     ax.set_xticklabels(layouts)
     ax.set_xlabel("MPI ranks x OpenMP threads")
     ax.set_ylabel("wall clock, 87 steps (s)")
     ax.grid(True, axis="y", color=GRID, lw=0.6)
-    ax.legend(fontsize=7, loc="upper right")
+    ax.legend(fontsize=6.5, loc="upper right")
     save(fig, "fig_m3_layouts")
 
 

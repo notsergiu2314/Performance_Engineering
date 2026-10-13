@@ -4,6 +4,11 @@
 Each planned change is expressed as an edit of the loop table in kernel_model.py
 (the same model that the DDR-controller counters confirmed to 1-5 % for bm3840),
 so every prediction uses one byte convention: hardware bytes with write-allocate.
+(m3_stream_ddrc, job 34795: a pure streaming store does NOT read the line first on this
+CPU, STREAM's hardware bytes are its counted bytes; the CloverLeaf stores do pay the
+read-for-ownership, m3_baseline job 34797 measured 2.83 TB = 1.01 x the WA model, reads
+1.34 x the demand reads. The no-WA model is therefore the upper bound of what streaming
+stores could save, reported as its own row.)
 
   python3 plan_bytes.py [--cells 14745600] [--steps 87] [--bw <GB/s>] [--csv report/data/plan.csv]
 
@@ -109,7 +114,8 @@ CHANGES = [
 TIME_ONLY = [
     ("nowait between independent worksharing loops", "12.5 % of cycles in gomp barrier (perf, 1x128)"),
     ("-fno-math-errno for the sqrt kernels", "calc_dt, ideal_gas, viscosity run scalar (0 % NEON)"),
-    ("omp simd / restructured upwind indexing in advection flux sweeps", "C 20-28 % slower than Fortran at equal bytes"),
+    ("omp simd / restructured upwind indexing in advection flux sweeps",
+     "only after the byte reductions: at 64x2 both C and Fortran run at 94-95 % of the hardware ceiling"),
     ("tile-level parallelism (jort patch 06)", "fork/join per tile per kernel"),
 ]
 
@@ -168,6 +174,20 @@ def main():
                      delta_pct=f"{100 * (bc - b0) / b0:.1f}", pred_TB=f"{bc * n / 1e12:.3f}",
                      floor_s=f"{floor:.2f}" if bw else "", cumulative_bytes_per_cell_wa=f"{bc:.0f}",
                      cumulative_delta_pct=f"{100 * (bc - b0) / b0:.1f}", rationale="sum of the rows above"))
+    # streaming stores: the no-write-allocate model is the bound (m3_stream_ddrc showed that STREAM's
+    # stores move no read-for-ownership bytes on this CPU; CloverLeaf's stores currently do)
+    bs = step_bytes(base, 0)
+    bsc = step_bytes(cumulative, 0)
+    fs = bs * n / bw / 1e9 if bw else float("nan")
+    print(f"{'streaming stores (no read-for-ownership), upper bound':62s} {bs:7.0f} {100 * (bs - b0) / b0:+6.1f}% {bs * n / 1e12:6.2f} {fs:8.2f}")
+    print(f"{'  ... on top of all byte changes':62s} {bsc:7.0f} {100 * (bsc - b0) / b0:+6.1f}% {bsc * n / 1e12:6.2f} "
+          f"{(bsc * n / bw / 1e9 if bw else float('nan')):8.2f}")
+    rows.append(dict(change="streaming stores (no read-for-ownership), upper bound", kind="bytes (bound)",
+                     bytes_per_cell_wa=f"{bs:.0f}", delta_pct=f"{100 * (bs - b0) / b0:.1f}", pred_TB=f"{bs * n / 1e12:.3f}",
+                     floor_s=f"{fs:.2f}" if bw else "", cumulative_bytes_per_cell_wa=f"{bsc:.0f}",
+                     cumulative_delta_pct=f"{100 * (bsc - b0) / b0:.1f}",
+                     rationale="STREAM's streaming stores move no read-for-ownership bytes on this CPU (m3_stream_ddrc); "
+                               "CloverLeaf's stores do (m3_baseline reads = 1.34 x demand). Bound = no-WA model; cumulative = with all rows above"))
     print("\ntime-only changes (no byte effect in the model):")
     for label, why in TIME_ONLY:
         print(f"  {label}: {why}")
@@ -176,7 +196,8 @@ def main():
     if a.csv:
         with open(a.csv, "w", newline="") as f:
             f.write(f"# Predicted DRAM traffic of the planned C-kernel changes, write-allocate byte model "
-                    f"(perf/analysis/plan_bytes.py), {a.cells} cells x {a.steps} steps, floor at {bw or 0:.0f} GB/s ({bw_src}).\n")
+                    f"(perf/analysis/plan_bytes.py), {a.cells} cells x {a.steps} steps, floor at {bw or 0:.0f} GB/s ({bw_src}). "
+                    f"Measured baseline (job 34797, 64x2): 2.828 TB, 11.25 s.\n")
             w = csv.DictWriter(f, fieldnames=list(rows[0]))
             w.writeheader()
             w.writerows(rows)

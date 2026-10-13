@@ -13,7 +13,7 @@ M3 (optimisations) is a placeholder in section 7.
 ## Rebuild the figures and tables
 ```
 cd report
-python make_assets.py        # needs matplotlib + numpy
+python3 make_assets.py       # needs matplotlib + numpy (on this laptop: /usr/bin/python3)
 ```
 Nothing in `figures/` or `tables/` is edited by hand: change a CSV (or the model) and re-run.
 
@@ -25,10 +25,11 @@ compiler pdfLaTeX, then bibliography with BibTeX (Overleaf does this automatical
 
 | File | Content | Produced by |
 |---|---|---|
-| `data/m3_baseline.csv` | 5 layouts x THP on/off, C and Fortran, median/min/max, DRAM TB, hardware GB/s | `perf/jobs/m3_baseline.sbatch` -> `summary.md` (placeholder rows from job 34733 until then) |
-| `data/correctness.csv` | `clover_bm.in` baseline deviation per kernel set and layout | `perf/jobs/m3_correctness.sbatch` (job 34729 until then) |
-| `data/plan.csv` | predicted bytes of every planned C change | `python3 -I CloverLeaf_ref/perf/analysis/plan_bytes.py --csv report/data/plan.csv` |
-| `data/ceilings.csv` rows `dram_node_hw`, `wa_ratio`, `dimm_mts_min` | hardware STREAM ceiling, write-allocate check | `perf/jobs/m3_stream_ddrc.sbatch` -> `ceilings_rows.csv` (paste) |
+| `data/m3_baseline.csv` | 5 layouts x THP on/off, C and Fortran, median/min/max, DRAM TB, hardware GB/s | job 34797 (`perf/jobs/m3_baseline.sbatch`, 2026-10-13), aggregated from `results.csv` |
+| `data/correctness.csv` | `clover_bm.in` baseline deviation per kernel set and layout | jobs 34729 and 34796 (`perf/jobs/m3_correctness.sbatch`, 7 of 7 ok) |
+| `data/plan.csv` | predicted bytes of every planned C change (+ streaming-store bound) | `python3 -I CloverLeaf_ref/perf/analysis/plan_bytes.py --csv report/data/plan.csv` |
+| `data/ceilings.csv` rows `dram_node_counted_best`, `dram_node_hw`, `wa_ratio`, `dimm_mts_min` | hardware STREAM ceiling 266.5 GB/s, write-allocate check | job 34795 (`perf/jobs/m3_stream_ddrc.sbatch`) -> `ceilings_rows.csv` |
+| `data/kernels_papi.csv` columns `*_64x2`, `*_1x128off` | per-kernel time, IPC, back-end stall at the M3 layouts | job 34798 (`perf/jobs/m3_papi.sbatch`) |
 
 `benchmark_comparison_jort_vs_sergiu.md` is the comparison of the two M1/M2 branches that fixed
 the M3 conventions (64x2 baseline, hardware bytes, correctness gate).

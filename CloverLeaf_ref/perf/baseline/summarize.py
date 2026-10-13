@@ -74,7 +74,7 @@ if have_dram:
     hdr += ["dram_TB", "hw_GB/s", "busiest/mean"] + (["%hw_roof"] if hw_roof else [])
 table(hdr, lines)
 if have_dram:
-    print("dram_TB: DDR-controller bytes (32 B/count, includes write-allocate), median over reps; "
+    print("dram_TB: DDR-controller bytes (32 B/count, everything the controllers moved incl. read-for-ownership), median over reps; "
           "hw_GB/s = dram / median wall; busiest/mean = load of the busiest NUMA controller group (1.00 = balanced)"
           + (f"; %hw_roof vs {hw_roof:.0f} GB/s hardware STREAM" if hw_roof else "") + "\n")
 

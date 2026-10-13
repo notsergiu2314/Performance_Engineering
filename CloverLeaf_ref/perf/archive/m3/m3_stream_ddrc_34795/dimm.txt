@@ -1,0 +1,95 @@
+== dmidecode -t 17
+== sudo -n dmidecode
+== lshw -C memory
+== /sys/firmware/dmi
+/sys/firmware/dmi/entries:
+total 0
+drwxr-xr-x 2 root root 0 Sep 12 20:49 0-0
+drwxr-xr-x 2 root root 0 Oct 13 11:12 1-0
+drwxr-xr-x 2 root root 0 Oct 13 11:12 127-0
+drwxr-xr-x 2 root root 0 Oct 13 11:12 128-0
+drwxr-xr-x 2 root root 0 Oct 13 11:12 13-0
+drwxr-xr-x 2 root root 0 Oct 13 11:12 16-0
+== edac
+/sys/devices/system/edac/mc/mc0/dimm0: SOCKET 0 CHANNEL 0 DIMM 0 DIMM0 Registered-DDR4 8192 
+/sys/devices/system/edac/mc/mc0/dimm10: SOCKET 0 CHANNEL 5 DIMM 0 DIMM0 Registered-DDR4 8192 
+/sys/devices/system/edac/mc/mc0/dimm12: SOCKET 0 CHANNEL 6 DIMM 0 DIMM0 Registered-DDR4 8192 
+/sys/devices/system/edac/mc/mc0/dimm14: SOCKET 0 CHANNEL 7 DIMM 0 DIMM0 Registered-DDR4 8192 
+/sys/devices/system/edac/mc/mc0/dimm16: SOCKET 1 CHANNEL 0 DIMM 0 DIMM1 Registered-DDR4 8192 
+/sys/devices/system/edac/mc/mc0/dimm18: SOCKET 1 CHANNEL 1 DIMM 0 DIMM1 Registered-DDR4 8192 
+/sys/devices/system/edac/mc/mc0/dimm2: SOCKET 0 CHANNEL 1 DIMM 0 DIMM0 Registered-DDR4 8192 
+/sys/devices/system/edac/mc/mc0/dimm20: SOCKET 1 CHANNEL 2 DIMM 0 DIMM1 Registered-DDR4 8192 
+/sys/devices/system/edac/mc/mc0/dimm22: SOCKET 1 CHANNEL 3 DIMM 0 DIMM1 Registered-DDR4 8192 
+/sys/devices/system/edac/mc/mc0/dimm24: SOCKET 1 CHANNEL 4 DIMM 0 DIMM1 Registered-DDR4 8192 
+/sys/devices/system/edac/mc/mc0/dimm26: SOCKET 1 CHANNEL 5 DIMM 0 DIMM1 Registered-DDR4 8192 
+/sys/devices/system/edac/mc/mc0/dimm28: SOCKET 1 CHANNEL 6 DIMM 0 DIMM1 Registered-DDR4 8192 
+/sys/devices/system/edac/mc/mc0/dimm30: SOCKET 1 CHANNEL 7 DIMM 0 DIMM1 Registered-DDR4 8192 
+/sys/devices/system/edac/mc/mc0/dimm4: SOCKET 0 CHANNEL 2 DIMM 0 DIMM0 Registered-DDR4 8192 
+/sys/devices/system/edac/mc/mc0/dimm6: SOCKET 0 CHANNEL 3 DIMM 0 DIMM0 Registered-DDR4 8192 
+/sys/devices/system/edac/mc/mc0/dimm8: SOCKET 0 CHANNEL 4 DIMM 0 DIMM0 Registered-DDR4 8192 
+== ddrc PMU events
+  hisi_sccl1_ddrc0/act_cmd/                          [Kernel PMU event]
+  hisi_sccl1_ddrc0/flux_rcmd/                        [Kernel PMU event]
+  hisi_sccl1_ddrc0/flux_rd/                          [Kernel PMU event]
+  hisi_sccl1_ddrc0/flux_wcmd/                        [Kernel PMU event]
+  hisi_sccl1_ddrc0/flux_wr/                          [Kernel PMU event]
+  hisi_sccl1_ddrc0/pre_cmd/                          [Kernel PMU event]
+  hisi_sccl1_ddrc0/rnk_chg/                          [Kernel PMU event]
+  hisi_sccl1_ddrc0/rw_chg/                           [Kernel PMU event]
+  hisi_sccl1_ddrc1/act_cmd/                          [Kernel PMU event]
+  hisi_sccl1_ddrc1/flux_rcmd/                        [Kernel PMU event]
+  hisi_sccl1_ddrc1/flux_rd/                          [Kernel PMU event]
+  hisi_sccl1_ddrc1/flux_wcmd/                        [Kernel PMU event]
+  hisi_sccl1_ddrc1/flux_wr/                          [Kernel PMU event]
+  hisi_sccl1_ddrc1/pre_cmd/                          [Kernel PMU event]
+  hisi_sccl1_ddrc1/rnk_chg/                          [Kernel PMU event]
+  hisi_sccl1_ddrc1/rw_chg/                           [Kernel PMU event]
+  hisi_sccl1_ddrc2/act_cmd/                          [Kernel PMU event]
+  hisi_sccl1_ddrc2/flux_rcmd/                        [Kernel PMU event]
+  hisi_sccl1_ddrc2/flux_rd/                          [Kernel PMU event]
+  hisi_sccl1_ddrc2/flux_wcmd/                        [Kernel PMU event]
+  hisi_sccl1_ddrc2/flux_wr/                          [Kernel PMU event]
+  hisi_sccl1_ddrc2/pre_cmd/                          [Kernel PMU event]
+  hisi_sccl1_ddrc2/rnk_chg/                          [Kernel PMU event]
+  hisi_sccl1_ddrc2/rw_chg/                           [Kernel PMU event]
+  hisi_sccl1_ddrc3/act_cmd/                          [Kernel PMU event]
+  hisi_sccl1_ddrc3/flux_rcmd/                        [Kernel PMU event]
+  hisi_sccl1_ddrc3/flux_rd/                          [Kernel PMU event]
+  hisi_sccl1_ddrc3/flux_wcmd/                        [Kernel PMU event]
+  hisi_sccl1_ddrc3/flux_wr/                          [Kernel PMU event]
+  hisi_sccl1_ddrc3/pre_cmd/                          [Kernel PMU event]
+  hisi_sccl1_ddrc3/rnk_chg/                          [Kernel PMU event]
+  hisi_sccl1_ddrc3/rw_chg/                           [Kernel PMU event]
+  hisi_sccl3_ddrc0/act_cmd/                          [Kernel PMU event]
+  hisi_sccl3_ddrc0/flux_rcmd/                        [Kernel PMU event]
+  hisi_sccl3_ddrc0/flux_rd/                          [Kernel PMU event]
+  hisi_sccl3_ddrc0/flux_wcmd/                        [Kernel PMU event]
+  hisi_sccl3_ddrc0/flux_wr/                          [Kernel PMU event]
+  hisi_sccl3_ddrc0/pre_cmd/                          [Kernel PMU event]
+  hisi_sccl3_ddrc0/rnk_chg/                          [Kernel PMU event]
+  hisi_sccl3_ddrc0/rw_chg/                           [Kernel PMU event]
+  hisi_sccl3_ddrc1/act_cmd/                          [Kernel PMU event]
+  hisi_sccl3_ddrc1/flux_rcmd/                        [Kernel PMU event]
+  hisi_sccl3_ddrc1/flux_rd/                          [Kernel PMU event]
+  hisi_sccl3_ddrc1/flux_wcmd/                        [Kernel PMU event]
+  hisi_sccl3_ddrc1/flux_wr/                          [Kernel PMU event]
+  hisi_sccl3_ddrc1/pre_cmd/                          [Kernel PMU event]
+  hisi_sccl3_ddrc1/rnk_chg/                          [Kernel PMU event]
+  hisi_sccl3_ddrc1/rw_chg/                           [Kernel PMU event]
+  hisi_sccl3_ddrc2/act_cmd/                          [Kernel PMU event]
+  hisi_sccl3_ddrc2/flux_rcmd/                        [Kernel PMU event]
+  hisi_sccl3_ddrc2/flux_rd/                          [Kernel PMU event]
+  hisi_sccl3_ddrc2/flux_wcmd/                        [Kernel PMU event]
+  hisi_sccl3_ddrc2/flux_wr/                          [Kernel PMU event]
+  hisi_sccl3_ddrc2/pre_cmd/                          [Kernel PMU event]
+  hisi_sccl3_ddrc2/rnk_chg/                          [Kernel PMU event]
+  hisi_sccl3_ddrc2/rw_chg/                           [Kernel PMU event]
+  hisi_sccl3_ddrc3/act_cmd/                          [Kernel PMU event]
+  hisi_sccl3_ddrc3/flux_rcmd/                        [Kernel PMU event]
+  hisi_sccl3_ddrc3/flux_rd/                          [Kernel PMU event]
+  hisi_sccl3_ddrc3/flux_wcmd/                        [Kernel PMU event]
+== numactl -H
+node 0 size: 32376 MB
+node 1 size: 32715 MB
+node 2 size: 32668 MB
+node 3 size: 32698 MB

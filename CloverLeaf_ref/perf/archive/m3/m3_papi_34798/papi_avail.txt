@@ -1,0 +1,60 @@
+Available PAPI preset and user defined events plus hardware information.
+--------------------------------------------------------------------------------
+PAPI version             : 7.1.0.0
+Operating system         : Linux 4.18.0-553.158.1.el8_10.aarch64
+Vendor string and code   : ARM_HISILICON (72, 0x48)
+Model string and code    : Hisilicon Kunpeng (0, 0x0)
+CPU revision             : 0.000000
+CPUID                    : Family/Model/Stepping 8/3329/1, 0x08/0xd01/0x01
+CPU Max MHz              : 2600
+CPU Min MHz              : 200
+Total cores              : 128
+SMT threads per core     : 1
+Cores per socket         : 64
+Sockets                  : 2
+Cores per NUMA region    : 32
+NUMA regions             : 4
+Running in a VM          : no
+Number Hardware Counters : 13
+Max Multiplex Counters   : 384
+Fast counter read (rdpmc): no
+--------------------------------------------------------------------------------
+
+================================================================================
+  PAPI Preset Events
+================================================================================
+    Name        Code    Deriv Description (Note)
+PAPI_L1_DCM  0x80000000  No   Level 1 data cache misses
+PAPI_L1_ICM  0x80000001  No   Level 1 instruction cache misses
+PAPI_L2_DCM  0x80000002  No   Level 2 data cache misses
+PAPI_L2_ICM  0x80000003  No   Level 2 instruction cache misses
+PAPI_L3_DCM  0x80000004  No   Level 3 data cache misses
+PAPI_L3_LDM  0x8000000e  No   Level 3 load misses
+PAPI_L3_STM  0x8000000f  Yes  Level 3 store misses
+PAPI_L1_LDM  0x80000017  No   Level 1 load misses
+PAPI_L1_STM  0x80000018  No   Level 1 store misses
+PAPI_L2_LDM  0x80000019  No   Level 2 load misses
+PAPI_L2_STM  0x8000001a  No   Level 2 store misses
+PAPI_BR_MSP  0x8000002e  No   Conditional branch instructions mispredicted
+PAPI_BR_PRC  0x8000002f  No   Conditional branch instructions correctly predicted
+PAPI_TOT_IIS 0x80000031  No   Instructions issued
+PAPI_TOT_INS 0x80000032  No   Instructions completed
+PAPI_FP_INS  0x80000034  No   Floating point instructions
+PAPI_LD_INS  0x80000035  No   Load instructions
+PAPI_SR_INS  0x80000036  No   Store instructions
+PAPI_BR_INS  0x80000037  No   Branch instructions
+PAPI_VEC_INS 0x80000038  No   Vector/SIMD instructions (could include integer)
+PAPI_TOT_CYC 0x8000003b  No   Total cycles
+PAPI_L1_DCA  0x80000040  No   Level 1 data cache accesses
+PAPI_L2_DCA  0x80000041  No   Level 2 data cache accesses
+PAPI_L3_DCA  0x80000042  No   Level 3 data cache accesses
+PAPI_L1_DCR  0x80000043  No   Level 1 data cache reads
+PAPI_L2_DCR  0x80000044  No   Level 2 data cache reads
+PAPI_L3_DCR  0x80000045  No   Level 3 data cache reads
+PAPI_L2_DCW  0x80000047  No   Level 2 data cache writes
+PAPI_L3_DCW  0x80000048  Yes  Level 3 data cache writes
+PAPI_L1_ICA  0x8000004c  No   Level 1 instruction cache accesses
+PAPI_L2_ICA  0x8000004d  No   Level 2 instruction cache accesses
+--------------------------------------------------------------------------------
+Of 31 available events, 2 are derived.
+
