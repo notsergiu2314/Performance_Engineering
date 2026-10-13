@@ -1,0 +1,8 @@
+# Baseline kinetic-energy deviation of clover_bm.in (960^2, 2955 steps, test_problem 3) on HAICGU,
+# GCC 14.1.0 / OpenMPI 5.0.3, unmodified kernels. Values from job 34729 (cn15, 2026-10-11), identical
+# at 128x1 and 4x32 over 5 repetitions each (perf/archive/baseline/baseline-34729/results.csv).
+# CloverLeaf's own 0.001 % threshold flags both as FAILED; the M3 gate is reproduction of these digits
+# (perf/baseline/qa_check.py). Re-confirm with jobs/m3_correctness.sbatch and update the source column.
+deck,kernels,qa_pct,source
+clover_bm.in,c,0.5726209E-02,job 34729 (128x1 and 4x32)
+clover_bm.in,fortran,0.1787088E-01,job 34729 (128x1 and 4x32)
