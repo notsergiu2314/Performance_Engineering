@@ -8,11 +8,11 @@
 void mxv(double *restrict y,
          double *restrict a,
          double *restrict x,
-         int m, int n)
+         size_t m, size_t n)
 {
-    for (int i=0; i<m; i++) {
+    for (size_t i=0; i<m; i++) {
         y[i] = 0.0;
-        for (int j=0; j<n; j++) {
+        for (size_t j=0; j<n; j++) {
             y[i] += a[i*n+j] * x[j];
         }
     }
@@ -25,15 +25,15 @@ void mxv(double *restrict y,
 void mxv_par_static(double *restrict y,
          double *restrict a,
          double *restrict x,
-         int m, int n)
+         size_t m, size_t n)
 {
     #pragma omp parallel for default(none) shared(y,a,x,m,n) schedule(static)
-    for (int i=0; i<m; i++) {
+    for (size_t i=0; i<m; i++) {
         
         double sum = 0.0; // local variable to avoid unnecessary memory writes
-        int col = i*n; // don't recompute column each time
+        size_t col = i * n; // don't recompute column each time
         #pragma omp simd reduction(+:sum)
-        for (int j=0; j<n; j++) {
+        for (size_t j=0; j<n; j++) {
             sum += a[col+j] * x[j];
         }
         y[i] = sum;
@@ -43,15 +43,15 @@ void mxv_par_static(double *restrict y,
 void mxv_par_dynamic(double *restrict y,
          double *restrict a,
          double *restrict x,
-         int m, int n)
+         size_t m, size_t n)
 {
     #pragma omp parallel for default(none) shared(y,a,x,m,n) schedule(dynamic)
-    for (int i=0; i<m; i++) {
+    for (size_t i=0; i<m; i++) {
         
         double sum = 0.0; // local variable to avoid unnecessary memory writes
-        int col = i*n; // don't recompute column each time
+        size_t col = i * n; // don't recompute column each time
         #pragma omp simd reduction(+:sum)
-        for (int j=0; j<n; j++) {
+        for (size_t j=0; j<n; j++) {
             sum += a[col+j] * x[j];
         }
         y[i] = sum;
@@ -61,15 +61,15 @@ void mxv_par_dynamic(double *restrict y,
 void mxv_par_guided(double *restrict y,
          double *restrict a,
          double *restrict x,
-         int m, int n)
+         size_t m, size_t n)
 {
     #pragma omp parallel for default(none) shared(y,a,x,m,n) schedule(guided)
-    for (int i=0; i<m; i++) {
+    for (size_t i=0; i<m; i++) {
         
         double sum = 0.0; // local variable to avoid unnecessary memory writes
-        int col = i*n; // don't recompute column each time
+        size_t col = i * n; // don't recompute column each time
         #pragma omp simd reduction(+:sum)
-        for (int j=0; j<n; j++) {
+        for (size_t j=0; j<n; j++) {
             sum += a[col+j] * x[j];
         }
         y[i] = sum;
@@ -78,21 +78,23 @@ void mxv_par_guided(double *restrict y,
 
 int main(int argc, char *argv[]) {
     if (argc != 4) {
-        printf("Usage: %s <MAT_COLS> <MAT_ROWS> <iterations>\n", argv[0]);
+        printf("Usage: %s <MAT_COLS> <MAT_ROWS> <iterations (unsigned int)>\n", argv[0]);
         return 1;
     }
 
-    int N = atoi(argv[1]);
-    int M = atoi(argv[2]);
-
-    int max_it = atoi(argv[3]);
-    if (max_it < 0) {
-        printf("iterations must be greater than 0.\n");
-        return 1;
-    }
+    /* Trust the user that they will not input a stupid number, since he is me. */
+    size_t N = strtoull(argv[1], NULL, 10);
+    size_t M = strtoull(argv[2], NULL, 10);
+    size_t max_it = strtoull(argv[3], NULL, 10);
 
     /* open csv file for results */
     FILE *results_csv = fopen("results.csv", "w");
+
+    if (!results_csv) {
+        perror("Could not open results.csv");
+        return 1;
+    }
+
     fprintf(results_csv, "iteration,paralellization_type,time_ns,result\n");
 
     // Allocate memory
@@ -112,28 +114,32 @@ int main(int argc, char *argv[]) {
     }
 
     /* Parallel first-touch initialization. */
-    #pragma omp parallel default(none) shared(A, x, y, N)
+    #pragma omp parallel default(none) shared(A, x, y, M, N)
     {
         #pragma omp for schedule(static) // only static, not the other scheduling policies,
         // because we cannot predict which pages are processed by which threads later
-        for (int i = 0; i < N; i++) {
-            size_t row = (size_t)i * (size_t)N;
+        for (size_t i=0; i < M; i++) {
+            size_t row = i * N;
 
-            for (int j = 0; j < N; j++) {
+            for (size_t j=0; j < N; j++) {
                 A[row + j] = 1.0;
             }
         }
 
         #pragma omp for schedule(static)
-        for (int i = 0; i < N; i++) {
+        for (size_t i=0; i < N; i++) {
             x[i] = 2.0;
+        }
+
+        #pragma omp for schedule(static)
+        for (size_t i=0; i < M; i++) {
             y[i] = 0.0;
         }
     }
 
     /* =========================== Baseline benchmark =========================== */
 
-    for (int i=0; i<max_it; i++) {
+    for (size_t i=0; i<max_it; i++) {
         // start timer
         struct timespec start, end;
         clock_gettime(CLOCK_MONOTONIC, &start);
@@ -142,7 +148,7 @@ int main(int argc, char *argv[]) {
         clock_gettime(CLOCK_MONOTONIC, &end);
         long long time_taken_ns = (end.tv_sec - start.tv_sec) * NS_DIV + (end.tv_nsec - start.tv_nsec);
         
-        fprintf(results_csv, "%d,baseline,%d,%lf\n", i, time_taken_ns,y[0]);
+        fprintf(results_csv, "%zu,baseline,%lld,%lf\n", i, time_taken_ns,y[0]);
         printf("Execution time: %lld ns\n", time_taken_ns);
     
         // Print a single value to prevent dead-code elimination
@@ -151,7 +157,7 @@ int main(int argc, char *argv[]) {
 
     /*=========================== Paralellization using Static ===========================*/
 
-    for (int i=0; i<max_it; i++) {
+    for (size_t i=0; i<max_it; i++) {
         // start timer
         struct timespec start, end;
         clock_gettime(CLOCK_MONOTONIC, &start);
@@ -160,7 +166,7 @@ int main(int argc, char *argv[]) {
         clock_gettime(CLOCK_MONOTONIC, &end);
         long long time_taken_ns = (end.tv_sec - start.tv_sec) * NS_DIV + (end.tv_nsec - start.tv_nsec);
         
-        fprintf(results_csv, "%d,parallel_static,%d,%lf\n", i, time_taken_ns,y[0]);
+        fprintf(results_csv, "%zu,parallel_static,%lld,%lf\n", i, time_taken_ns,y[0]);
         printf("Execution time: %lld ns\n", time_taken_ns);
     
         // Print a single value to prevent dead-code elimination
@@ -169,7 +175,7 @@ int main(int argc, char *argv[]) {
 
     /*=========================== Paralellization using Dynamic ===========================*/
 
-    for (int i=0; i<max_it; i++) {
+    for (size_t i=0; i<max_it; i++) {
         // start timer
         struct timespec start, end;
         clock_gettime(CLOCK_MONOTONIC, &start);
@@ -178,7 +184,7 @@ int main(int argc, char *argv[]) {
         clock_gettime(CLOCK_MONOTONIC, &end);
         long long time_taken_ns = (end.tv_sec - start.tv_sec) * NS_DIV + (end.tv_nsec - start.tv_nsec);
         
-        fprintf(results_csv, "%d,parallel_dynamic,%d,%lf\n", i, time_taken_ns,y[0]);
+        fprintf(results_csv, "%zu,parallel_dynamic,%lld,%lf\n", i, time_taken_ns,y[0]);
         printf("Execution time: %lld ns\n", time_taken_ns);
     
         // Print a single value to prevent dead-code elimination
@@ -187,7 +193,7 @@ int main(int argc, char *argv[]) {
 
     /*=========================== Paralellization using Guided ===========================*/
     
-    for (int i=0; i<max_it; i++) {
+    for (size_t i=0; i<max_it; i++) {
         // start timer
         struct timespec start, end;
         clock_gettime(CLOCK_MONOTONIC, &start);
@@ -196,7 +202,7 @@ int main(int argc, char *argv[]) {
         clock_gettime(CLOCK_MONOTONIC, &end);
         long long time_taken_ns = (end.tv_sec - start.tv_sec) * NS_DIV + (end.tv_nsec - start.tv_nsec);
         
-        fprintf(results_csv, "%d,parallel_guided,%d,%lf\n", i, time_taken_ns,y[0]);
+        fprintf(results_csv, "%zu,parallel_guided,%lld,%lf\n", i, time_taken_ns,y[0]);
         printf("Execution time: %lld ns\n", time_taken_ns);
     
         // Print a single value to prevent dead-code elimination

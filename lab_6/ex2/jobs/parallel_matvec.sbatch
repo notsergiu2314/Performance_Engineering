@@ -16,11 +16,11 @@ gcc -O3 -mcpu=native -fopenmp "$SRC/openmp_ex2.c" -o "$OUT/parallel_matvec"
 
 # Run with max threads and large enough matrix/vector
 export OMP_NUM_THREADS=128
-MATSIZE=10000
-VECSIZE=10000
+M=
+N=
 ITERS=100
 
 echo "threads: "
 echo $OMP_NUM_THREADS
 
-$OUT/parallel_matvec $MATSIZE $VECSIZE $ITERS
+$OUT/parallel_matvec $M $N $ITERS
