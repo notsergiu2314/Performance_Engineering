@@ -50,7 +50,7 @@ tmp/*
 *.out
 *.app
 # cloverleaf exe
-clover_leaf 
+clover_leaf
 
 # Build directories
 build/
@@ -64,6 +64,9 @@ generated_deps/
 # other
 # *.png
 # *.csv
-# CloverLeaf roofline microbenchmark binaries
-cloverleaf/perf-investigation/roofline/bin/
+# CloverLeaf build products and job output (CloverLeaf_ref/perf)
+CloverLeaf_ref/perf/bin/
+CloverLeaf_ref/perf/roofline/bin/
+CloverLeaf_ref/perf/results/
+CloverLeaf_ref/perf/microbench/STREAM/
 __pycache__/

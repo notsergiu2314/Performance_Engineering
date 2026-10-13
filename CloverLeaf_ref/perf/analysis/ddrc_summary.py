@@ -30,6 +30,9 @@ def main():
     ap.add_argument("--unit", type=float, default=32.0)
     ap.add_argument("--model-bytes", type=float,
                     help="analytic-model bytes of the same run, for a measured/model ratio")
+    ap.add_argument("--csv-row", action="store_true",
+                    help="print one line 'rd_GB,wr_GB,total_GB,busiest_over_mean,seconds' and nothing else "
+                         "(used by perf/baseline/run_case.sh to fill results.csv)")
     args = ap.parse_args()
 
     counts = defaultdict(lambda: {"rd": 0.0, "wr": 0.0})
@@ -53,6 +56,11 @@ def main():
     tot_rd = sum(c["rd"] for c in counts.values())
     tot_wr = sum(c["wr"] for c in counts.values())
     u = args.unit
+    if args.csv_row:
+        n = len(counts)
+        busiest = max(c["rd"] + c["wr"] for c in counts.values()) / total * n
+        print(f"{tot_rd * u * 1e-9:.3f},{tot_wr * u * 1e-9:.3f},{total * u * 1e-9:.3f},{busiest:.3f},{seconds:.3f}")
+        return
     print(f"unit = {u:g} B/count, measured for {seconds:.2f} s")
     print(f"{'SCCL':>5s} {'read GB':>9s} {'write GB':>9s} {'share%':>7s} {'GB/s':>7s}")
     shares = []
