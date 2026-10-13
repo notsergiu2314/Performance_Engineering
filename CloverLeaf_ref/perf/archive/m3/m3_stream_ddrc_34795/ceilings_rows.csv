@@ -1,0 +1,5 @@
+name,value,unit,note
+dram_node_counted_best,266.5,GB/s,"STREAM triad 128 threads THP off best of 10 (STREAM-counted bytes), job m3_stream_ddrc_34795"
+dram_node_hw,266.5,GB/s,"hardware bytes: counted triad x 1.000 (without write-allocate, DDRC calibrated)"
+wa_ratio,0.741,ratio,DDRC bytes / write-allocate byte model of the STREAM process (no-WA model: 1.040)
+dimm_mts_min,2082,MT/s,lower bound from 266.5 GB/s over 16 channels; DMI reading in dimm.txt

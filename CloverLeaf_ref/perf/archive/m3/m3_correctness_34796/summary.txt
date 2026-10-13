@@ -1,0 +1,32 @@
+Results in /home/joosterveld/CloverLeaf_ref/perf/results/m3_correctness_34796  (7 runs, 7 cases)
+
+case                       deck          kernels  ranks  thr  thp  n  best_wall_s  median_s  spread  grind_ns/cell  qa_dev_%  qa      reported
+clover_bm_c_r64_t2         clover_bm.in  c        64     2    on   1  15.027       15.027    0.0%    5.52           5.73e-03  FAILED  C       
+clover_bm_c_r1_t128        clover_bm.in  c        1      128  on   1  48.721       48.721    0.0%    17.89          5.73e-03  FAILED  C       
+clover_bm_c_r4_t32         clover_bm.in  c        4      32   on   1  32.660       32.660    0.0%    11.99          5.73e-03  FAILED  C       
+clover_bm_c_r32_t4         clover_bm.in  c        32     4    on   1  15.231       15.231    0.0%    5.59           5.73e-03  FAILED  C       
+clover_bm_c_r128_t1        clover_bm.in  c        128    1    on   1  15.620       15.620    0.0%    5.74           5.73e-03  FAILED  C       
+clover_bm_c_r64_t2_thpoff  clover_bm.in  c        64     2    off  1  15.081       15.081    0.0%    5.54           5.73e-03  FAILED  C       
+clover_bm_fortran_r64_t2   clover_bm.in  fortran  64     2    on   1  14.020       14.020    0.0%    5.15           1.79e-02  FAILED  Fortran 
+
+C relative to Fortran (best wall, ratio > 1 means C slower; Fortran for reference only)
+deck          ranks  thr  thp  fortran_s  c_s     c/fortran
+clover_bm.in  64     2    on   14.020     15.027  1.072    
+
+Profiler split of best repetition (seconds, % of wall); sections under 1% omitted
+section             clover_bm_c_r64_t2  clover_bm_c_r1_t128  clover_bm_c_r4_t32  clover_bm_c_r32_t4  clover_bm_c_r128_t1  clover_bm_c_r64_t2_thpoff  clover_bm_fortran_r64_t2
+Timestep            2.13 (14%)          1.94 (4%)            1.59 (5%)           2.08 (14%)          1.82 (12%)           1.67 (11%)                 1.52 (11%)              
+Ideal Gas           0.64 (4%)           1.44 (3%)            0.84 (3%)           0.69 (5%)           0.76 (5%)            0.65 (4%)                  0.62 (4%)               
+Viscosity           0.92 (6%)           1.42 (3%)            1.16 (4%)           0.95 (6%)           0.96 (6%)            1.00 (7%)                  0.96 (7%)               
+PdV                 1.70 (11%)          1.94 (4%)            2.19 (7%)           1.72 (11%)          1.83 (12%)           1.73 (11%)                 1.52 (11%)              
+Revert              0.06 (0%)           0.58 (1%)            0.14 (0%)           0.05 (0%)           0.06 (0%)            0.07 (0%)                  0.05 (0%)               
+Acceleration        0.46 (3%)           0.77 (2%)            0.53 (2%)           0.46 (3%)           0.49 (3%)            0.48 (3%)                  0.44 (3%)               
+Fluxes              0.24 (2%)           0.63 (1%)            0.20 (1%)           0.21 (1%)           0.32 (2%)            0.25 (2%)                  0.24 (2%)               
+Cell Advection      2.42 (16%)          4.32 (9%)            2.96 (9%)           2.54 (17%)          2.62 (17%)           2.55 (17%)                 2.09 (15%)              
+Momentum Advection  3.57 (24%)          9.44 (19%)           4.52 (14%)          3.74 (25%)          3.70 (24%)           3.76 (25%)                 3.49 (25%)              
+Reset               0.39 (3%)           1.16 (2%)            0.32 (1%)           0.29 (2%)           0.45 (3%)            0.37 (2%)                  0.34 (2%)               
+Self Halo Exchange  0.00 (0%)           24.17 (50%)          0.60 (2%)           0.00 (0%)           0.00 (0%)            0.00 (0%)                  0.00 (0%)               
+MPI Halo Exchange   2.46 (16%)          0.02 (0%)            17.46 (53%)         2.46 (16%)          2.56 (16%)           2.51 (17%)                 2.70 (19%)              
+Total               15.02 (100%)        48.00 (99%)          32.65 (100%)        15.22 (100%)        15.61 (100%)         15.07 (100%)               14.01 (100%)            
+The Rest            0.01 (0%)           0.72 (1%)            0.01 (0%)           0.01 (0%)           0.01 (0%)            0.01 (0%)                  0.01 (0%)               
+
