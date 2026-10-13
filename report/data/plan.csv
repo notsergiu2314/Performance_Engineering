@@ -1,0 +1,12 @@
+# Predicted DRAM traffic of the planned C-kernel changes, write-allocate byte model (perf/analysis/plan_bytes.py), 14745600 cells x 87 steps, floor at 356 GB/s (dram_node_best x 4/3 (assumed write-allocate; run m3_stream_ddrc)).
+change,kind,bytes_per_cell_wa,delta_pct,pred_TB,floor_s,cumulative_bytes_per_cell_wa,cumulative_delta_pct,rationale
+advec_mom: direction-only helper loops once per sweep,bytes,1906,-12.8,2.445,6.87,1906,-12.8,"Loops 0-3 of advec_mom (post_vol/pre_vol, node_flux, node_mass_post, node_mass_pre)"
+advec_cell: keep 4 temporaries in registers,bytes,2058,-5.9,2.640,7.42,1778,-18.7,"pre_mass, post_mass, post_ener, advec_vol are consumed in the same iteration that"
+drop dead stores post_vol / pre_vol,bytes,2090,-4.4,2.681,7.54,1714,-21.6,post_vol in advec_cell and pre_vol in advec_mom are stored but never read.
+Reset/Revert copies by pointer swap,bytes,2042,-6.6,2.619,7.37,1570,-28.2,Reset copies the *1 fields back into *0 and Revert the *0 into *1: both become pointer
+calc_dt: fuse the min reduction,bytes,2162,-1.1,2.773,7.80,1546,-29.3,calc_dt writes dt_min per cell and re-reads it for the minimum: fuse the reduction
+all byte changes together,bytes,1546,-29.3,1.983,5.58,1546,-29.3,sum of the rows above
+nowait between independent worksharing loops,time,,,,,,,"12.5 % of cycles in gomp barrier (perf, 1x128)"
+-fno-math-errno for the sqrt kernels,time,,,,,,,"calc_dt, ideal_gas, viscosity run scalar (0 % NEON)"
+omp simd / restructured upwind indexing in advection flux sweeps,time,,,,,,,C 20-28 % slower than Fortran at equal bytes
+tile-level parallelism (jort patch 06),time,,,,,,,fork/join per tile per kernel

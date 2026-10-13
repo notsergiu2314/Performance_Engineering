@@ -1,0 +1,7 @@
+# Correctness gate: clover_bm.in (960^2, 2955 steps, test_problem 3) kinetic-energy deviation reported by CloverLeaf.
+# Baseline from job 34729 (cn15, 2026-10-11, unmodified kernels); jobs/m3_correctness.sbatch re-confirms and extends it.
+deck,kernels,layout,reps,qa_pct,clover_verdict,source
+clover_bm.in,c,128x1,5,0.5726209E-02,FAILED,job 34729
+clover_bm.in,c,4x32,5,0.5726209E-02,FAILED,job 34729
+clover_bm.in,fortran,128x1,5,0.1787088E-01,FAILED,job 34729
+clover_bm.in,fortran,4x32,5,0.1787088E-01,FAILED,job 34729

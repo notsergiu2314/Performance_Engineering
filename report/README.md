@@ -21,6 +21,19 @@ Nothing in `figures/` or `tables/` is edited by hand: change a CSV (or the model
 Upload `main.tex`, `refs.bib`, `figures/*.pdf` and `tables/*.tex` to Overleaf (same folder layout),
 compiler pdfLaTeX, then bibliography with BibTeX (Overleaf does this automatically).
 
+## M3 data files (branch `M3_dev`)
+
+| File | Content | Produced by |
+|---|---|---|
+| `data/m3_baseline.csv` | 5 layouts x THP on/off, C and Fortran, median/min/max, DRAM TB, hardware GB/s | `perf/jobs/m3_baseline.sbatch` -> `summary.md` (placeholder rows from job 34733 until then) |
+| `data/correctness.csv` | `clover_bm.in` baseline deviation per kernel set and layout | `perf/jobs/m3_correctness.sbatch` (job 34729 until then) |
+| `data/plan.csv` | predicted bytes of every planned C change | `python3 -I CloverLeaf_ref/perf/analysis/plan_bytes.py --csv report/data/plan.csv` |
+| `data/ceilings.csv` rows `dram_node_hw`, `wa_ratio`, `dimm_mts_min` | hardware STREAM ceiling, write-allocate check | `perf/jobs/m3_stream_ddrc.sbatch` -> `ceilings_rows.csv` (paste) |
+
+`benchmark_comparison_jort_vs_sergiu.md` is the comparison of the two M1/M2 branches that fixed
+the M3 conventions (64x2 baseline, hardware bytes, correctness gate).
+
 ## Adding results later
 * new measurements: add rows to the CSVs in `data/`, then `python make_assets.py`;
-* M3 results go to a new `data/optimisations.csv` and a new table/figure in `make_assets.py`.
+* M3 optimisation results go to a new `data/optimisations.csv` and a new table/figure in `make_assets.py`,
+  compared against the `64x2 / c / on` row of `m3_baseline.csv`.

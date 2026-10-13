@@ -306,6 +306,89 @@ def tab_placement():
     tex("tab_placement.tex", "\n".join(lines) + "\n")
 
 
+def esc(s):
+    return s.replace("_", r"\_").replace("%", r"\%")
+
+
+def tab_correctness():
+    lines = [r"\begin{tabular}{llrrl}", r"\toprule",
+             r"kernels & layout & runs & deviation (\%) & CloverLeaf verdict \\", r"\midrule"]
+    for r in rows("correctness.csv"):
+        lines.append(f"{r['kernels']} & {r['layout']} & {r['reps']} & {esc(r['qa_pct'])} & "
+                     f"{r['clover_verdict']} ({esc(r['source'])}) \\\\")
+    lines += [r"\bottomrule", r"\end{tabular}"]
+    tex("tab_correctness.tex", "\n".join(lines) + "\n")
+
+
+def tab_plan():
+    lines = [r"\begin{tabular}{p{7.2cm}rrrr}", r"\toprule",
+             r"change & B/cell & DRAM & cumulative & floor \\",
+             r" & (WA) & bytes & bytes & (s) \\", r"\midrule"]
+    for r in rows("plan.csv"):
+        if r["kind"] == "bytes":
+            lines.append(f"{esc(r['change'])} & {r['bytes_per_cell_wa']} & ${float(r['delta_pct']):+.1f}\\%$ & "
+                         f"${float(r['cumulative_delta_pct']):+.1f}\\%$ & {r['floor_s'] or '--'} \\\\")
+        else:
+            lines.append(f"{esc(r['change'])} & \\multicolumn{{4}}{{l}}{{time only: {esc(r['rationale'])}}} \\\\")
+    lines += [r"\bottomrule", r"\end{tabular}"]
+    tex("tab_plan.tex", "\n".join(lines) + "\n")
+
+
+def m3_rows():
+    return [r for r in rows("m3_baseline.csv") if r["median_s"]]
+
+
+def tab_m3_baseline():
+    lines = [r"\begin{tabular}{llllrrrrl}", r"\toprule",
+             r"kernels & layout & THP & wall (s) & DRAM & bandwidth & busiest/ & vs.\ hw & source \\",
+             r" & & & median (min--max) & (TB) & (GB/s) & mean & roof (\%) & \\", r"\midrule"]
+    hw = C.get("dram_node_hw")
+    for r in m3_rows():
+        med = float(r["median_s"])
+        dram = f"{float(r['dram_TB']):.2f}" if r["dram_TB"] else "--"
+        bw = f"{float(r['hw_GBs']):.0f}" if r["hw_GBs"] else "--"
+        bus = f"{float(r['busiest_over_mean']):.2f}" if r["busiest_over_mean"] else "--"
+        roof = f"{100 * float(r['hw_GBs']) / hw:.0f}" if (r["hw_GBs"] and hw) else "--"
+        lines.append(f"{r['kernels']} & {r['layout']} & {r['thp']} & {med:.1f} ({float(r['min_s']):.1f}--{float(r['max_s']):.1f}) & "
+                     f"{dram} & {bw} & {bus} & {roof} & {esc(r['source'])} \\\\")
+    lines += [r"\bottomrule", r"\end{tabular}"]
+    tex("tab_m3_baseline.tex", "\n".join(lines) + "\n")
+
+
+def fig_m3_layouts():
+    data = m3_rows()
+    layouts = []
+    for r in data:
+        if r["layout"] not in layouts:
+            layouts.append(r["layout"])
+    series = [("c", "on", BLUE, "C, THP on"), ("c", "off", AQUA, "C, THP off"), ("fortran", "on", "#b8b6b0", "Fortran, THP on (reference)")]
+    fig, ax = plt.subplots(figsize=(4.6, 2.7))
+    xs = np.arange(len(layouts))
+    width = 0.26
+    for i, (k, thp, col, lab) in enumerate(series):
+        sel = {r["layout"]: r for r in data if r["kernels"] == k and r["thp"] == thp}
+        if not sel:
+            continue
+        x = [xs[layouts.index(l)] + (i - 1) * width for l in sel]
+        y = [float(r["median_s"]) for r in sel.values()]
+        lo = [float(r["median_s"]) - float(r["min_s"]) for r in sel.values()]
+        hi = [float(r["max_s"]) - float(r["median_s"]) for r in sel.values()]
+        ax.bar(x, y, width, color=col, label=lab, yerr=[lo, hi], capsize=2, error_kw=dict(lw=0.8, ecolor=INK2))
+        for xi, yi in zip(x, y):
+            ax.text(xi, yi + 0.4, f"{yi:.1f}", ha="center", va="bottom", fontsize=6, color=INK)
+    hw = C.get("dram_node_hw")
+    floor = APP_BYTES_MODEL / ((hw or BW_NODE * 4 / 3) * 1e9)
+    ax.axhline(floor, color=INK2, lw=1, ls="--")
+    ax.text(len(layouts) - 0.5, floor + 0.4, f"floor {floor:.1f} s", ha="right", fontsize=7, color=INK2)
+    ax.set_xticks(xs)
+    ax.set_xticklabels(layouts)
+    ax.set_xlabel("MPI ranks x OpenMP threads")
+    ax.set_ylabel("wall clock, 87 steps (s)")
+    ax.grid(True, axis="y", color=GRID, lw=0.6)
+    ax.legend(fontsize=7, loc="upper right")
+    save(fig, "fig_m3_layouts")
+
+
 def tab_configs():
     sc = [r for r in rows("scaling.csv") if r["deck"] == "bm3840"]
     t1 = float(sc[0]["median_s"])
@@ -336,6 +419,12 @@ def numbers():
     print(f"THP speed-up {a / e:.2f}x; floor at best STREAM: model {APP_BYTES_MODEL / (BW_NODE * 1e9):.1f} s, "
           f"measured bytes {float(PL['E']['dram_GB']) * 1e9 / (BW_NODE * 1e9):.1f} s")
     print(f"ridge point (FMA) {FMA_NODE / BW_NODE:.2f} flop/B; 1 core {FMA_CORE / BW_CORE:.2f}")
+    if "dram_node_hw" in C:
+        print(f"hardware ceiling {C['dram_node_hw']:.0f} GB/s (wa_ratio {C.get('wa_ratio', float('nan')):.2f}, "
+              f"DIMM >= {C.get('dimm_mts_min', float('nan')):.0f} MT/s); floor at measured bytes "
+              f"{float(PL['E']['dram_GB']) * 1e9 / (C['dram_node_hw'] * 1e9):.1f} s")
+    else:
+        print("no dram_node_hw row in ceilings.csv yet: run perf/jobs/m3_stream_ddrc.sbatch and paste ceilings_rows.csv")
 
 
 if __name__ == "__main__":
@@ -349,4 +438,8 @@ if __name__ == "__main__":
     tab_model()
     tab_placement()
     tab_configs()
+    tab_correctness()
+    tab_plan()
+    tab_m3_baseline()
+    fig_m3_layouts()
     numbers()

@@ -1,0 +1,19 @@
+# M3 baseline layouts, bm3840 (= clover_bm16_short.in), 87 steps. PLACEHOLDER rows from the jort M1 sweep
+# (job 34733, cn15, 2026-10-12, 5 reps, THP on, no DDR counters) until jobs/m3_baseline.sbatch has run;
+# then replace every row from its summary.md (dram_TB, hw_GBs, busiest_over_mean come from the DDRC counters).
+layout,ranks,threads,kernels,thp,n,median_s,min_s,max_s,dram_TB,hw_GBs,busiest_over_mean,source
+64x2,64,2,c,on,5,11.292,11.233,11.314,,,,job 34733 (M1 jort sweep)
+1x128,1,128,c,on,5,27.945,21.942,37.038,,,,job 34733 (M1 jort sweep)
+4x32,4,32,c,on,5,13.277,13.051,13.667,,,,job 34733 (M1 jort sweep)
+32x4,32,4,c,on,5,11.410,11.390,11.460,,,,job 34733 (M1 jort sweep)
+128x1,128,1,c,on,5,11.644,11.626,11.752,,,,job 34733 (M1 jort sweep)
+64x2,64,2,c,off,,,,,,,,pending m3_baseline
+1x128,1,128,c,off,,,,,,,,pending m3_baseline
+4x32,4,32,c,off,,,,,,,,pending m3_baseline
+32x4,32,4,c,off,,,,,,,,pending m3_baseline
+128x1,128,1,c,off,,,,,,,,pending m3_baseline
+64x2,64,2,fortran,on,5,9.319,9.314,9.409,,,,job 34733 (M1 jort sweep)
+1x128,1,128,fortran,on,5,19.392,13.708,20.619,,,,job 34733 (M1 jort sweep)
+4x32,4,32,fortran,on,5,11.008,10.635,11.267,,,,job 34733 (M1 jort sweep)
+32x4,32,4,fortran,on,5,9.449,9.435,9.514,,,,job 34733 (M1 jort sweep)
+128x1,128,1,fortran,on,5,9.657,9.636,9.670,,,,job 34733 (M1 jort sweep)

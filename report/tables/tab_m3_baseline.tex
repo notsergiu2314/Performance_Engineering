@@ -1,0 +1,17 @@
+\begin{tabular}{llllrrrrl}
+\toprule
+kernels & layout & THP & wall (s) & DRAM & bandwidth & busiest/ & vs.\ hw & source \\
+ & & & median (min--max) & (TB) & (GB/s) & mean & roof (\%) & \\
+\midrule
+c & 64x2 & on & 11.3 (11.2--11.3) & -- & -- & -- & -- & job 34733 (M1 jort sweep) \\
+c & 1x128 & on & 27.9 (21.9--37.0) & -- & -- & -- & -- & job 34733 (M1 jort sweep) \\
+c & 4x32 & on & 13.3 (13.1--13.7) & -- & -- & -- & -- & job 34733 (M1 jort sweep) \\
+c & 32x4 & on & 11.4 (11.4--11.5) & -- & -- & -- & -- & job 34733 (M1 jort sweep) \\
+c & 128x1 & on & 11.6 (11.6--11.8) & -- & -- & -- & -- & job 34733 (M1 jort sweep) \\
+fortran & 64x2 & on & 9.3 (9.3--9.4) & -- & -- & -- & -- & job 34733 (M1 jort sweep) \\
+fortran & 1x128 & on & 19.4 (13.7--20.6) & -- & -- & -- & -- & job 34733 (M1 jort sweep) \\
+fortran & 4x32 & on & 11.0 (10.6--11.3) & -- & -- & -- & -- & job 34733 (M1 jort sweep) \\
+fortran & 32x4 & on & 9.4 (9.4--9.5) & -- & -- & -- & -- & job 34733 (M1 jort sweep) \\
+fortran & 128x1 & on & 9.7 (9.6--9.7) & -- & -- & -- & -- & job 34733 (M1 jort sweep) \\
+\bottomrule
+\end{tabular}
