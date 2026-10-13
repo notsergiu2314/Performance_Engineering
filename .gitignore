@@ -1,6 +1,7 @@
 # Visual Studio Code
 .vscode/*
 .vscode
+.venv
 
 # Built Visual Studio Code Extensions
 *.vsix

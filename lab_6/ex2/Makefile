@@ -1,5 +1,5 @@
 CC  = gcc
-CFLAGS   = -fopenmp
+CFLAGS   = -O3 -march=native -fopenmp
 
 TARGETS = parallel_matvec
 
