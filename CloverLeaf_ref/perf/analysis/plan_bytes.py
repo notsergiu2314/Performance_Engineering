@@ -116,7 +116,7 @@ TIME_ONLY = [
     ("-fno-math-errno for the sqrt kernels", "calc_dt, ideal_gas, viscosity run scalar (0 % NEON)"),
     ("omp simd / restructured upwind indexing in advection flux sweeps",
      "only after the byte reductions: at 64x2 both C and Fortran run at 94-95 % of the hardware ceiling"),
-    ("tile-level parallelism (jort patch 06)", "fork/join per tile per kernel"),
+    ("tile-level parallelism", "one fork/join per tile instead of per loop (fallback if nowait is not enough)"),
 ]
 
 

@@ -10,4 +10,4 @@ all byte changes together,bytes,1546,-29.3,1.983,7.44,1546,-29.3,sum of the rows
 nowait between independent worksharing loops,time,,,,,,,"12.5 % of cycles in gomp barrier (perf, 1x128)"
 -fno-math-errno for the sqrt kernels,time,,,,,,,"calc_dt, ideal_gas, viscosity run scalar (0 % NEON)"
 omp simd / restructured upwind indexing in advection flux sweeps,time,,,,,,,only after the byte reductions: at 64x2 both C and Fortran run at 94-95 % of the hardware ceiling
-tile-level parallelism (jort patch 06),time,,,,,,,fork/join per tile per kernel
+tile-level parallelism,time,,,,,,,one fork/join per tile instead of per loop (fallback if nowait is not enough)

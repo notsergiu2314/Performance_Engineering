@@ -7,7 +7,7 @@
 \usepackage{graphicx}
 \usepackage{booktabs}
 \usepackage{xcolor}
-\usepackage{subcaption}
+\usepackage{listings}
 \usepackage[hidelinks]{hyperref}
 \usepackage[sc]{titlesec}
 
@@ -15,9 +15,14 @@
 \newcommand{\kernel}[1]{\texttt{#1}}
 \newcommand{\GBs}{\,GB/s}
 \newcommand{\GFs}{\,GFLOP/s}
+\lstset{basicstyle=\ttfamily\footnotesize, columns=fullflexible, keepspaces=true, frame=single,
+  framerule=0.3pt, rulecolor=\color{gray}, breaklines=true, language=C, commentstyle=\color{gray},
+  aboveskip=4pt, belowskip=6pt}
+% a listing that is never split over a page
+\lstnewenvironment{code}[1][]{\endgraf\noindent\minipage{\linewidth}\lstset{#1}}{\endminipage\endgraf}
 
 \title{\Large{\sc{Performance Engineering}}\\[2mm]
-  Performance Analysis and Modelling of the CloverLeaf Mini-App\\
+  Analysis and Optimisation of the CloverLeaf Mini-App\\
   on the HAICGU Kunpeng~920 Cluster}
 \author{Jort Oosterveld S5545781 \& Sergiu-Adrian Preda S6778542 \\ Group 11}
 \date{Draft, \today}
@@ -27,490 +32,366 @@
 \setlength{\parskip}{0.6em}
 \maketitle
 
-\begin{abstract}
-We analyse and model the C kernels of the CloverLeaf reference mini-app on a dual-socket Kunpeng~920 node
-(128 cores, 4 NUMA domains).
-Internal timers, PAPI counters per kernel, Linux \texttt{perf} and the DDR-controller counters show that the
-code is memory-bound everywhere: its arithmetic intensity (0.2\,flop/B) is 25$\times$ below the ridge point
-of the measured roofline (5\,flop/B).
-The default pure-OpenMP configuration reaches less than half (48\%) of the best STREAM bandwidth, because
-transparent huge pages place the application's arrays unevenly on the NUMA domains.
-Disabling huge pages for the process, without touching the source, gives a 1.7$\times$ speed-up and
-79\% of the best STREAM bandwidth.
-An analytic model of the kernels predicts the measured DRAM traffic within 1--5\%, and identifies
-the remaining optimisation potential as a reduction of the bytes moved.
-\end{abstract}
-
 % =============================================================================
 \section{Introduction}
 % =============================================================================
-CloverLeaf is a mini-app that solves the compressible Euler equations on a two-dimensional structured
-grid with an explicit second-order Lagrangian--Eulerian scheme~\cite{mallinson2013}.
-It is a typical stencil code, and a popular case study for memory-bound performance
-engineering~\cite{laukemann2023}.
-We work on the reference implementation (\texttt{CloverLeaf\_ref}, commit \texttt{b5e598d}, hybrid
-MPI+OpenMP) and restrict ourselves to its \emph{C kernels}, which are selected at run time with
-\texttt{use\_c\_kernels} in the input deck.
-The Fortran code outside the kernels (driver, input, halo-exchange bookkeeping) is unchanged and is not
-optimised.
-The target is one standard compute node of the HAICGU cluster.
-
-The report follows the structure of the assignment.
-Section~\ref{sec:app} describes the application and the test problems, Section~\ref{sec:system} the system and
-the tool chain, and Section~\ref{sec:method} the measurement methodology, including how we checked that the
-tools themselves are correct.
-Section~\ref{sec:analysis} presents the performance analysis (where does the time go?),
-Section~\ref{sec:model} the performance model (what is attainable?), and Section~\ref{sec:opt} the
-optimisation plan that follows from both.
+CloverLeaf~\cite{mallinson2013} solves the compressible Euler equations on a 2D structured grid with an
+explicit Lagrangian--Eulerian scheme; it is a stencil code and a standard case for memory-bound performance
+engineering~\cite{laukemann2023}. We work on the reference implementation (\texttt{CloverLeaf\_ref},
+commit \texttt{b5e598d}, MPI+OpenMP) and optimise its \emph{C kernels} (\texttt{use\_c\_kernels}) on one
+node of the HAICGU cluster. Section~\ref{sec:base} establishes where the baseline stands against the
+hardware, Section~\ref{sec:impr} derives the kernel changes that can still pay off and shows them in code,
+and Section~\ref{sec:res} compares the optimised kernels with the baseline at every layout.
 
 % =============================================================================
-\section{Application and test problems}
-\label{sec:app}
+\section{Baseline Analysis}
+\label{sec:base}
 % =============================================================================
-One time step executes, in this order, the kernels listed in Table~\ref{tab:kernels}:
-the equation of state (\kernel{ideal\_gas}), artificial viscosity, the stable time step
-(\kernel{calc\_dt}), a predictor and a corrector pressure--volume work step (\kernel{pdv}), the
-acceleration of the nodes, the volume fluxes, the advection of cell quantities (\kernel{advec\_cell})
-and of momentum (\kernel{advec\_mom}) in two sweeps, and the reset of the time levels.
-Every kernel is a loop nest over the 2D grid with a stencil of at most $\pm1$ cell, and
-\kernel{advec\_cell} and \kernel{advec\_mom} contain an upwind/limiter loop with data-dependent indices.
+\subsection{Application and system}
+One time step runs, in order, the equation of state (\kernel{ideal\_gas}), artificial viscosity, the stable
+time step (\kernel{calc\_dt}), a predictor and a corrector PdV step, the node acceleration, the volume
+fluxes, the advection of cell quantities (\kernel{advec\_cell}) and of momentum (\kernel{advec\_mom}) in two
+directional sweeps, and the reset of the time levels. Every kernel is a loop nest over the grid with a
+$\pm1$ stencil; the two advection kernels contain an upwind/limiter loop with data-dependent indices.
+All fields are double-precision arrays of $(n_x+5)\times(n_y+5)$ elements.
+The benchmark problem is \textbf{bm3840}: $3840^2$ cells, 87 time steps, about 25 arrays of 118\,MB
+($\approx$3\,GB working set, far beyond the 2$\times$64\,MB L3), with CloverLeaf's built-in kinetic-energy
+check (\texttt{PASSED} in every run reported here).
 
-All 2D fields are double-precision arrays of $(n_x+5)\times(n_y+5)$ elements.
-We use two problem sizes, both with 87 time steps and the built-in quality check (\texttt{test\_problem~4}
-resp.\ \texttt{2}), which compares the final kinetic energy with a reference value:
-\begin{itemize}
-  \item \textbf{bm3840}: $3840^2$ cells = 14.7\,M cells.
-        About 25 arrays of 118\,MB each, i.e.\ a working set of $\approx$3\,GB, far beyond all caches
-        (2$\times$64\,MB L3). This is our main problem.
-  \item \textbf{bm960}: $960^2$ cells, 0.2\,GB; it partly fits in the L3 and is used to see how
-        synchronisation costs show up at small sizes.
-\end{itemize}
-Every run reported here printed \texttt{PASSED}.
+\begin{sloppypar}
+The node has 2$\times$ Kunpeng~920 (ARMv8, 2.6\,GHz, 64 cores each, 4 NUMA domains of 32 cores) and
+16 channels of DDR4-2666 (128\,GB, 341\GBs{} theoretical), under a RHEL-8-compatible Linux with 64\,KB
+pages. Software: GCC/GFortran 14.1.0, OpenMPI 5.0.3, PAPI 7.1.0 and Linux \texttt{perf}; the kernels are
+compiled with the project's \texttt{GNU} settings, \texttt{-O3 -march=native -funroll-loops -fopenmp}.
+Nodes are used exclusively. A configuration ``$r\times t$'' is $r$ MPI ranks with $t$ OpenMP threads each. Every rank is
+bound to $t$ consecutive cores (\texttt{--map-by slot:PE=}$t$) and OpenMP pins one thread per core
+(\texttt{OMP\_PLACES=cores}, \texttt{OMP\_PROC\_BIND=close}). The Fortran kernels are run at the same
+configurations for reference only.
+\end{sloppypar}
 
-% =============================================================================
-\section{Target system and tool chain}
-\label{sec:system}
-% =============================================================================
-\begin{itemize}
-  \item \textbf{Node:} HAICGU standard compute node, 2$\times$ Kunpeng~920 (ARMv8, 64 cores each,
-        2.6\,GHz), 4 NUMA domains of 32 cores, 16 channels of DDR4-2666 (128\,GB, theoretical
-        341\GBs{}). We use whole nodes exclusively (\texttt{--exclusive}) in the \texttt{cn-ib} partition.
-  \item \textbf{Operating system:} a RHEL-8-compatible Linux on aarch64 with 64\,KB base pages; transparent huge pages
-        (THP) are set to \texttt{always} and the huge-page size is 512\,MB.
-  \item \textbf{Software:} GCC and GFortran 14.1.0, OpenMPI 5.0.3, PAPI 7.1.0 (site module), Linux
-        \texttt{perf}. Flags: \texttt{-O3 -march=native -funroll-loops -fopenmp} (the project's \texttt{GNU}
-        settings) plus \texttt{-g}, which does not change the generated code.
-  \item \textbf{Placement:} \texttt{OMP\_PLACES=cores}, \texttt{OMP\_PROC\_BIND=close}; for MPI runs every rank is
-        bound to $t$ consecutive cores (\texttt{--map-by slot:PE=}$t$), which is one rank per NUMA domain at
-        4$\times$32 and one per socket at 2$\times$64; a single rank (1$\times$128) is left unbound by
-        \texttt{mpirun} and the OpenMP runtime pins thread $i$ to core $i$.
-\end{itemize}
-A configuration is written ``$r\times t$'' for $r$ MPI ranks with $t$ OpenMP threads each.
-The subject of the work are the C kernels (\texttt{use\_c\_kernels}); the Fortran kernels are run at
-the same configurations for reference only.
-
-% =============================================================================
-\section{Methodology}
+\subsection{Methodology}
 \label{sec:method}
-% =============================================================================
-\subsection{Measurement tools}
-We use three independent sources, as required by the assignment.
+\textbf{Tools.} Three independent sources: (1) CloverLeaf's internal profiler (wall clock per algorithmic
+phase); (2) PAPI per kernel, through a small instrumentation layer (\texttt{papi\_prof}) that wraps the
+\texttt{omp parallel} region of each C kernel, keeps one event set per thread and writes the counts per
+thread at exit (compiles to nothing without \texttt{-DUSE\_PAPI}); cycles/instructions, instruction mix and
+stall sets are measured in separate runs; (3) Linux \texttt{perf}: sampling profiles, whole-run counters,
+and the HiSilicon DDR-controller PMU (\texttt{hisi\_sccl*\_ddrc*/flux\_rd,wr}), read system-wide
+around every run, which counts the bytes that cross the memory interface per controller.
 
-\textbf{(1) CloverLeaf's internal profiler} (\texttt{profiler\_on}) reports the wall-clock time of each
-algorithmic phase from \texttt{gettimeofday}. It gives the overview and the scaling studies.
+\textbf{Protocol.} Five repetitions per configuration, median and min--max reported; the timed region
+is the complete run of 87 steps including start-up; every repetition runs under the DDR-controller
+counters, so wall clock and hardware bytes belong to the same run. All bandwidths are
+\emph{hardware bytes} (DDR-controller counts $\times$ 32\,B) over wall clock, for STREAM and for the
+application alike. The harness (\texttt{perf/baseline}) is driven by matrix files and environment
+variables and runs through \texttt{mpirun} only.
 
-\textbf{(2) PAPI, per kernel.}
-We added a small instrumentation layer (\texttt{papi\_prof}) that wraps the \texttt{omp parallel} region of
-each C kernel. Every thread keeps its own event set running and reads the counters at region entry and exit;
-the results are written per thread at process exit. The macros compile to nothing without
-\texttt{-DUSE\_PAPI}. Because the PMU has few counters, events are measured in separate runs:
-cycles+instructions, L1D/L2 accesses and misses, an instruction-mix set (loads, stores, FP, SIMD), and a set with
-back-end/front-end stall cycles and bus accesses.
+\textbf{Checks of the tools.} The PAPI build costs nothing measurable (11.30\,s against 11.34\,s at
+64$\times$2; 521--523\,s against 528\,s on one core) and its per-kernel times add up to the wall clock
+within 1\%; \texttt{MEM\_ACCESS} equals \texttt{PAPI\_L1\_DCA} in every kernel; the cycle counter gives
+2.59\,GHz; the DDR counters were calibrated on STREAM (Section~\ref{sec:ceil}). The placement of every
+multi-rank run is checked by the counters: the busiest controller group carries $1.00\times$ the mean.
 
-\textbf{(3) Linux \texttt{perf}.} \texttt{perf record} (sampling, 999\,Hz) attributes cycles to functions;
-\texttt{perf stat} gives whole-run counters; and the HiSilicon DDR-controller PMU
-(\texttt{hisi\_sccl*\_ddrc*/flux\_rd,wr}) is read system-wide and measures the bytes that really cross the
-memory interface, per memory controller.
-
-\subsection{Protocol}
-Each configuration is run three times (M1/M2) or five times (the M3 baseline of Section~\ref{sec:m3base}) and we
-report the median (min--max where relevant). The timed region is the complete run of 87 steps, including
-start-up. From M3 on every repetition runs under the DDR-controller counters, so wall clock and hardware bytes
-belong to the same run.
-
-\subsection{Checks of the tools}
-\label{sec:checks}
-\begin{itemize}
-  \item \emph{Correctness of the code under instrumentation:} all runs, with and without PAPI, pass the quality check.
-  \item \emph{Overhead:} the PAPI build needs 521--523\,s on one core against 528\,s for the plain build, i.e.\ no
-        measurable overhead; at 128 threads the difference is inside the run-to-run noise (M3, 64$\times$2: 11.30\,s
-        instrumented against 11.34\,s plain, job 34798).
-  \item \emph{Timers vs.\ PAPI:} the per-kernel PAPI times add up to 523\,s on one core (wall clock of that run:
-        522\,s), and the kernel shares agree with the internal profiler within one percentage point
-        (e.g.\ \kernel{advec\_mom} 28.5\% vs.\ 28.1\%).
-  \item \emph{Counters vs.\ counters:} \texttt{MEM\_ACCESS} equals \texttt{PAPI\_L1\_DCA}, and
-        loads$+$stores equal L1D accesses, in every kernel. The cycle counter gives 2.59\,GHz on one core.
-  \item \emph{Memory counters vs.\ a known byte count:} STREAM moves a known number of bytes. The job
-        \texttt{m3\_stream\_ddrc} (10 THP-off and 10 default repetitions of STREAM at 128 threads, plus three
-        runs of our own triad kernel, each under the DDR-controller counters) finds 1.04$\times$ the bytes STREAM
-        counts itself (24\,B per triad element) at 32\,B per count, and 0.74$\times$ the write-allocate model, in
-        every repetition and for both codes. One count is 32\,B, and a pure streaming store does \emph{not} read the
-        line first on this CPU (Section~\ref{sec:bw}). This supersedes the M1 calibration of the other branch,
-        which had read write-allocate into a single THP-default run; the M1 argument of this branch (a
-        write-allocate read on top of the 267\GBs{} triad would exceed the 341\GBs{} bus) was right.
-  \item \emph{Correctness gate for the optimisations:} the long deck \texttt{clover\_bm.in} (960$^2$ cells,
-        2955 steps, test problem 3, the shock crosses every chunk boundary) does \emph{not} pass CloverLeaf's
-        0.001\% threshold on this system even with the unmodified code: the reported deviation is the same at
-        every layout and repetition (Table~\ref{tab:correctness}), so the reference value compiled into the
-        code was produced elsewhere. We therefore use \emph{reproduction of this baseline deviation} to
-        $10^{-6}$\% as the gate for every modified kernel (\texttt{perf/baseline/qa\_check.py}), in addition
-        to the \texttt{PASSED} of the 3840$^2$ deck.
-\end{itemize}
+\textbf{Correctness gate.} CloverLeaf's own check on the long deck \texttt{clover\_bm.in} ($960^2$ cells,
+2955 steps, test problem 3) reports a deviation of 0.57\% (C) and 1.79\% (Fortran) from the reference
+compiled into the code even for the \emph{unmodified} kernels, identical to all digits at every layout and
+repetition (Table~\ref{tab:correctness}): the reference was produced on another machine. Every modified
+kernel therefore has to reproduce this baseline deviation to $10^{-6}$\% (\texttt{perf/baseline/qa\_check.py})
+and print \texttt{PASSED} on bm3840.
 
 \begin{table}[t]
   \centering\small
   \input{tables/tab_correctness.tex}
-  \caption{Baseline kinetic-energy deviation of \texttt{clover\_bm.in} reported by CloverLeaf's built-in check
-    (unmodified kernels). Identical digits at every layout: the gate for M3 is that an optimised build
-    reproduces them.}
+  \caption{Baseline kinetic-energy deviation of \texttt{clover\_bm.in} with the unmodified kernels, the value
+    an optimised build has to reproduce (jobs 34729 and 34796).}
   \label{tab:correctness}
 \end{table}
 
-% =============================================================================
-\section{Performance analysis}
-\label{sec:analysis}
-% =============================================================================
 \subsection{Where the time goes}
-Table~\ref{tab:kernels} shows the time share of every kernel and the hardware metrics measured with PAPI.
-On one core the run is dominated by the two advection kernels (48\%), followed by the two PdV
-passes (18\%) and \kernel{calc\_dt} (12\%). With 128 cores \kernel{advec\_mom} grows to 44\% of the time
-because it scales worst of the large kernels (14$\times$, against 22--59$\times$ for the others), while \kernel{calc\_dt},
-\kernel{viscosity} and \kernel{ideal\_gas}, which are compute-heavy on one core, shrink to about 12\% together.
+\label{sec:time}
+Table~\ref{tab:kernels} gives the time share and the counters of every kernel. The two advection kernels
+take 48\% of the time on one core and 63\% on 128; \kernel{advec\_mom} scales worst of the large kernels
+(14$\times$ against 22--59$\times$). On one core the IPC is 0.35--1.07 and 60--87\% of the cycles are
+back-end stalls; at 64$\times$2 the IPC is 0.10--0.50 per kernel and the stall share 81--96\%: the cores
+wait for memory. Three kernel groups appear in the instruction mix: \kernel{pdv}, \kernel{accelerate} and
+\kernel{flux\_calc} are vectorised (41--62\% NEON); \kernel{calc\_dt}, \kernel{ideal\_gas} and
+\kernel{viscosity} run entirely scalar (they contain \texttt{sqrt}, which GCC keeps scalar without
+\texttt{-fno-math-errno}) but are only 12\% of the node-level run; \kernel{advec\_mom} and
+\kernel{advec\_cell} are 12--16\% vector instructions because their upwind loops have data-dependent
+indices. The \texttt{perf} profile of a 128-thread run adds that 12.5\% of all cycles are spent in the
+OpenMP barrier (\texttt{gomp\_team\_barrier\_wait\_end}): every kernel is a sequence of worksharing loops
+with an implicit barrier each.
 
 \begin{table}[t]
   \centering\small
   \input{tables/tab_kernels.tex}
-  \caption{Per-kernel time share (bm3840, 87 steps; ``128 cores'' = 1x128 with the default THP setting),
-    IPC, share of SIMD and scalar floating-point instructions among all instructions, and back-end stall
-    cycles as a share of cycles on 1 / 128 cores. Numbers refer to Figure~\ref{fig:roofline}.
-    \kernel{reset\_field}, \kernel{revert} and \kernel{update\_halo} do no floating-point work.}
+  \caption{Per-kernel time share (bm3840; ``128 cores'' = 1$\times$128), IPC, share of SIMD and scalar
+    floating-point instructions, and back-end stall cycles on 1 / 128 cores. Numbers refer to
+    Figure~\ref{fig:roofline}. \kernel{reset\_field}, \kernel{revert} and \kernel{update\_halo} do no
+    floating-point work.}
   \label{tab:kernels}
 \end{table}
 
-\subsection{Hardware counters: the kernels are latency- and memory-bound}
-On one core the IPC is only 0.35--1.07, and 60--87\% of all cycles are back-end stalls. At 128 cores the
-stall share rises to 79--97\% and the IPC falls to 0.09--0.54 (0.19 for the whole run according to
-\texttt{perf stat}): the cores wait for memory.
-The instruction mix shows three groups of kernels:
-\begin{itemize}
-  \item \kernel{pdv}, \kernel{accelerate} and \kernel{flux\_calc} are auto-vectorised
-        (41--62\% NEON instructions);
-  \item \kernel{calc\_dt}, \kernel{ideal\_gas} and \kernel{viscosity} execute no vector instructions at all
-        (53--64\% of their instructions are scalar FP). They contain \texttt{sqrt}, which GCC does not vectorise
-        without \texttt{-fno-math-errno};
-  \item \kernel{advec\_mom} and \kernel{advec\_cell} are only 12--16\% vector instructions: the upwind loop
-        has data-dependent indices and runs scalar.
-\end{itemize}
-The three scalar kernels use only 2--3\GBs{} of the 15\GBs{} that one core can sustain, so on a single core they
-are limited by the latency of divisions and square roots rather than by memory.
-At full node size this group is only about 12\% of the run, so it is a secondary target.
+\subsection{Ceilings and byte model}
+\label{sec:ceil}
+\textbf{Memory.} STREAM triad ($10^8$ doubles, 20 iterations, 10 runs per configuration) sustains
+15\GBs{} on one core, 67\GBs{} per NUMA domain (32 threads) and \textbf{266.5\GBs{}} for the node, in every
+one of 10 pinned repetitions. Under the DDR-controller counters the controllers move $1.04\times$ the
+bytes STREAM counts itself (24\,B per triad element) and $0.74\times$ the write-allocate model, in all 20
+STREAM runs and in our own triad kernel: a streaming store does \emph{not} read the line first on this CPU,
+one count is 32\,B, and the hardware ceiling is the counted triad, 78\% of the bus. (The DIMM clock is
+not readable without root; 266.5\GBs{} over 16 channels needs at least 2082\,MT/s, so DDR4-2666 is
+consistent.)
 
-\subsection{Profile and synchronisation}
-The \texttt{perf record} profile of the 128-thread run (5.8$\cdot10^{12}$ cycles) agrees with PAPI:
-\kernel{advec\_mom} 35\%, \kernel{advec\_cell} 18\%, \kernel{pdv} 10.5\%, \kernel{calc\_dt} 4.6\%.
-In addition it shows that \textbf{12.5\% of all cycles are spent in the OpenMP barrier}
-(\texttt{gomp\_team\_barrier\_wait\_end}). The kernels consist of several consecutive worksharing loops,
-each with an implicit barrier, so this is a direct optimisation target. At the small size (bm960) the
-synchronisation cost dominates: 1x128 is slower than 1x64, and the halo-exchange phases take 50\% of the time.
+\textbf{Compute.} Independent FMA chains on 2-lane NEON registers reach 4.0\,flop/cycle per core and
+\textbf{1330\GFs{}} per node; scalar FMA reaches the same, so vectorisation saves instructions, not flops.
+Vector division runs at 0.19\GFs{} per core. The ridge point of the node is $1330/266.5 = 5$\,flop/B
+(0.7\,flop/B for one core).
 
-\subsection{Scaling and the effect of memory placement}
-Table~\ref{tab:configs} and Figure~\ref{fig:scaling} show the strong scaling of bm3840.
-With one rank, 128 threads give a speed-up of 21 and a run-to-run spread of 21--27\,s, which is much worse
-than the 4$\times$32 hybrid configuration (13.0\,s, speed-up 41, spread $<$3\%) on the same cores.
+\textbf{Byte model.} For every loop nest of the C kernels we counted the arrays read and written and the
+flops per cell; each array is streamed from DRAM once per loop nest, and a store is charged a
+read-for-ownership (write-allocate) in addition to the write. Table~\ref{tab:model} gives 451\,flop and
+2186\,B per cell and step (1688\,B without the read-for-ownership), an intensity of 0.21\,flop/B.
 
 \begin{table}[t]
   \centering\small
-  \input{tables/tab_configs.tex}
-  \caption{Strong scaling of bm3840 (median of 3 runs). The last row is the same code with transparent huge
-    pages disabled for the process (Section~\ref{sec:thp}).}
-  \label{tab:configs}
+  \input{tables/tab_model.tex}
+  \caption{Analytic flop and byte counts per cell and call (WA = write-allocate). \kernel{ideal\_gas} runs
+    2.1 times per step.}
+  \label{tab:model}
 \end{table}
 
-\begin{figure}[t]
-  \centering
-  \begin{subfigure}[t]{0.49\linewidth}
-    \includegraphics[width=\linewidth]{figures/fig_scaling.pdf}
-    \caption{Strong scaling, bm3840.}
-    \label{fig:scaling}
-  \end{subfigure}\hfill
-  \begin{subfigure}[t]{0.49\linewidth}
-    \includegraphics[width=\linewidth]{figures/fig_placement.pdf}
-    \caption{DRAM traffic per controller group.}
-    \label{fig:placement}
-  \end{subfigure}
-  \caption{(a) Wall clock against core count; error bars are min--max. (b) Share of the node's DRAM traffic
-    handled by each of the four memory-controller groups (SCCL, one per NUMA domain, four DDR channels
-    each), with the wall clock on top; a balanced run gives 25\% each.}
-  \label{fig:scaling_placement}
-\end{figure}
+\textbf{Validation.} The model predicts 2.80\,TB for bm3840; the counters measure 2.83\,TB at 64$\times$2
+in all five repetitions (1\% above), 2.79--2.99\,TB at the other layouts. The read/write split decides
+which version of the model applies: the counters see 2.05\,TB of reads and 0.77\,TB of writes against
+1.53\,TB of demand reads and 0.64\,TB of writes in the model, i.e.\ the reads are $1.34\times$ the demand
+reads. Unlike STREAM, the C kernels' stores \emph{do} cause a read of the line first, for about 70\% of the
+written volume; the write-allocate model is the right one for the code as it stands. The Fortran build
+writes the same amount (0.60\,TB) but reads only $1.15\times$ the demand reads (1.76\,TB, 2.36\,TB in
+total): its loops avoid most of that traffic, and this 0.47\,TB is the entire C/Fortran gap
+(Section~\ref{sec:perf}).
 
-\subsection{The M3 baseline: 64 ranks $\times$ 2 threads}
-\label{sec:m3base}
-The scaling study above stops at four ranks. The layout sweep of the other branch (Table~\ref{tab:m3base},
-Figure~\ref{fig:m3layouts}) continues it to 8, 16, 32, 64 and 128 ranks on the same node and deck: every
-layout with eight or more ranks lands within 4\% of each other, the spread drops below 1\%, and 64$\times$2
-is the fastest for the C kernels. The M3 baseline job (34797, five repetitions per case, every repetition under
-the DDR-controller counters) confirms it: 64$\times$2 runs in 11.25\,s (median, spread 0.7\%), 32$\times$4
-in 11.40\,s, 128$\times$1 in 11.7\,s, 4$\times$32 in 12.8--13.0\,s and 1$\times$128 in 13.3\,s with THP off
-(26.9\,s with THP on, spread 67\%). The counters show the mechanism of Section~\ref{sec:thp} directly: the
-busiest controller group carries 1.66$\times$ the mean in the 1$\times$128 default run and 1.00$\times$ in every
-other case, THP on or off, because with four or more ranks every rank first-touches only its own part of the
-mesh. Switching THP off therefore changes nothing for the multi-rank layouts (within 1\%) and the baseline
-needs no change to the system; the halo exchange of a 3840$^2$ mesh costs 2\% of the step at 64$\times$2.
-We take \textbf{64$\times$2 with the C kernels, THP as installed} as the baseline for every optimisation, and
-report 1$\times$128, 4$\times$32, 32$\times$4 and 128$\times$1, each with THP on and off, next to it. The
-Fortran kernels run the same layouts for reference and are 17--20\% faster than C at every stable layout. The
-counters explain the whole gap: the Fortran build moves 2.36\,TB against 2.83\,TB for the C build at
-64$\times$2 ($-17\%$), and both run at 250--252\GBs{}, i.e.\ 94--95\% of the hardware ceiling of
-Section~\ref{sec:bw}. The gap is a byte gap, not an instruction gap (Section~\ref{sec:model}).
+\subsection{Baseline performance}
+\label{sec:perf}
+Table~\ref{tab:m3base} gives the layouts of the C kernels with the hardware bandwidth they sustain over the
+whole run, start-up included. \textbf{64$\times$2 is the baseline}: 11.3\,s (spread 0.8\%), 2.83\,TB,
+250\GBs{} = \textbf{94\% of the hardware ceiling}; 32$\times$4 and 128$\times$1 reach 91--95\%, 4$\times$32
+83\%. Transparent huge pages (512\,MB on this system) matter only for the single-rank 1$\times$128 layout,
+where first touch places whole arrays on one NUMA domain and the busiest controller group carries
+$1.66\times$ the mean (26.9\,s, against 13.3\,s with THP disabled for the process); with four or more ranks
+every rank touches its own data and THP has no effect, so the baseline needs no change to the system.
 
 \begin{table}[t]
   \centering\small
   \input{tables/tab_m3_baseline.tex}
-  \caption{M3 baseline layouts, bm3840, job 34797: median of 5 (min--max), the DRAM bytes of the DDR-controller
-    counters (median over the repetitions), the resulting hardware bandwidth and its share of the 266.5\GBs{}
-    hardware STREAM ceiling, and the load of the busiest controller group relative to the mean.}
+  \caption{Baseline layouts, bm3840, job 34797: median of 5 (min--max), hardware bytes of the DDR-controller
+    counters, the resulting bandwidth and its share of the 266.5\GBs{} ceiling, and the load of the busiest
+    controller group relative to the mean. THP as installed except for the one marked row.}
   \label{tab:m3base}
+\end{table}
+
+Figure~\ref{fig:roofline} places every kernel on the rooflines of one core and of the node. Every kernel lies
+at 0.13--0.83\,flop/B, far left of the 5\,flop/B ridge; even \kernel{viscosity} could reach only 17\% of the
+FMA peak with perfect bandwidth. In hardware-byte terms (per-section roofline of the 64$\times$2 run,
+\texttt{perf/roofline/roofline.py --hw}) both advection sections, PdV, \kernel{ideal\_gas} and the fluxes
+run at 94--102\% of the memory roof, acceleration at 83\%, and the scalar \texttt{sqrt} kernels at
+63--66\%. The floor at the measured traffic is 2.83\,TB / 266.5\GBs{} = \textbf{10.6\,s}; the baseline is
+within 7\% of it. There is no headroom at the current byte count: \emph{every further gain has to come from
+moving fewer bytes}, and the Fortran build shows that this is possible (9.33\,s, 2.36\,TB, at the same
+252\GBs{}).
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig_roofline.pdf}
+  \caption{Roofline of the CloverLeaf C kernels (bm3840), one core and full node. Kernel numbers refer to
+    Table~\ref{tab:kernels}; kernel points use model bytes and PAPI times (1$\times$128), the application
+    point the measured DRAM bytes and wall clock of the 64$\times$2 baseline.}
+  \label{fig:roofline}
+\end{figure}
+
+% =============================================================================
+\section{Kernel Improvements}
+\label{sec:impr}
+% =============================================================================
+\subsection{What the analysis allows}
+The baseline sustains 94\% of the memory ceiling, so instruction-side work (vectorising the upwind loops,
+\texttt{-fno-math-errno} for the \texttt{sqrt} kernels, fewer barriers) cannot pay off until the bytes shrink;
+those items are listed at the end of Table~\ref{tab:plan} as time-only candidates. The byte count has two
+components we can change: the bytes the algorithm asks for (temporaries, dead stores, copies, repeated
+helper loops) and the read-for-ownership that the C stores pay and a streaming store would not. Every
+change below is expressed as an edit of the loop table of the byte model
+(\texttt{perf/analysis/plan\_bytes.py}), so the prediction and the later measurement use the same
+convention, and every change has to pass the correctness gate of Section~\ref{sec:method}.
+
+\begin{table}[t]
+  \centering\small
+  \input{tables/tab_plan.tex}
+  \caption{Kernel changes and their predicted effect on hardware bytes (write-allocate model, bm3840,
+    87 steps; floor at 266.5\GBs{}; measured baseline 2.83\,TB, 11.3\,s). Cumulative = all byte changes up to
+    that row; for the streaming-store bound, cumulative = on top of all five.}
+  \label{tab:plan}
+\end{table}
+
+\subsection{Byte reductions}
+\label{sec:bytes}
+
+\textbf{(1) \kernel{advec\_mom}: direction-only helper loops once per sweep ($-12.8\%$).}
+The kernel is called four times per step (two sweeps $\times$ \texttt{xvel}, \texttt{yvel}). Its first four
+loops (\texttt{post\_vol}/\texttt{pre\_vol}, \texttt{node\_flux}, \texttt{node\_mass\_post},
+\texttt{node\_mass\_pre}) depend only on the sweep direction, not on the velocity component, and are
+recomputed for \texttt{yvel} with identical results. The kernel is split in a preparation part called once
+per sweep and a velocity part called twice:
+\begin{code}[language={[90]Fortran}]
+! advec_mom_driver.f90, before: one call per velocity component recomputes
+! post_vol, pre_vol, node_flux, node_mass_post, node_mass_pre
+CALL advec_mom_kernel_c(..., xvel1, ..., which_vel=1, sweep_number)
+CALL advec_mom_kernel_c(..., yvel1, ..., which_vel=2, sweep_number)
+! after: the helpers once, the upwind flux and the velocity update per component
+CALL advec_mom_prep_c(..., node_flux, node_mass_post, node_mass_pre, &
+                      direction, sweep_number)
+CALL advec_mom_vel_c (..., xvel1, node_flux, node_mass_pre, direction)
+CALL advec_mom_vel_c (..., yvel1, node_flux, node_mass_pre, direction)
+\end{code}
+
+\textbf{(2) \kernel{advec\_cell}: temporaries in registers ($-5.9\%$).}
+The update loop of each sweep stores \texttt{pre\_mass}, \texttt{post\_mass}, \texttt{post\_ener} and
+\texttt{advec\_vol} to four arrays and reads them back in the same iteration; nothing else reads them.
+They become scalars (no store, no read-for-ownership):
+\begin{code}
+/* before (x sweep; i = FTNREF2D(j,k,...)) */
+pre_mass[i]  = density1[i]*pre_vol[i];
+post_mass[i] = pre_mass[i] + mass_flux_x[i] - mass_flux_x[i+1];
+post_ener[i] = (energy1[i]*pre_mass[i] + ener_flux[i] - ener_flux[i+1])
+               / post_mass[i];
+advec_vol[i] = pre_vol[i] + vol_flux_x[i] - vol_flux_x[i+1];
+density1[i]  = post_mass[i] / advec_vol[i];
+energy1[i]   = post_ener[i];
+/* after */
+double pre_mass  = density1[i]*pre_vol[i];
+double post_mass = pre_mass + mass_flux_x[i] - mass_flux_x[i+1];
+double advec_vol = pre_vol[i] + vol_flux_x[i] - vol_flux_x[i+1];
+energy1[i]  = (energy1[i]*pre_mass + ener_flux[i] - ener_flux[i+1]) / post_mass;
+density1[i] = post_mass / advec_vol;
+\end{code}
+
+\textbf{(3) Dead stores ($-4.4\%$).}
+\texttt{post\_vol} in the first sweep of \kernel{advec\_cell} and \texttt{pre\_vol} in \kernel{advec\_mom}
+are written over the whole (haloed) grid and never read; the stores are removed:
+\begin{code}
+/* advec_cell, sweep 1 */
+pre_vol[i]  = volume[i] + (vol_flux_x[i+1]-vol_flux_x[i])
+                        + (vol_flux_y[iy+1]-vol_flux_y[iy]);
+post_vol[i] = pre_vol[i] - (vol_flux_x[i+1]-vol_flux_x[i]);   /* removed: never read */
+/* advec_mom, every sweep */
+post_vol[i] = volume[i] + vol_flux_y[iy+1] - vol_flux_y[iy];
+pre_vol[i]  = post_vol[i] + vol_flux_x[i+1] - vol_flux_x[i];  /* removed: never read */
+\end{code}
+
+\textbf{(4) Reset and Revert without copies ($-6.6\%$).}
+\kernel{reset\_field} copies the four end-of-step fields (\texttt{density1}, \texttt{energy1},
+\texttt{xvel1}, \texttt{yvel1}) into their level-0 partners, 118\,MB each; \kernel{revert} copies
+\texttt{density0}/\texttt{energy0} back into the level-1 arrays before the PdV corrector because the
+predictor wrote into them. The fields are allocatable components of the tile, so the reset becomes a swap
+of the allocations, and the revert disappears because the C corrector reads only the level-0 fields:
+\begin{code}[language={[90]Fortran}]
+! reset_field.f90: replaces the four copy loops of reset_field_kernel_c
+CALL swap(field%density0, field%density1);  CALL swap(field%energy0, field%energy1)
+CALL swap(field%xvel0,    field%xvel1);     CALL swap(field%yvel0,   field%yvel1)
+
+SUBROUTINE swap(a, b)                          ! O(1), no traffic
+  REAL(KIND=8), ALLOCATABLE, INTENT(INOUT) :: a(:,:), b(:,:)
+  REAL(KIND=8), ALLOCATABLE :: t(:,:)
+  CALL MOVE_ALLOC(a, t); CALL MOVE_ALLOC(b, a); CALL MOVE_ALLOC(t, b)
+END SUBROUTINE
+! PdV.f90: the CALL revert() at the end of the predictor pass is dropped
+\end{code}
+
+\textbf{(5) \kernel{calc\_dt}: fused reduction ($-1.1\%$).}
+The kernel stores the local time step of every cell to \texttt{dt\_min} and reduces the array in a second
+loop. The reduction moves into the first loop; the cell of the minimum, needed only in the failure
+message, is located afterwards by a scan over the scalar criterion when the step is too small:
+\begin{code}
+/* before */
+#pragma omp for private(...)
+for (k...) for (j...) { ... dt_min[i] = MIN(dtct, MIN(dtut, MIN(dtvt, dtdivt))); }
+#pragma omp for reduction(min:dt_min_val)
+for (k...) for (j...) if (dt_min[i] < dt_min_val) dt_min_val = dt_min[i];
+/* after: no dt_min array */
+#pragma omp for private(...) reduction(min:dt_min_val)
+for (k...) for (j...) {
+    ... dt_min_val = MIN(dt_min_val, MIN(dtct, MIN(dtut, MIN(dtvt, dtdivt)))); }
+\end{code}
+
+\textbf{(6) Streaming stores (bound $-23\%$, $-41\%$ with the five above).}
+Section~\ref{sec:ceil} showed that a streaming store moves no read-for-ownership bytes on this CPU while
+the C kernels' stores do, and that the Fortran build already avoids most of them. Two routes are open:
+making the store streams of a loop recognisable to the core's write-streaming detector (every output array
+written once per iteration, contiguously, without loads from the same lines, which also follows from
+changes 2 and 3), or explicit non-temporal stores where the output is never re-read in the loop:
+\begin{code}
+/* candidate: the velocity update of advec_mom (vel1 read once, written once) */
+#pragma omp simd
+for (j = x_min; j <= x_max+1; j++) {
+    double v = (vel1[i]*node_mass_pre[i] + mom_flux[i-1] - mom_flux[i])
+               / node_mass_post[i];
+    __builtin_nontemporal_store(v, &vel1[i]);   /* clang; GCC: inline stnp */
+}
+\end{code}
+The no-write-allocate model is only an upper bound for this item; the counters decide what the hardware
+actually grants.
+
+\subsection{Time-only changes}
+After the bytes shrink, three items move the kernels off the memory roof: \texttt{nowait} between
+independent worksharing loops (12.5\% of the cycles are barrier time), \texttt{-fno-math-errno} so that
+the \texttt{sqrt} kernels vectorise, and an \texttt{omp simd}-friendly formulation of the upwind loops
+(select the donor index arithmetically instead of by branch). Tile-level parallelism (one fork/join per
+tile instead of per loop) is the fallback if \texttt{nowait} is not enough.
+
+\subsection{Implementation status}
+\todo{placeholder: for each change, implemented (yes/no), passes the correctness gate, measured bytes and time
+at 64$\times$2, link to the commit. Table~\ref{tab:results} and Figure~\ref{fig:results} are filled from
+\texttt{data/optimised.csv} once the first change is measured.}
+
+% =============================================================================
+\section{Results}
+\label{sec:res}
+% =============================================================================
+Every optimised build is measured exactly like the baseline (Section~\ref{sec:method}): five repetitions
+under the DDR-controller counters, at the same five layouts, the correctness gate on \texttt{clover\_bm.in}
+and \texttt{PASSED} on bm3840. Table~\ref{tab:results} compares every layout with its own baseline;
+Figure~\ref{fig:results} shows the wall clock against the memory floor.
+
+\begin{table}[t]
+  \centering\small
+  \input{tables/tab_results.tex}
+  \caption{C kernels, bm3840: baseline (job 34797) against the optimised build at every layout, THP as
+    installed. Speed-up = baseline median / optimised median.}
+  \label{tab:results}
 \end{table}
 
 \begin{figure}[t]
   \centering
   \includegraphics[width=0.75\linewidth]{figures/fig_m3_layouts.pdf}
-  \caption{Wall clock of the M3 layouts (median, bars min--max): C kernels with THP on and off, Fortran for
-    reference. The dashed line is the memory-bound floor of the C build at the hardware STREAM ceiling.}
-  \label{fig:m3layouts}
+  \caption{Wall clock per layout (median, bars min--max): C baseline, C optimised where measured, Fortran
+    for reference. The dashed line is the memory floor of the baseline byte count at 266.5\GBs{}.}
+  \label{fig:results}
 \end{figure}
 
-\subsection{Cause: transparent huge pages unbalance the memory controllers}
-\label{sec:thp}
-The DDR-controller counters (Figure~\ref{fig:placement}, Table~\ref{tab:placement}) explain the gap.
-All variants move the same amount of data (2.8--3.0\,TB), but in the default 1$\times$128 run the busiest
-controller group carries up to 1.45$\times$ the average, and the distribution differs from run to run
-(e.g.\ 22/28/14/36\% and 27/33/13/27\%), while the 4$\times$32 run is perfectly balanced.
-The system uses 64\,KB base pages with THP set to \texttt{always}, so a first touch allocates a
-\emph{512\,MB} huge page entirely on the touching thread's NUMA domain. CloverLeaf's roughly 25 arrays
-of 118\,MB are allocated back to back and occupy only about six such pages, so each page---and with it several
-arrays---sits on a single domain, wherever its first-touching thread happened to run. In the 4$\times$32
-configuration every rank holds only a quarter of the data and touches it from its own domain, so the problem
-does not arise.
-
-We tested the hypothesis with a small launcher that disables THP for the process tree only
-(\texttt{prctl(PR\_SET\_THP\_DISABLE)}, no root needed). With THP off the 1$\times$128 run becomes perfectly
-balanced and reaches the time of the MPI version (13.5\,s against 23.1\,s default, 1.71$\times$ faster),
-with a spread below 1\%. Interleaving all pages (\texttt{numactl --interleave=all}) balances the controllers
-but is \emph{slower} (29\,s), because three quarters of the accesses become remote; leaving eight cores idle
-does not help either. Locality \emph{and} balance are needed, which first touch provides once pages are small.
-
-\begin{table}[t]
-  \centering\small
-  \input{tables/tab_placement.tex}
-  \caption{Placement experiments for bm3840: wall clock, DRAM bytes (DDR-controller counters, 32\,B per
-    count), load of the busiest controller group relative to the mean, and the resulting bandwidth during the run
-    in absolute terms and relative to the best STREAM result.}
-  \label{tab:placement}
-\end{table}
-
-\paragraph{Remark.}
-The effect is specific to this system: with 4\,KB pages and 2\,MB huge pages (x86-64) the same arrays
-would span hundreds of pages and be placed evenly by first touch.
-
-% =============================================================================
-\section{Performance modelling}
-\label{sec:model}
-% =============================================================================
-\subsection{Choice of model}
-CloverLeaf is a structured-grid stencil code whose kernels stream several arrays with little data reuse.
-The roofline model~\cite{williams2009} fits this case: it bounds the performance of a kernel with arithmetic
-intensity $I$ (flop/byte) by
-\[
-  P \le \min\bigl(P_\text{peak},\; I \cdot b_\text{mem}\bigr),
-\]
-and tells immediately whether a kernel can profit from faster arithmetic or only from moving fewer bytes.
-Both ceilings are \emph{measured} on the target node, not taken from data sheets, and the intensity
-of every kernel is obtained from an analytic count of its flops and its memory traffic.
-
-\subsection{Attainable memory bandwidth}
-We used STREAM~\cite{mccalpin1995} with arrays of $10^8$ doubles (800\,MB, more than four times the aggregate
-cache) and 20 repetitions per run, and ran each configuration 10 times (Figure~\ref{fig:stream}).
-One core sustains 15\GBs{}; one NUMA domain saturates at 67\GBs{} with 32 threads and scales perfectly
-with the number of domains (2 domains: 134\GBs{}). The best full-node result, 267\GBs{}, is four times
-the single-domain value and 78\% of the theoretical 341\GBs{}. With 96 or 128 threads, however, the typical
-result is only 110--135\GBs{}, while the best runs reach 151 and 267\GBs{}: the same sensitivity to
-placement and scheduling as in CloverLeaf. The M3 calibration run (THP off, 10 repetitions) reproduces the
-best value in every repetition (265.6--266.5\GBs{}). We take \textbf{266.5\GBs{}} as the memory ceiling and
-67\GBs{} per NUMA domain as the unit for balanced placements.
-
-\paragraph{Hardware bytes.}
-\label{sec:bw}
-STREAM counts 24\,B per element for triad (two reads, one write); if the hardware read every line before
-overwriting it (write-allocate) it would move 32\,B, and the \emph{hardware} ceiling would be $4/3$ of the
-counted one, 356\GBs{}, more than the 341\GBs{} theoretical bus of DDR4-2666. The job \texttt{m3\_stream\_ddrc}
-(34795) settles this: with the whole STREAM process modelled (initialisation, 20 timed iterations, validation)
-the DDR controllers count $1.04\times$ the no-write-allocate bytes and $0.74\times$ the write-allocate bytes,
-in all 10 THP-off and 10 default repetitions and in the three runs of our own triad kernel ($1.02\times$). A
-streaming store on this CPU does not read the line first, so the hardware triad ceiling \emph{is} the counted one,
-\textbf{266.5\GBs{}} (\texttt{dram\_node\_hw}), 78\% of the bus. The DIMM speed itself is not readable without
-root (DMI and \texttt{dmidecode} refused; EDAC lists 16 registered DDR4 modules of 8\,GB without their clock),
-but 266.5\GBs{} over 16 channels requires at least 2082\,MT/s, so DDR4-2666 is consistent and nothing faster
-is needed to explain the measurement. From M3 on, \emph{all} bandwidth figures are hardware bytes
-(DDR-controller counts $\times$ 32\,B) over wall clock, against this ceiling, so that the utilisation of the
-application and of STREAM are measured the same way. The application, unlike STREAM, \emph{does} pay for its
-stores: see the validation paragraph of Section~\ref{sec:model}.
-
-\begin{figure}[t]
-  \centering
-  \includegraphics[width=0.6\linewidth]{figures/fig_stream.pdf}
-  \caption{STREAM triad bandwidth against thread count (median of 10 runs, bars min--max).}
-  \label{fig:stream}
-\end{figure}
-
-\subsection{Attainable floating-point performance}
-A micro-benchmark of independent fused multiply-add chains on 2-lane NEON registers reaches
-4.0 flop/cycle per core, 10.4\GFs{} per core and \textbf{1330\GFs{}} for 128 cores, with perfect scaling.
-Scalar FMA reaches the same value (two scalar FMAs per cycle against one vector FMA), so on this
-core NEON does not raise the FMA peak: vectorisation saves instructions, not flops per cycle.
-Division is much slower, 0.19\GFs{} per core (24.6\GFs{} per node) for vector divides, which matters for
-\kernel{viscosity}, \kernel{calc\_dt} and \kernel{pdv}. The ridge point of the node is
-$1330/267\approx 5$\,flop/B (0.7\,flop/B for one core).
-
-\subsection{Analytic kernel model}
-For every loop nest of the C kernels we counted by hand the 2D arrays that are read and written and the
-floating-point operations per cell (+, $-$, $\times$, $/$, $\sqrt{\cdot}$ count as one; MIN, MAX, fabs and
-comparisons as zero). Stencil neighbours are assumed to come from the cache, so each array is streamed from
-DRAM once per loop nest. Stores that do not read the line first still cost a write-allocate read.
-Table~\ref{tab:model} gives the result: 451\,flop and 2186\,B (1688\,B without write-allocate) per cell and time step,
-i.e.\ an intensity of 0.21\,flop/B.
-
-\begin{table}[t]
-  \centering\small
-  \input{tables/tab_model.tex}
-  \caption{Analytic flop and byte counts per cell (WA = write-allocate). \kernel{ideal\_gas} runs 2.1
-    times per step (once more every 10th step).}
-  \label{tab:model}
-\end{table}
-
-\paragraph{Validation.}
-The model predicts 2.80\,TB of DRAM traffic for bm3840. The DDR-controller counters measure 2.83\,TB
-(1$\times$128, THP off), 2.87\,TB (4$\times$32) and 2.94\,TB (1$\times$128 default): 1\%, 2\% and 5\%
-above the model. The measured read:write ratio of 2.6--2.9 matches the model as well.
-The M3 baseline confirms it at 64$\times$2 (job 34797): 2.83\,TB, 1\% above the model, in all five repetitions
-and with THP on or off. The read/write split tells more. The counters see 2.05\,TB of reads and 0.77\,TB of
-writes; the model has 1.53\,TB of demand reads, 0.64\,TB of writes and, with write-allocate, 2.17\,TB of reads.
-The measured reads are $1.34\times$ the demand reads: the C build's stores \emph{do} cause a read of the line
-first, for about 70\% of the written volume, although a pure streaming store does not on this CPU
-(Section~\ref{sec:bw}). The write-allocate version of the model is therefore the right one for the C kernels as
-they stand. The Fortran build moves 1.76\,TB of reads and 0.60\,TB of writes (2.36\,TB): the same writes within
-6\%, but only $1.15\times$ the demand reads, i.e.\ about 40\% of its written volume comes back as reads. The
-compiler-generated Fortran loops avoid most of the read-for-ownership traffic that the C loops pay, and this
-0.47\,TB is the whole C/Fortran gap at equal bandwidth (Section~\ref{sec:m3base}). Which loops differ is the
-first question of M3.
-For the pure-copy kernels \kernel{revert} and \kernel{reset\_field} the bus-access counter agrees with the
-write-allocate model within 4\% and 35\%. We note that the core-level bus counter overestimates DRAM traffic by
-about 1.8$\times$ for stencil kernels because it also counts L3 hits.
-
-\subsection{Roofline of the kernels}
-\label{sec:roof}
-Figure~\ref{fig:roofline} places every kernel on the rooflines of one core and of the full node.
-\begin{figure}[t]
-  \centering
-  \includegraphics[width=\linewidth]{figures/fig_roofline.pdf}
-  \caption{Roofline of the CloverLeaf C kernels (bm3840). Kernel numbers refer to Table~\ref{tab:kernels}.
-    Kernel points use analytic bytes and per-kernel PAPI times; the whole-application points use the
-    measured DRAM bytes and the median wall clock. The memory ceilings are the STREAM triad values of
-    one core and of the full node.}
-  \label{fig:roofline}
-\end{figure}
-The conclusions are:
-\begin{itemize}
-  \item \textbf{Everything is memory-bound.} All kernels have an intensity of 0.13--0.83\,flop/B, far to the left of
-        the node's ridge point (5\,flop/B). Even the most intense kernel, \kernel{viscosity}, would reach only
-        222\GFs{} (17\% of the FMA peak) with perfect bandwidth.
-  \item \textbf{On one core}, kernels reach 0.6--1.7\GFs{} and 2--9\GBs{}, 12--59\% of the single-core
-        bandwidth. The scalar kernels (\kernel{ideal\_gas}, \kernel{calc\_dt}, \kernel{viscosity}) lie
-        furthest below the memory roofline; they are limited by instruction latency (divide, square root).
-  \item \textbf{On the full node}, the kernels reach 100--150\GBs{} (model bytes) with the default THP
-        setting, i.e.\ 38--56\% of the ceiling; the placement problem of Section~\ref{sec:thp} is what keeps
-        them below it.
-  \item \textbf{Whole application:} the default 1$\times$128 run attains 25\GFs{} (46\% of the 55\GFs{}
-        attainable at this intensity), the run with THP disabled 43\GFs{} (\textbf{78\%}), and the 4$\times$32
-        run 44\GFs{} (80\%).
-  \item \textbf{Floor:} at the measured 2.83\,TB and the hardware ceiling of 266.5\GBs{} the 87 steps cannot
-        take less than \textbf{10.6\,s} (10.5\,s for the model's 2.80\,TB). The 64$\times$2 baseline runs in
-        11.25\,s, at \textbf{94\%} of that floor (250\GBs{} sustained over the whole run, start-up included);
-        32$\times$4 and 128$\times$1 reach 92--95\%, 4$\times$32 84\% and 1$\times$128 with THP off 80\%
-        (Table~\ref{tab:m3base}). The per-section roofline of the other branch, rerun in hardware-byte mode
-        (\texttt{perf/roofline/roofline.py --hw}, archived with job 34797), puts both advection categories,
-        PdV, Ideal Gas and Fluxes of the C build at 94--102\% of the roof, Acceleration at 83\% and the
-        \texttt{sqrt} kernels (Timestep, Viscosity) at 63--66\%. There is no headroom at the current traffic:
-        every gain needs fewer bytes. The Fortran build runs the same deck in 9.33\,s because it moves 2.36\,TB
-        (its floor is 8.8\,s; it also sits at 95\%).
-\end{itemize}
-
-% =============================================================================
-\section{From the analysis to optimisations}
-\label{sec:opt}
-% =============================================================================
-The analysis fixes the order of the work: first the layout (done: 64$\times$2 avoids the placement problem
-without touching the system, Section~\ref{sec:m3base}), then reduce the number of bytes moved per time step,
-then the instruction-side deficit of the C kernels and the synchronisation overhead. The byte reductions in
-Table~\ref{tab:plan} are predicted with the write-allocate model of Section~\ref{sec:model}
-(\texttt{perf/analysis/plan\_bytes.py}, every change expressed as an edit of the loop table) and will be
-verified with the DDR-controller counters. Both branches had arrived at the same list independently; the
-Fortran patch series of the other branch (unmeasured) was dropped and its two extra ideas folded in:
-Reset and Revert as pointer swaps of the field pairs ($-6.6\%$, missing from the M1 plan), and tile-level
-parallelism as a candidate against the barrier overhead. Together the byte changes remove 29\% of the
-modelled traffic, which at the 266.5\GBs{} hardware ceiling lowers the floor from 10.5 to 7.4\,s, i.e.\ about
-3\,s of the 11.25\,s baseline if the kernels stay at 94\% of the roof. The M3 counters add a sixth lever that
-neither branch had: the C stores pay a read-for-ownership that a streaming store on this CPU does not, and that
-the Fortran build largely avoids (Section~\ref{sec:model}); turning the kernels' full-line stores into
-streaming stores (non-temporal stores, or store sequences the core recognises as streaming) is bounded by
-the no-write-allocate model at $-23\%$ on its own and $-41\%$ on top of the five byte changes (last byte row of
-Table~\ref{tab:plan}). The instruction-side items cannot pay off at 64$\times$2 while the DRAM is 94\% busy;
-they become relevant once the bytes have shrunk, and the C/Fortran comparison no longer motivates them.
-
-\begin{table}[t]
-  \centering\small
-  \input{tables/tab_plan.tex}
-  \caption{Planned optimisations of the C kernels and their predicted effect on DRAM traffic (write-allocate
-    model, bm3840, 87 steps; floor at the 266.5\GBs{} hardware STREAM ceiling; measured baseline 2.83\,TB,
-    11.25\,s). Cumulative = all byte changes up to that row; for the streaming-store bound, cumulative = on top
-    of all five.}
-  \label{tab:plan}
-\end{table}
-
-\todo{M3: implement the changes of Table~\ref{tab:plan} on the 64x2 C baseline, verify each with
-\texttt{qa\_check} (clover\_bm.in deviation) and the DDR counters, report speed-up and the updated roofline.}
+\todo{results text: bytes removed per change against the prediction of Table~\ref{tab:plan}, speed-up per
+layout, updated roofline position, remaining gap to the floor.}
 
 % =============================================================================
 \section{Conclusions (draft)}
 % =============================================================================
 \begin{itemize}
-  \item CloverLeaf's C kernels are memory-bound on the Kunpeng~920: the whole run has an intensity of
-        0.2\,flop/B against a ridge point of 5\,flop/B. Compute-side optimisation cannot pay off.
-  \item The analytic traffic model is accurate to 1--5\% of the measured DRAM traffic and can therefore be
-        used to predict the effect of optimisations.
-  \item The largest single inefficiency of the baseline was not in the kernels but in memory placement:
-        transparent huge pages unbalance the NUMA domains and cost a factor 1.7 in pure-OpenMP runs.
-  \item At 64$\times$2 the C build sustains 250\GBs{}, 94\% of the 266.5\GBs{} hardware ceiling, over the
-        whole run; there is no headroom at the current traffic and every further speed-up has to come from
-        moving fewer bytes.
-  \item The hardware ceiling is the counted STREAM triad: a streaming store does not read the line first on
-        this CPU. The C kernels' stores nevertheless do (reads $1.34\times$ the demand reads), and the Fortran
-        build avoids most of that: its 17\% fewer hardware bytes are the whole 20\% C/Fortran gap.
-  \item The M3 baseline is the C kernels at 64 ranks $\times$ 2 threads (11.25\,s, spread 0.7\%, THP as
-        installed), compared with 1$\times$128, 4$\times$32, 32$\times$4 and 128$\times$1 with THP on and off
-        (job 34797); all bandwidths are hardware bytes from the DDR-controller counters; the correctness gate,
-        reproduction of the \texttt{clover\_bm.in} baseline deviation, held 7 of 7 at every layout (job 34796).
+  \item The C kernels are memory-bound (0.2\,flop/B against a 5\,flop/B ridge) and the 64$\times$2 baseline
+        already sustains 94\% of the 266.5\GBs{} hardware ceiling over the whole run: only fewer bytes can
+        make it faster.
+  \item The analytic byte model matches the counters to 1\% and predicts the five planned changes at
+        $-29\%$ of the traffic (floor 10.5 to 7.4\,s); the read-for-ownership that the C stores pay, and
+        that streaming stores and the Fortran build avoid, is a sixth lever worth up to another $-23\%$.
+  \item The correctness gate (reproduction of the \texttt{clover\_bm.in} deviation) held at every layout for
+        the baseline and is applied to every change.
 \end{itemize}
 
 \bibliographystyle{plain}

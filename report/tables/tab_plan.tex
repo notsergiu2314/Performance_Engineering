@@ -13,6 +13,6 @@ streaming stores (no read-for-ownership), upper bound & 1688 & $-22.8\%$ & $-41.
 nowait between independent worksharing loops & \multicolumn{4}{p{5.6cm}}{time only: 12.5 \% of cycles in gomp barrier (perf, 1x128)} \\
 -fno-math-errno for the sqrt kernels & \multicolumn{4}{p{5.6cm}}{time only: calc\_dt, ideal\_gas, viscosity run scalar (0 \% NEON)} \\
 omp simd / restructured upwind indexing in advection flux sweeps & \multicolumn{4}{p{5.6cm}}{time only: only after the byte reductions: at 64x2 both C and Fortran run at 94-95 \% of the hardware ceiling} \\
-tile-level parallelism (jort patch 06) & \multicolumn{4}{p{5.6cm}}{time only: fork/join per tile per kernel} \\
+tile-level parallelism & \multicolumn{4}{p{5.6cm}}{time only: one fork/join per tile instead of per loop (fallback if nowait is not enough)} \\
 \bottomrule
 \end{tabular}

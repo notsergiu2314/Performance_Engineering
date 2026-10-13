@@ -239,14 +239,11 @@ def fig_roofline():
     roof(b, BW_NODE, FMA_NODE, [(DIV_NODE, "vector divide", ":")], 0.08, 10, "(b) full node, 128 cores", 1.5, 4000)
     kernel_points(b, "time_1x128", OFFS_B)
     b.scatter([], [], s=30, color=BLUE, edgecolor="white", lw=1, label="kernels (numbered as in the table)")
-    # whole application, measured DRAM bytes: hollow markers so the kernels stay visible
-    app = [("A", "o", INK2, 90, "whole app, 1x128, THP on"),
-           ("E", "D", ORANGE, 70, "whole app, 1x128, THP off"),
-           ("D", "s", AQUA, 40, "whole app, 4x32")]
-    for v, mk, col, size, lab in app:
-        nbytes = float(PL[v]["dram_GB"]) * 1e9
-        b.scatter([APP_FLOPS / nbytes], [APP_FLOPS / wall(v) * 1e-9], s=size, marker=mk,
-                  facecolors="none", edgecolors=col, linewidths=1.6, zorder=5, label=lab)
+    # whole application at the 64x2 baseline, measured DRAM bytes: hollow marker so the kernels stay visible
+    base = next(r for r in m3_rows() if r["kernels"] == "c" and r["thp"] == "on" and r["layout"] == "64x2")
+    nbytes, t = float(base["dram_TB"]) * 1e12, float(base["median_s"])
+    b.scatter([APP_FLOPS / nbytes], [APP_FLOPS / t * 1e-9], s=70, marker="D", facecolors="none",
+              edgecolors=ORANGE, linewidths=1.6, zorder=5, label="whole application, 64x2 baseline")
     b.legend(loc="lower right", fontsize=6.5, handletextpad=0.3)
 
     fig.tight_layout()
@@ -311,11 +308,20 @@ def esc(s):
 
 
 def tab_correctness():
-    lines = [r"\begin{tabular}{llrrl}", r"\toprule",
-             r"kernels & layout & runs & deviation (\%) & CloverLeaf verdict \\", r"\midrule"]
+    """One row per kernel set: the deviation is identical at every layout and repetition."""
+    groups = {}
     for r in rows("correctness.csv"):
-        lines.append(f"{r['kernels']} & {r['layout']} & {r['reps']} & {esc(r['qa_pct'])} & "
-                     f"{r['clover_verdict']} ({esc(r['source'])}) \\\\")
+        g = groups.setdefault(r["kernels"], dict(qa=r["qa_pct"], layouts=[], runs=0, jobs=set()))
+        assert g["qa"] == r["qa_pct"], (r["kernels"], r["qa_pct"])
+        layout = r["layout"].split(" THP")[0]
+        if layout not in g["layouts"]:
+            g["layouts"].append(layout)
+        g["runs"] += int(r["reps"])
+        g["jobs"].add(r["source"])
+    lines = [r"\begin{tabular}{lrrl}", r"\toprule",
+             r"kernels & runs & deviation (\%) & layouts (all identical) \\", r"\midrule"]
+    for k, g in groups.items():
+        lines.append(f"{k} & {g['runs']} & {g['qa']} & {esc(', '.join(g['layouts']))} \\\\")
     lines += [r"\bottomrule", r"\end{tabular}"]
     tex("tab_correctness.tex", "\n".join(lines) + "\n")
 
@@ -339,17 +345,20 @@ def m3_rows():
 
 
 def tab_m3_baseline():
-    lines = [r"\begin{tabular}{llllrrrr}", r"\toprule",
-             r"kernels & layout & THP & wall (s) & DRAM & bandwidth & busiest/ & vs.\ hw \\",
-             r" & & & median (min--max) & (TB) & (GB/s) & mean & roof (\%) \\", r"\midrule"]
+    lines = [r"\begin{tabular}{lllrrrr}", r"\toprule",
+             r"kernels & layout & wall (s) & DRAM & bandwidth & busiest/ & vs.\ hw \\",
+             r" & & median (min--max) & (TB) & (GB/s) & mean & roof (\%) \\", r"\midrule"]
     hw = C.get("dram_node_hw")
     for r in m3_rows():
+        if r["thp"] == "off" and not (r["kernels"] == "c" and r["layout"] == "1x128"):
+            continue
+        layout = r["layout"] + (", THP off" if r["thp"] == "off" else "")
         med = float(r["median_s"])
         dram = f"{float(r['dram_TB']):.2f}" if r["dram_TB"] else "--"
         bw = f"{float(r['hw_GBs']):.0f}" if r["hw_GBs"] else "--"
         bus = f"{float(r['busiest_over_mean']):.2f}" if r["busiest_over_mean"] else "--"
         roof = f"{100 * float(r['hw_GBs']) / hw:.0f}" if (r["hw_GBs"] and hw) else "--"
-        lines.append(f"{r['kernels']} & {r['layout']} & {r['thp']} & {med:.2f} ({float(r['min_s']):.2f}--{float(r['max_s']):.2f}) & "
+        lines.append(f"{r['kernels']} & {layout} & {med:.2f} ({float(r['min_s']):.2f}--{float(r['max_s']):.2f}) & "
                      f"{dram} & {bw} & {bus} & {roof} \\\\")
     lines += [r"\bottomrule", r"\end{tabular}"]
     tex("tab_m3_baseline.tex", "\n".join(lines) + "\n")
@@ -361,15 +370,19 @@ def fig_m3_layouts():
     for r in data:
         if r["layout"] not in layouts:
             layouts.append(r["layout"])
-    series = [("c", "on", BLUE, "C, THP on"), ("c", "off", AQUA, "C, THP off"), ("fortran", "on", "#b8b6b0", "Fortran, THP on (reference)")]
+    opt = optimised_rows()
+    series = [("c", "on", BLUE, "C baseline"), ("opt", "on", AQUA, "C optimised"), ("fortran", "on", "#b8b6b0", "Fortran (reference)")]
     fig, ax = plt.subplots(figsize=(4.6, 2.7))
     xs = np.arange(len(layouts))
+    present = []
+    for k, thp, col, lab in series:
+        src = opt if k == "opt" else data
+        sel = {r["layout"]: r for r in src if (k == "opt" or r["kernels"] == k) and r.get("thp", "on") == thp}
+        if sel:
+            present.append((sel, col, lab))
     width = 0.26
-    for i, (k, thp, col, lab) in enumerate(series):
-        sel = {r["layout"]: r for r in data if r["kernels"] == k and r["thp"] == thp}
-        if not sel:
-            continue
-        x = [xs[layouts.index(l)] + (i - 1) * width for l in sel]
+    for i, (sel, col, lab) in enumerate(present):
+        x = [xs[layouts.index(l)] + (i - (len(present) - 1) / 2) * width for l in sel]
         y = [float(r["median_s"]) for r in sel.values()]
         lo = [float(r["median_s"]) - float(r["min_s"]) for r in sel.values()]
         hi = [float(r["max_s"]) - float(r["median_s"]) for r in sel.values()]
@@ -378,7 +391,7 @@ def fig_m3_layouts():
             ax.text(xi, yi + h + 0.5, f"{yi:.1f}", ha="center", va="bottom", fontsize=5.5, color=INK, rotation=90)
     hw = C.get("dram_node_hw")
     floor = APP_BYTES_MODEL / ((hw or BW_NODE * 4 / 3) * 1e9)
-    ax.axhline(floor, color=INK2, lw=1, ls="--", label=f"C memory floor {floor:.1f} s")
+    ax.axhline(floor, color=INK2, lw=1, ls="--", label=f"baseline memory floor {floor:.1f} s")
     ax.set_ylim(0, 1.3 * max(float(r["max_s"]) for r in data))
     ax.set_xticks(xs)
     ax.set_xticklabels(layouts)
@@ -387,6 +400,32 @@ def fig_m3_layouts():
     ax.grid(True, axis="y", color=GRID, lw=0.6)
     ax.legend(fontsize=6.5, loc="upper right")
     save(fig, "fig_m3_layouts")
+
+
+def optimised_rows():
+    """data/optimised.csv: layout,ranks,threads,variant,n,median_s,min_s,max_s,dram_TB,qa_ok,source (optional)."""
+    p = DATA / "optimised.csv"
+    return [r for r in rows("optimised.csv") if r["median_s"]] if p.exists() else []
+
+
+def tab_results():
+    base = {r["layout"]: r for r in m3_rows() if r["kernels"] == "c" and r["thp"] == "on"}
+    opt = {r["layout"]: r for r in optimised_rows()}
+    lines = [r"\begin{tabular}{lrrrrrrr}", r"\toprule",
+             r"layout & \multicolumn{3}{c}{baseline} & \multicolumn{3}{c}{optimised} & speed-up \\",
+             r" & wall (s) & TB & GB/s & wall (s) & TB & GB/s & \\", r"\midrule"]
+    for l, b in base.items():
+        o = opt.get(l)
+        bw = float(b["median_s"])
+        if o:
+            ow = float(o["median_s"]); ob = float(o["dram_TB"]) if o["dram_TB"] else float("nan")
+            right = f"{ow:.2f} ({float(o['min_s']):.2f}--{float(o['max_s']):.2f}) & {ob:.2f} & {ob * 1e3 / ow:.0f} & {bw / ow:.2f}"
+        else:
+            right = "-- & -- & -- & --"
+        lines.append(f"{l} & {bw:.2f} ({float(b['min_s']):.2f}--{float(b['max_s']):.2f}) & {float(b['dram_TB']):.2f} & "
+                     f"{float(b['hw_GBs']):.0f} & {right} \\\\")
+    lines += [r"\bottomrule", r"\end{tabular}"]
+    tex("tab_results.tex", "\n".join(lines) + "\n")
 
 
 def tab_configs():
@@ -430,16 +469,14 @@ def numbers():
 if __name__ == "__main__":
     FIG.mkdir(exist_ok=True)
     TAB.mkdir(exist_ok=True)
-    fig_scaling()
-    fig_stream()
-    fig_placement()
     fig_roofline()
     tab_kernels()
     tab_model()
-    tab_placement()
-    tab_configs()
     tab_correctness()
     tab_plan()
     tab_m3_baseline()
+    tab_results()
     fig_m3_layouts()
+    # not in the report any more (M1/M2 material, data still in data/): fig_scaling(), fig_stream(),
+    # fig_placement(), tab_placement(), tab_configs()
     numbers()

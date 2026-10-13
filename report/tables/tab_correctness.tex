@@ -1,17 +1,8 @@
-\begin{tabular}{llrrl}
+\begin{tabular}{lrrl}
 \toprule
-kernels & layout & runs & deviation (\%) & CloverLeaf verdict \\
+kernels & runs & deviation (\%) & layouts (all identical) \\
 \midrule
-c & 128x1 & 5 & 0.5726209E-02 & FAILED (job 34729) \\
-c & 4x32 & 5 & 0.5726209E-02 & FAILED (job 34729) \\
-fortran & 128x1 & 5 & 0.1787088E-01 & FAILED (job 34729) \\
-fortran & 4x32 & 5 & 0.1787088E-01 & FAILED (job 34729) \\
-c & 64x2 & 1 & 0.5726209E-02 & FAILED (job 34796) \\
-c & 64x2 THP off & 1 & 0.5726209E-02 & FAILED (job 34796) \\
-c & 1x128 & 1 & 0.5726209E-02 & FAILED (job 34796) \\
-c & 4x32 & 1 & 0.5726209E-02 & FAILED (job 34796) \\
-c & 32x4 & 1 & 0.5726209E-02 & FAILED (job 34796) \\
-c & 128x1 & 1 & 0.5726209E-02 & FAILED (job 34796) \\
-fortran & 64x2 & 1 & 0.1787088E-01 & FAILED (job 34796) \\
+c & 16 & 0.5726209E-02 & 128x1, 4x32, 64x2, 1x128, 32x4 \\
+fortran & 11 & 0.1787088E-01 & 128x1, 4x32, 64x2 \\
 \bottomrule
 \end{tabular}
