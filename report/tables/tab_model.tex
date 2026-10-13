@@ -1,0 +1,21 @@
+\begin{tabular}{lrrrrr}
+\toprule
+kernel & calls/step & flop/cell & B/cell & B/cell & AI \\
+ & & & (no WA) & (with WA) & (flop/B, WA) \\
+\midrule
+\texttt{ideal\_gas} & 2.1 & 9 & 32 & 48 & 0.19 \\
+\texttt{viscosity} & 1 & 40 & 40 & 48 & 0.83 \\
+\texttt{calc\_dt} & 1 & 31 & 80 & 88 & 0.35 \\
+\texttt{pdv\_predict} & 1 & 33 & 96 & 120 & 0.28 \\
+\texttt{pdv\_correct} & 1 & 33 & 112 & 136 & 0.24 \\
+\texttt{revert} & 1 & 0 & 32 & 48 & 0.00 \\
+\texttt{accelerate} & 1 & 37 & 80 & 96 & 0.39 \\
+\texttt{flux\_calc} & 1 & 10 & 64 & 80 & 0.12 \\
+\texttt{advec\_cell} & 2 & 45 & 180 & 244 & 0.18 \\
+\texttt{advec\_mom} & 4 & 39 & 172 & 220 & 0.18 \\
+\texttt{reset\_field} & 1 & 0 & 64 & 96 & 0.00 \\
+\texttt{field\_summary} & 0.1 & 22 & 48 & 48 & 0.46 \\
+\midrule
+per cell and step & & 451 & 1688 & 2186 & 0.21 \\
+\bottomrule
+\end{tabular}
