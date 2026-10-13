@@ -78,17 +78,12 @@ void mxv_par_guided(double *restrict y,
 
 int main(int argc, char *argv[]) {
     if (argc != 4) {
-        printf("Usage: %s <N> <B> <iterations>\n", argv[0]);
+        printf("Usage: %s <MAT_COLS> <MAT_ROWS> <iterations>\n", argv[0]);
         return 1;
     }
 
     int N = atoi(argv[1]);
-    int B = atoi(argv[2]);
-
-    if (N % B != 0) {
-        printf("Error: N must be divisible by B.\n");
-        return 1;
-    }
+    int M = atoi(argv[2]);
 
     int max_it = atoi(argv[3]);
     if (max_it < 0) {
@@ -101,9 +96,9 @@ int main(int argc, char *argv[]) {
     fprintf(results_csv, "iteration,paralellization_type,time_ns,result\n");
 
     // Allocate memory
-    double *A = (double *)malloc(N * N * sizeof(double));
+    double *A = (double *)malloc(M * N * sizeof(double));
     double *x = (double *)malloc(N * sizeof(double));
-    double *y = (double *)malloc(N * sizeof(double));
+    double *y = (double *)malloc(M * sizeof(double));
 
     if (!A || !x || !y) {
         printf("Memory allocation failed.\n");
@@ -143,7 +138,7 @@ int main(int argc, char *argv[]) {
         struct timespec start, end;
         clock_gettime(CLOCK_MONOTONIC, &start);
         // Run the blocked matrix-vector multiplication
-        mxv(y, A, x, B, N);
+        mxv(y, A, x, M, N);
         clock_gettime(CLOCK_MONOTONIC, &end);
         long long time_taken_ns = (end.tv_sec - start.tv_sec) * NS_DIV + (end.tv_nsec - start.tv_nsec);
         
@@ -161,7 +156,7 @@ int main(int argc, char *argv[]) {
         struct timespec start, end;
         clock_gettime(CLOCK_MONOTONIC, &start);
         // Run the blocked matrix-vector multiplication
-        mxv_par_static(y, A, x, B, N);
+        mxv_par_static(y, A, x, M, N);
         clock_gettime(CLOCK_MONOTONIC, &end);
         long long time_taken_ns = (end.tv_sec - start.tv_sec) * NS_DIV + (end.tv_nsec - start.tv_nsec);
         
@@ -179,7 +174,7 @@ int main(int argc, char *argv[]) {
         struct timespec start, end;
         clock_gettime(CLOCK_MONOTONIC, &start);
         // Run the blocked matrix-vector multiplication
-        mxv_par_dynamic(y, A, x, B, N);
+        mxv_par_dynamic(y, A, x, M, N);
         clock_gettime(CLOCK_MONOTONIC, &end);
         long long time_taken_ns = (end.tv_sec - start.tv_sec) * NS_DIV + (end.tv_nsec - start.tv_nsec);
         
@@ -197,7 +192,7 @@ int main(int argc, char *argv[]) {
         struct timespec start, end;
         clock_gettime(CLOCK_MONOTONIC, &start);
         // Run the blocked matrix-vector multiplication
-        mxv_par_guided(y, A, x, B, N);
+        mxv_par_guided(y, A, x, M, N);
         clock_gettime(CLOCK_MONOTONIC, &end);
         long long time_taken_ns = (end.tv_sec - start.tv_sec) * NS_DIV + (end.tv_nsec - start.tv_nsec);
         
