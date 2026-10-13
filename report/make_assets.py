@@ -379,7 +379,7 @@ def fig_m3_layouts():
     hw = C.get("dram_node_hw")
     floor = APP_BYTES_MODEL / ((hw or BW_NODE * 4 / 3) * 1e9)
     ax.axhline(floor, color=INK2, lw=1, ls="--")
-    ax.text(len(layouts) - 0.5, floor + 0.4, f"floor {floor:.1f} s", ha="right", fontsize=7, color=INK2)
+    ax.text(-0.55, floor + 0.4, f"memory floor {floor:.1f} s", ha="left", fontsize=7, color=INK2)
     ax.set_xticks(xs)
     ax.set_xticklabels(layouts)
     ax.set_xlabel("MPI ranks x OpenMP threads")
