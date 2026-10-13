@@ -113,7 +113,9 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    /* Parallel first-touch initialization. */
+    /* Parallel first-touch initialization. Possible limitation that pages might migrate
+    * because of large serial access right after parallel static schedule allocate.
+    */
     #pragma omp parallel default(none) shared(A, x, y, M, N)
     {
         #pragma omp for schedule(static) // only static, not the other scheduling policies,
