@@ -1,0 +1,5 @@
+__pycache__/
+*.exe
+ex1_stream/stream_omp
+ex1_stream/nothp
+ex1_stream/results/*/raw/
