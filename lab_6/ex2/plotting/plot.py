@@ -165,12 +165,12 @@ ax.grid(
 )
 
 # Add mean values above bars
-offset = 0.02 * max(maxs)
+offset = 0.05 * max(maxs)
 
-for bar, mean, minimum in zip(bars, means, mins):
+for bar, mean, std in zip(bars, means, stds):
     ax.text(
         bar.get_x() + bar.get_width() / 2,
-        minimum - offset,
+        mean + std + offset,
         f"{mean:.2f}",
         ha="center",
         va="top",
