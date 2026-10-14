@@ -45,6 +45,9 @@ void reset_field_kernel_c_(int *xmin,int *xmax,int *ymin,int *ymax,
 
   int j,k;
   
+ /* TODO(M3-4): these four copies (118 MB each) go away. In reset_field.f90 swap the
+  * allocations instead (MOVE_ALLOC density0<->density1, energy0<->energy1,
+  * xvel0<->xvel1, yvel0<->yvel1), O(1) and no traffic. This kernel becomes unused. (-6.6%) */
 #pragma omp parallel
  {
   PROF_BEGIN(PROF_RESET_FIELD);

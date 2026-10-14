@@ -46,6 +46,8 @@ void ideal_gas_kernel_c_(int *xmin,int *xmax,int *ymin,int *ymax,
 #pragma omp parallel private(j)
  {
   PROF_BEGIN(PROF_IDEAL_GAS);
+  /* TODO(M3-T2): this loop runs scalar (0% NEON) because sqrt may set errno. Build with
+   * -fno-math-errno so it vectorises. */
 #pragma omp for private(v,pressurebyenergy,pressurebyvolume,sound_speed_squared)
   for (k=y_min;k<=y_max;k++) {
 #pragma omp simd

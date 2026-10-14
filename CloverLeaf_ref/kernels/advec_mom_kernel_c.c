@@ -69,9 +69,15 @@ void advec_mom_kernel_c_(int *xmin,int *xmax,int *ymin,int *ymax,
 
   mom_sweep=direction+2*(sweep_number-1);
   
+ /* TODO(M3-T1): nowait between worksharing loops that do not depend on each other
+  * (e.g. node_flux and node_mass_post); 12.5% of cycles are barrier time. */
 #pragma omp parallel
  {
   PROF_BEGIN(PROF_ADVEC_MOM);
+  /* TODO(M3-1): split this kernel. The post_vol/pre_vol, node_flux, node_mass_post and
+   * node_mass_pre loops depend only on direction+sweep, not on which_vel, and are
+   * recomputed identically for yvel. Move them to advec_mom_prep_c (once per sweep);
+   * keep only the mom_flux upwind loop and the vel1 update in advec_mom_vel_c. (-12.8%) */
   if(mom_sweep==1){
 #pragma omp for private(j)
     for (k=y_min-2;k<=y_max+2;k++) {
@@ -80,6 +86,7 @@ void advec_mom_kernel_c_(int *xmin,int *xmax,int *ymin,int *ymax,
         post_vol[FTNREF2D(j  ,k  ,x_max+5,x_min-2,y_min-2)]=volume[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)]
                                                            +vol_flux_y[FTNREF2D(j  ,k+1,x_max+4,x_min-2,y_min-2)]
                                                            -vol_flux_y[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)];
+        /* TODO(M3-3): dead store, pre_vol is never read. Remove. (-4.4% with advec_cell post_vol) */
         pre_vol[FTNREF2D(j  ,k  ,x_max+5,x_min-2,y_min-2)]=post_vol[FTNREF2D(j  ,k  ,x_max+5,x_min-2,y_min-2)]
                                                           +vol_flux_x[FTNREF2D(j+1,k  ,x_max+5,x_min-2,y_min-2)]
                                                           -vol_flux_x[FTNREF2D(j  ,k  ,x_max+5,x_min-2,y_min-2)];
@@ -93,6 +100,7 @@ void advec_mom_kernel_c_(int *xmin,int *xmax,int *ymin,int *ymax,
         post_vol[FTNREF2D(j  ,k  ,x_max+5,x_min-2,y_min-2)]=volume[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)]
                                                                 +vol_flux_x[FTNREF2D(j+1,k  ,x_max+5,x_min-2,y_min-2)]
                                                                 -vol_flux_x[FTNREF2D(j  ,k  ,x_max+5,x_min-2,y_min-2)];
+        /* TODO(M3-3): dead store, pre_vol is never read. Remove. */
         pre_vol[FTNREF2D(j  ,k  ,x_max+5,x_min-2,y_min-2)]=post_vol[FTNREF2D(j  ,k  ,x_max+5,x_min-2,y_min-2)]
                                                                +vol_flux_y[FTNREF2D(j  ,k+1,x_max+4,x_min-2,y_min-2)]
                                                                -vol_flux_y[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)];
@@ -104,6 +112,7 @@ void advec_mom_kernel_c_(int *xmin,int *xmax,int *ymin,int *ymax,
 #pragma omp simd
       for (j=x_min-2;j<=x_max+2;j++) {
         post_vol[FTNREF2D(j  ,k  ,x_max+5,x_min-2,y_min-2)]=volume[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)];
+        /* TODO(M3-3): dead store, pre_vol is never read. Remove. */
         pre_vol[FTNREF2D(j  ,k  ,x_max+5,x_min-2,y_min-2)]=post_vol[FTNREF2D(j  ,k  ,x_max+5,x_min-2,y_min-2)]
                                                           +vol_flux_y[FTNREF2D(j  ,k+1,x_max+4,x_min-2,y_min-2)]
                                                           -vol_flux_y[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)];
@@ -115,6 +124,7 @@ void advec_mom_kernel_c_(int *xmin,int *xmax,int *ymin,int *ymax,
 #pragma omp simd
       for (j=x_min-2;j<=x_max+2;j++) {
         post_vol[FTNREF2D(j  ,k  ,x_max+5,x_min-2,y_min-2)]=volume[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)];
+        /* TODO(M3-3): dead store, pre_vol is never read. Remove. */
         pre_vol[FTNREF2D(j  ,k  ,x_max+5,x_min-2,y_min-2)]=post_vol[FTNREF2D(j  ,k  ,x_max+5,x_min-2,y_min-2)]
                                                           +vol_flux_x[FTNREF2D(j+1,k  ,x_max+5,x_min-2,y_min-2)]
                                                           -vol_flux_x[FTNREF2D(j  ,k  ,x_max+5,x_min-2,y_min-2)];
@@ -157,6 +167,8 @@ void advec_mom_kernel_c_(int *xmin,int *xmax,int *ymin,int *ymax,
                           -node_flux[FTNREF2D(j-1,k  ,x_max+5,x_min-2,y_min-2)]+node_flux[FTNREF2D(j  ,k  ,x_max+5,x_min-2,y_min-2)];
       }
     }
+    /* TODO(M3-T3): make this upwind loop omp simd friendly: select upwind/donor/downwind
+     * arithmetically from the sign of node_flux instead of by branch. */
 #pragma omp for private(upwind,downwind,donor,dif,sigma,width,limiter,vdiffuw,vdiffdw,auw,adw,wind,j,advec_vel_s)
     for (k=y_min;k<=y_max+1;k++) {
       for (j=x_min-1;j<=x_max+1;j++) {
@@ -190,6 +202,11 @@ void advec_mom_kernel_c_(int *xmin,int *xmax,int *ymin,int *ymax,
       }
     }
 
+    /* TODO(M3-6): streaming stores. The report lists this update as the candidate, but vel1
+     * is loaded in the same iteration so its line is already in L1 and no read-for-ownership
+     * is paid here. Pure-output loops (node_flux, node_mass_post above) are the better
+     * targets: contiguous full-line stores, never re-read in the loop -> write-streaming
+     * detector or explicit stnp. Upper bound -23%; verify with the DDR counters. */
 #pragma omp for private(j)
     for (k=y_min;k<=y_max+1;k++) {
 #pragma omp simd
@@ -237,6 +254,7 @@ void advec_mom_kernel_c_(int *xmin,int *xmax,int *ymin,int *ymax,
                           -node_flux[FTNREF2D(j  ,k-1,x_max+5,x_min-2,y_min-2)]+node_flux[FTNREF2D(j  ,k  ,x_max+5,x_min-2,y_min-2)];
       }
     }
+    /* TODO(M3-T3): make this upwind loop omp simd friendly (see direction==1). */
 #pragma omp for private(upwind,downwind,donor,dif,sigma,width,limiter,vdiffuw,vdiffdw,auw,adw,wind,j,advec_vel_s)
     for (k=y_min-1;k<=y_max+1;k++) {
       for (j=x_min;j<=x_max+1;j++) {
@@ -269,6 +287,7 @@ void advec_mom_kernel_c_(int *xmin,int *xmax,int *ymin,int *ymax,
                                                            *node_flux[FTNREF2D(j  ,k  ,x_max+5,x_min-2,y_min-2)];
       }
     }
+    /* TODO(M3-6): streaming stores, see the direction==1 note. */
 #pragma omp for private(j)
     for (k=y_min;k<=y_max+1;k++) {
 #pragma omp simd

@@ -44,6 +44,9 @@ void revert_kernel_c_(int *xmin,int *xmax,int *ymin,int *ymax,
 
   int j,k;
   
+ /* TODO(M3-4): drop this copy. The PdV corrector reads only the level-0 fields, so the
+  * CALL revert() at the end of the predictor pass in PdV.f90 is removed and this kernel
+  * becomes unused. Verify with the clover_bm.in correctness gate. */
 #pragma omp parallel
  {
   PROF_BEGIN(PROF_REVERT);

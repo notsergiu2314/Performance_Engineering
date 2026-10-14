@@ -66,6 +66,7 @@ void advec_cell_kernel_c_(int *xmin,int *xmax,int *ymin,int *ymax,
 
   one_by_six=1.0/6.0;
 
+ /* TODO(M3-T1): nowait between independent worksharing loops (12.5% of cycles in barrier). */
 #pragma omp parallel
  {
   PROF_BEGIN(PROF_ADVEC_CELL);
@@ -82,6 +83,7 @@ void advec_cell_kernel_c_(int *xmin,int *xmax,int *ymin,int *ymax,
                                                             -vol_flux_x[FTNREF2D(j  ,k  ,x_max+5,x_min-2,y_min-2)]
                                                             +vol_flux_y[FTNREF2D(j  ,k+1,x_max+4,x_min-2,y_min-2)]
                                                             -vol_flux_y[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)]);
+          /* TODO(M3-3): dead store, post_vol is never read in sweep 1. Remove. */
           post_vol[FTNREF2D(j  ,k  ,x_max+5,x_min-2,y_min-2)]=pre_vol[FTNREF2D(j  ,k  ,x_max+5,x_min-2,y_min-2)]
                                                             -(vol_flux_x[FTNREF2D(j+1,k  ,x_max+5,x_min-2,y_min-2)]
                                                              -vol_flux_x[FTNREF2D(j  ,k  ,x_max+5,x_min-2,y_min-2)]);
@@ -102,6 +104,8 @@ void advec_cell_kernel_c_(int *xmin,int *xmax,int *ymin,int *ymax,
       }
 
     }
+    /* TODO(M3-T3): make this upwind flux loop omp simd friendly: select upwind/donor/downwind
+     * arithmetically from the sign of vol_flux_x instead of by branch. */
 #pragma omp for private(upwind,donor,downwind,dif,sigmat,sigma3,sigma4,sigmav,sigma,sigmam,diffuw,diffdw,limiter,j)
     for (k=y_min;k<=y_max;k++) {
       for (j=x_min;j<=x_max+2;j++) {
@@ -155,6 +159,9 @@ void advec_cell_kernel_c_(int *xmin,int *xmax,int *ymin,int *ymax,
       }
     }
     
+    /* TODO(M3-2): pre_mass, post_mass, post_ener and advec_vol are stored and read back in
+     * the same iteration and nothing else reads them. Make them scalars: no store, no
+     * read-for-ownership. (-5.9%) */
 #pragma omp for private(j)
     for (k=y_min;k<=y_max;k++) {
 #pragma omp simd
@@ -193,6 +200,7 @@ void advec_cell_kernel_c_(int *xmin,int *xmax,int *ymin,int *ymax,
                                                             -vol_flux_y[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)]
                                                             +vol_flux_x[FTNREF2D(j+1,k  ,x_max+5,x_min-2,y_min-2)]
                                                             -vol_flux_x[FTNREF2D(j  ,k  ,x_max+5,x_min-2,y_min-2)]);
+          /* TODO(M3-3): dead store, post_vol is never read in sweep 1. Remove. */
           post_vol[FTNREF2D(j  ,k  ,x_max+5,x_min-2,y_min-2)]=pre_vol[FTNREF2D(j  ,k  ,x_max+5,x_min-2,y_min-2)]
                                                             -(vol_flux_y[FTNREF2D(j  ,k+1,x_max+4,x_min-2,y_min-2)]
                                                              -vol_flux_y[FTNREF2D(j  ,k  ,x_max+4,x_min-2,y_min-2)]);
@@ -215,6 +223,7 @@ void advec_cell_kernel_c_(int *xmin,int *xmax,int *ymin,int *ymax,
 
     }
     
+    /* TODO(M3-T3): make this upwind flux loop omp simd friendly (see x sweep). */
 #pragma omp for private(upwind,donor,downwind,dif,sigmat,sigma3,sigma4,sigmav,sigma,sigmam,diffuw,diffdw,limiter,j)
     for (k=y_min;k<=y_max+2;k++) {
       for (j=x_min;j<=x_max;j++) {
@@ -269,6 +278,7 @@ void advec_cell_kernel_c_(int *xmin,int *xmax,int *ymin,int *ymax,
       }
     }
     
+    /* TODO(M3-2): same as the x sweep: keep the four temporaries in registers. */
 #pragma omp for private(j)
     for (k=y_min;k<=y_max;k++) {
 #pragma omp simd
