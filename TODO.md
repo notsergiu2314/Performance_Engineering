@@ -24,6 +24,10 @@ node_flux, node_mass_post, node_mass_pre) out of velocity loop, these do not nee
 
 **Jort**
 
-- 
+- advec_mom
+- calc_dt
 
 **Sergiu**
+
+- advec_cell
+- revert/reset field kernels
