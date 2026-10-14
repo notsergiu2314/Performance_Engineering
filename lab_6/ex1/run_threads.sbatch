@@ -8,4 +8,4 @@
 # Submit from this directory: sbatch run_threads.sbatch
 # (partition name taken from the earlier cluster jobs; adjust if needed)
 cd "$SLURM_SUBMIT_DIR"
-./run_threads.sh
+bash ./run_threads.sh
