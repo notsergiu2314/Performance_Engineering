@@ -1,0 +1,49 @@
+\relax 
+\providecommand\hyper@newdestlabel[2]{}
+\providecommand\HyField@AuxAddToFields[1]{}
+\providecommand\HyField@AuxAddToCoFields[2]{}
+\citation{mallinson2013}
+\citation{laukemann2023}
+\@writefile{toc}{\contentsline {section}{\numberline {1}Introduction}{1}{section.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {2}Baseline Analysis}{1}{section.2}\protected@file@percent }
+\newlabel{sec:base}{{2}{1}{Baseline Analysis}{section.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.1}Application and system}{1}{subsection.2.1}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces Baseline kinetic-energy deviation of \texttt  {clover\_bm.in} with the unmodified kernels, the value an optimised build has to reproduce (jobs 34729 and 34796).}}{2}{table.1}\protected@file@percent }
+\newlabel{tab:correctness}{{1}{2}{Baseline kinetic-energy deviation of \texttt {clover\_bm.in} with the unmodified kernels, the value an optimised build has to reproduce (jobs 34729 and 34796)}{table.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.2}Methodology}{2}{subsection.2.2}\protected@file@percent }
+\newlabel{sec:method}{{2.2}{2}{Methodology}{subsection.2.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.3}Where the time goes}{2}{subsection.2.3}\protected@file@percent }
+\newlabel{sec:time}{{2.3}{2}{Where the time goes}{subsection.2.3}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces Per-kernel time share (bm3840; ``128 cores'' = 1$\times $128), IPC, share of SIMD and scalar floating-point instructions, and back-end stall cycles on 1 / 128 cores. Numbers refer to Figure~\ref {fig:roofline}. \texttt  {reset\_field}, \texttt  {revert} and \texttt  {update\_halo} do no floating-point work.}}{3}{table.2}\protected@file@percent }
+\newlabel{tab:kernels}{{2}{3}{Per-kernel time share (bm3840; ``128 cores'' = 1$\times $128), IPC, share of SIMD and scalar floating-point instructions, and back-end stall cycles on 1 / 128 cores. Numbers refer to Figure~\ref {fig:roofline}. \kernel {reset\_field}, \kernel {revert} and \kernel {update\_halo} do no floating-point work}{table.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.4}Ceilings and byte model}{3}{subsection.2.4}\protected@file@percent }
+\newlabel{sec:ceil}{{2.4}{3}{Ceilings and byte model}{subsection.2.4}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces Analytic flop and byte counts per cell and call (WA = write-allocate). \texttt  {ideal\_gas} runs 2.1 times per step.}}{4}{table.3}\protected@file@percent }
+\newlabel{tab:model}{{3}{4}{Analytic flop and byte counts per cell and call (WA = write-allocate). \kernel {ideal\_gas} runs 2.1 times per step}{table.3}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {4}{\ignorespaces Baseline layouts, bm3840, job 34797: median of 5 (min--max), hardware bytes of the DDR-controller counters, the resulting bandwidth and its share of the 266.5\,GB/s{} ceiling, and the load of the busiest controller group relative to the mean. THP as installed except for the one marked row.}}{4}{table.4}\protected@file@percent }
+\newlabel{tab:m3base}{{4}{4}{Baseline layouts, bm3840, job 34797: median of 5 (min--max), hardware bytes of the DDR-controller counters, the resulting bandwidth and its share of the 266.5\GBs {} ceiling, and the load of the busiest controller group relative to the mean. THP as installed except for the one marked row}{table.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.5}Baseline performance}{4}{subsection.2.5}\protected@file@percent }
+\newlabel{sec:perf}{{2.5}{4}{Baseline performance}{subsection.2.5}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Roofline of the CloverLeaf C kernels (bm3840), one core and full node. Kernel numbers refer to Table~\ref {tab:kernels}; kernel points use model bytes and PAPI times (1$\times $128), the application point the measured DRAM bytes and wall clock of the 64$\times $2 baseline.}}{5}{figure.1}\protected@file@percent }
+\newlabel{fig:roofline}{{1}{5}{Roofline of the CloverLeaf C kernels (bm3840), one core and full node. Kernel numbers refer to Table~\ref {tab:kernels}; kernel points use model bytes and PAPI times (1$\times $128), the application point the measured DRAM bytes and wall clock of the 64$\times $2 baseline}{figure.1}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {3}Kernel Improvements}{5}{section.3}\protected@file@percent }
+\newlabel{sec:impr}{{3}{5}{Kernel Improvements}{section.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}What the analysis allows}{5}{subsection.3.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}Byte reductions}{5}{subsection.3.2}\protected@file@percent }
+\newlabel{sec:bytes}{{3.2}{5}{Byte reductions}{subsection.3.2}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {5}{\ignorespaces Kernel changes and their predicted effect on hardware bytes (write-allocate model, bm3840, 87 steps; floor at 266.5\,GB/s{}; measured baseline 2.83\,TB, 11.3\,s). Cumulative = all byte changes up to that row; for the streaming-store bound, cumulative = on top of all five.}}{6}{table.5}\protected@file@percent }
+\newlabel{tab:plan}{{5}{6}{Kernel changes and their predicted effect on hardware bytes (write-allocate model, bm3840, 87 steps; floor at 266.5\GBs {}; measured baseline 2.83\,TB, 11.3\,s). Cumulative = all byte changes up to that row; for the streaming-store bound, cumulative = on top of all five}{table.5}{}}
+\bibstyle{plain}
+\bibdata{refs}
+\bibcite{laukemann2023}{1}
+\@writefile{lot}{\contentsline {table}{\numberline {6}{\ignorespaces C kernels, bm3840: baseline (job 34797) against the optimised build at every layout, THP as installed. Speed-up = baseline median / optimised median.}}{8}{table.6}\protected@file@percent }
+\newlabel{tab:results}{{6}{8}{C kernels, bm3840: baseline (job 34797) against the optimised build at every layout, THP as installed. Speed-up = baseline median / optimised median}{table.6}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.3}Time-only changes}{8}{subsection.3.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.4}Implementation status}{8}{subsection.3.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {4}Results}{8}{section.4}\protected@file@percent }
+\newlabel{sec:res}{{4}{8}{Results}{section.4}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {5}Conclusions (draft)}{8}{section.5}\protected@file@percent }
+\bibcite{mallinson2013}{2}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Wall clock per layout (median, bars min--max): C baseline, C optimised where measured, Fortran for reference. The dashed line is the memory floor of the baseline byte count at 266.5\,GB/s{}.}}{9}{figure.2}\protected@file@percent }
+\newlabel{fig:results}{{2}{9}{Wall clock per layout (median, bars min--max): C baseline, C optimised where measured, Fortran for reference. The dashed line is the memory floor of the baseline byte count at 266.5\GBs {}}{figure.2}{}}
+\gdef \@abspage@last{9}
