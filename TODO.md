@@ -55,7 +55,9 @@ node_flux, node_mass_post, node_mass_pre) out of velocity loop, these do not nee
 
 - advec_mom
 - calc_dt
+
 report:
+
 - rewrite kernel improvements
   - remove percentages, say choose top 3 most time-consuming kernels and some obvious improvements across other kernels for bytes
   - include time-only compiler changes as compile command full old
@@ -70,7 +72,9 @@ report:
 
 - advec_cell
 - revert/reset field kernels
+
 report:
+
 - Add explanation of Arithmetic Intensity analysis for each kernel
 - rewrite introduction
   - remove cloverleaf commit hash

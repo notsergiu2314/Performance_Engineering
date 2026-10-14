@@ -50,8 +50,8 @@ void viscosity_kernel_c_(int *xmin,int *xmax,int *ymin,int *ymax,
 #pragma omp parallel	
  {
   PROF_BEGIN(PROF_VISCOSITY);
-  /* TODO(M3-T2): this loop runs scalar (0% NEON) because sqrt may set errno. Build with
-   * -fno-math-errno so it vectorises. */
+  /* M3-T2: sqrt() below only vectorises without errno semantics; the Makefile
+ * passes -fno-math-errno for the C kernels (GNU and ARM flags). */
 #pragma omp for private(ugrad,vgrad,div,strain2,pgradx,pgrady,pgradx2,pgrady2,limiter,pgrad,xgrad,ygrad,grad,grad2,j,k)
   for (k=y_min;k<=y_max;k++) {
 #pragma omp simd
