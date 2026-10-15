@@ -73,6 +73,7 @@ CONTAINS
   
 
     DO tile=1,tiles_per_chunk
+      CALL advec_mom_prep_driver(tile,direction,sweep_number)   ! M3-1: C kernels, once per sweep
       CALL advec_mom_driver(tile,xvel,direction,sweep_number)
       CALL advec_mom_driver(tile,yvel,direction,sweep_number)
     ENDDO
@@ -103,6 +104,7 @@ CONTAINS
     IF(profiler_on) kernel_time=timer()
 
     DO tile=1,tiles_per_chunk
+      CALL advec_mom_prep_driver(tile,direction,sweep_number)   ! M3-1: C kernels, once per sweep
       CALL advec_mom_driver(tile,xvel,direction,sweep_number)
       CALL advec_mom_driver(tile,yvel,direction,sweep_number)
     ENDDO

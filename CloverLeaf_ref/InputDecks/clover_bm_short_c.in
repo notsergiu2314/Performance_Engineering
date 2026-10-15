@@ -17,5 +17,6 @@
  end_time=0.5
  end_step=87
  use_c_kernels
+ test_problem 2
 
 *endclover

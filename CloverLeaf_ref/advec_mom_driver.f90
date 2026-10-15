@@ -81,55 +81,73 @@ CONTAINS
           direction                              )
       ENDIF
     ELSEIF(use_C_kernels)THEN
+      ! M3-1: the direction-only helpers (work_array1/2/3/6) were built by
+      ! advec_mom_prep_driver once per sweep; here only the per-component part
+      ! runs. work_array4 is mom_flux; work_array5 (pre_vol) is no longer used.
       IF(which_vel.EQ.1) THEN
-        CALL advec_mom_kernel_c(chunk%tiles(tile)%t_xmin,            &
+        CALL advec_mom_vel_c(chunk%tiles(tile)%t_xmin,            &
           chunk%tiles(tile)%t_xmax,              &
           chunk%tiles(tile)%t_ymin,              &
           chunk%tiles(tile)%t_ymax,              &
           chunk%tiles(tile)%field%xvel1,         &
-          chunk%tiles(tile)%field%mass_flux_x,   &
-          chunk%tiles(tile)%field%vol_flux_x,    &
-          chunk%tiles(tile)%field%mass_flux_y,   &
-          chunk%tiles(tile)%field%vol_flux_y,    &
-          chunk%tiles(tile)%field%volume,        &
-          chunk%tiles(tile)%field%density1,      &
           chunk%tiles(tile)%field%work_array1,   &
           chunk%tiles(tile)%field%work_array2,   &
           chunk%tiles(tile)%field%work_array3,   &
           chunk%tiles(tile)%field%work_array4,   &
-          chunk%tiles(tile)%field%work_array5,   &
-          chunk%tiles(tile)%field%work_array6,   &
           chunk%tiles(tile)%field%celldx,        &
           chunk%tiles(tile)%field%celldy,        &
-          which_vel,                             &
-          sweep_number,                          &
           direction                              )
       ELSE
-        CALL advec_mom_kernel_c(chunk%tiles(tile)%t_xmin,            &
+        CALL advec_mom_vel_c(chunk%tiles(tile)%t_xmin,            &
           chunk%tiles(tile)%t_xmax,              &
           chunk%tiles(tile)%t_ymin,              &
           chunk%tiles(tile)%t_ymax,              &
           chunk%tiles(tile)%field%yvel1,         &
-          chunk%tiles(tile)%field%mass_flux_x,   &
-          chunk%tiles(tile)%field%vol_flux_x,    &
-          chunk%tiles(tile)%field%mass_flux_y,   &
-          chunk%tiles(tile)%field%vol_flux_y,    &
-          chunk%tiles(tile)%field%volume,        &
-          chunk%tiles(tile)%field%density1,      &
           chunk%tiles(tile)%field%work_array1,   &
           chunk%tiles(tile)%field%work_array2,   &
           chunk%tiles(tile)%field%work_array3,   &
           chunk%tiles(tile)%field%work_array4,   &
-          chunk%tiles(tile)%field%work_array5,   &
-          chunk%tiles(tile)%field%work_array6,   &
           chunk%tiles(tile)%field%celldx,        &
           chunk%tiles(tile)%field%celldy,        &
-          which_vel,                             &
-          sweep_number,                          &
           direction                              )
       ENDIF
     ENDIF
 
   END SUBROUTINE advec_mom_driver
+
+  ! M3-1: direction-only part of the momentum advection, called once per sweep
+  ! and tile before the two advec_mom_driver calls. It fills
+  !   work_array1 = node_flux, work_array2 = node_mass_post,
+  !   work_array3 = node_mass_pre, work_array6 = post_vol
+  ! for both velocity components. The Fortran kernel still computes these
+  ! inside advec_mom_kernel itself, so this is a no-op for that build.
+  SUBROUTINE advec_mom_prep_driver(tile,direction,sweep_number)
+
+    USE clover_module
+
+    IMPLICIT NONE
+
+    INTEGER :: tile,direction,sweep_number
+
+    IF(use_C_kernels)THEN
+      CALL advec_mom_prep_c(chunk%tiles(tile)%t_xmin,            &
+        chunk%tiles(tile)%t_xmax,              &
+        chunk%tiles(tile)%t_ymin,              &
+        chunk%tiles(tile)%t_ymax,              &
+        chunk%tiles(tile)%field%mass_flux_x,   &
+        chunk%tiles(tile)%field%vol_flux_x,    &
+        chunk%tiles(tile)%field%mass_flux_y,   &
+        chunk%tiles(tile)%field%vol_flux_y,    &
+        chunk%tiles(tile)%field%volume,        &
+        chunk%tiles(tile)%field%density1,      &
+        chunk%tiles(tile)%field%work_array1,   &
+        chunk%tiles(tile)%field%work_array2,   &
+        chunk%tiles(tile)%field%work_array3,   &
+        chunk%tiles(tile)%field%work_array6,   &
+        sweep_number,                          &
+        direction                              )
+    ENDIF
+
+  END SUBROUTINE advec_mom_prep_driver
 
 END MODULE advec_mom_driver_module
