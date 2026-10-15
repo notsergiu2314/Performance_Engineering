@@ -1,0 +1,3 @@
+# bm3840 at the baseline layout only (64 ranks x 2 threads, THP as installed): a quick like-for-like
+# timing of one binary. Use: CLOVER_BIN=<binary> MATRIX=$PWD/perf/baseline/matrix.m3_64x2 sbatch perf/baseline/baseline.sbatch
+c       64  2   clover_bm16_short.in on
