@@ -13,7 +13,7 @@
 # Matrix: perf/baseline/matrix.m3. Harness: perf/baseline/ (baseline.sbatch does the work).
 # Knobs: REPS (5), STREAM_HW_GBS (hardware STREAM ceiling from m3_stream_ddrc, for the
 # %-of-roof column; pass it once that job has run), DDRC=off to skip the counters.
-# Submit from CloverLeaf_ref: STREAM_HW_GBS=356 sbatch perf/jobs/m3_baseline.sbatch
+# Submit from CloverLeaf_ref: STREAM_HW_GBS=266.5 sbatch perf/jobs/m3_baseline.sbatch
 export MATRIX="$SLURM_SUBMIT_DIR/perf/baseline/matrix.m3"
 export REPS="${REPS:-5}"
 exec bash "$SLURM_SUBMIT_DIR/perf/baseline/baseline.sbatch"

@@ -27,16 +27,18 @@ only. Baseline build: GCC 14.1.0 (HAICGU default module) `-O3 -march=native -fun
 
 | Path | Purpose |
 |---|---|
-| `env.sh`, `build.sh` | modules; builds `bin/clover_base` and `bin/clover_papi`, vectorisation report, `bin/build_info.txt` |
+| `env.sh`, `build.sh` | modules; `build.sh [VARIANT...]` builds `bin/clover_<variant>` and `bin/clover_<variant>_papi` from `src/<variant>/`, with `bin/build_info_<variant>.txt` and `bin/vec_report_<variant>.txt` |
+| `variants.conf`, `export_variants.sh`, `sync.sh` | the commit ladder of the M3 optimisations (`base`, `flags`, `cell`, `mom`, `opt`); `export_variants.sh` exports each ref's sources into `src/<variant>/` (gitignored) because the cluster copy has no git; `sync.sh` rsyncs the tree to the cluster |
+| `archive.sh` | copies job summaries into `archive/m3/<job>/` and, with `--report`, the aggregated rows into `../../report/data/` (`analysis/report_data.py`) |
 | `smoke.sh` | pre-flight job (quick deck, base and PAPI builds) |
 | `inputs/` | decks used by the sergiu-style jobs (`bm3840`, `bm960`, `quick`, `clover_bm`) |
-| `baseline/` | matrix harness (mpirun only, env-var configured): `baseline.sh` → `run_case.sh` → `lib.sh`, `summarize.py`, `qa_check.py`, `baseline.sbatch`, matrices `matrix.m3`, `matrix.correctness`, `matrix.papi`, `matrix.cluster` (M1 sweep), `matrix.laptop` |
-| `jobs/` | Slurm jobs. M3: `m3_stream_ddrc`, `m3_baseline`, `m3_correctness`, `m3_papi`. M1/M2 (historical, still runnable): `m1_baseline`, `m1_perf`, `m1_papi`, `m2_stream`, `m2_peak`, `m3_numa`, `m3_thp`; `common.sh` = `run_clover`, `record_system`, `ddrc_events` |
+| `baseline/` | matrix harness (mpirun only, env-var configured): `baseline.sh` → `run_case.sh` → `lib.sh`, `summarize.py`, `qa_check.py`, `baseline.sbatch`, matrices `matrix.m3`, `matrix.layouts` (C at the five layouts, THP off only at 1x128), `matrix.ladder` (C 64x2), `matrix.correctness`, `matrix.papi`, `matrix.cluster` (M1 sweep), `matrix.laptop`. Every row of `results.csv` carries the build `variant` (last column) |
+| `jobs/` | Slurm jobs. M3: `m3_stream_ddrc`, `m3_baseline`, `m3_correctness` (per variant), `m3_opt` (ladder + layouts, base against opt in one job), `m3_papi` (per variant). M1/M2 (historical, still runnable): `m1_baseline`, `m1_perf`, `m1_papi`, `m2_stream`, `m2_peak`, `m3_numa`, `m3_thp`; `common.sh` = `run_clover`, `record_system`, `ddrc_events`, `prepare_harness` |
 | `microbench/` | `nothp.c` (THP off per process tree), `peak_flops.c` (FMA/mul/div ceilings), `membw.c` + `peak_fma.c` (jort STREAM-style and FMA ceilings) |
 | `roofline/` | jort ceilings harness (`machine.sbatch`, `machine.sh`, `build.sh`) and `roofline.py` (per-section roofline; `--hw` mode for hardware bytes) |
-| `analysis/` | `clover_profile.py`, `papi_summary.py`, `ddrc_summary.py`, `stream_summary.py`, `stream_ddrc.py`, `kernel_model.py`, `plan_bytes.py`, `roofline.py` (sergiu per-kernel roofline) |
+| `analysis/` | `variants.py` (base vs optimised: `optimised.csv`, `ladder.csv`, `compare.md`), `report_data.py` (into `report/data/`), `clover_profile.py`, `papi_summary.py`, `ddrc_summary.py`, `stream_summary.py`, `stream_ddrc.py`, `kernel_model.py`, `plan_bytes.py`, `roofline.py` (sergiu per-kernel roofline) |
 | `archive/` | committed results: `baseline/` (jobs 34729, 34733 = `baseline-cluster`, laptop), `roofline/` (jobs 34735/34739/34746, `roofline_bm16_short.*`), `m3/` (correctness baseline; M3 jobs 34795 stream+DDRC, 34796 correctness, 34797 baseline, 34798 PAPI: summaries, `results.csv`, `profiler.csv`, hardware roofline), `jort_notes.md` |
-| `results/` | job output, not tracked; copy summaries into `archive/` and aggregated rows into `../../report/data/` |
+| `results/` | job output, not tracked; `archive.sh <job dirs> --report` copies the summaries into `archive/m3/` and the aggregated rows into `../../report/data/` |
 
 The Fortran patch series of the jort branch (`patches/01`–`06`, unmeasured) was dropped; its
 ideas live on as rows of `plan_bytes.py`: 01 + 05 → hoist the direction-only sweeps of
@@ -46,22 +48,61 @@ meshes only and is not planned.
 
 ## Runbook (HAICGU, from `CloverLeaf_ref/`)
 
-All four M3 jobs ran on 2026-10-13 (smoke 34794; `m3_stream_ddrc` 34795, `m3_correctness` 34796,
+The M3 baseline jobs ran on 2026-10-13 (smoke 34794; `m3_stream_ddrc` 34795, `m3_correctness` 34796,
 `m3_baseline` 34797, `m3_papi` 34798); their summaries are in `archive/m3/` and the aggregated
-rows in `../../report/data/`. Rerun them after every optimisation; `STREAM_HW_GBS=266.5`.
+rows in `../../report/data/`. The hardware ceiling is `STREAM_HW_GBS=266.5`.
+
+### Optimised kernels against the baseline
+
+Build variants (`variants.conf`): `base` = 3c20f85 (baseline source and CFLAGS, job 34797),
+`flags` = 59cdd3b (`-fno-math-errno -fno-trapping-math` only), `cell` = ff83119 (flags +
+advec_cell temporaries and dead store + reset/revert field swap), `mom` = 88fce34 (flags +
+advec_mom hoist and dead store + calc_dt fused reduction), `opt` = HEAD (everything). The
+cluster copy is an rsync copy without git, so the sources are exported locally first.
 
 ```bash
+# laptop (git checkout)
+bash perf/export_variants.sh                      # -> perf/src/<variant>/ (+ SOURCE.txt), gitignored
+CLUSTER=<ssh host> bash perf/sync.sh              # rsync CloverLeaf_ref/ (no results, no binaries)
+
+# cluster, from CloverLeaf_ref/
 mkdir -p perf/results
 . perf/env.sh                                     # GCC 14.1.0, OpenMPI 5.0.3, PAPI
-srun -p cn-ib -N 1 -t 00:20:00 bash perf/build.sh # build on a compute node
-sbatch perf/smoke.sh                              # ~1 min; then cat perf/results/smoke_<id>.log
+srun -p cn-ib -N 1 -t 00:30:00 bash perf/build.sh # all variants -> perf/bin/clover_<v>[_papi]
+sbatch perf/jobs/m3_correctness.sbatch            # gate per variant (~25 min): $OUT/qa_check.txt, correctness_rows.csv
+sbatch perf/jobs/m3_opt.sbatch                    # ladder at 64x2 + base/opt at 5 layouts, DDRC bytes (~25 min)
+VARIANT=opt sbatch perf/jobs/m3_papi.sbatch       # per-kernel counters of the optimised build (~15 min)
+# with the correctness job's rows the qa_ok column is the gate verdict:
+QA=perf/results/m3_correctness_<id>/correctness_rows.csv sbatch perf/jobs/m3_opt.sbatch
 
+# afterwards (cluster or laptop, after copying perf/results back):
+python3 -I perf/analysis/variants.py --run perf/results/m3_opt_<id> \
+    --qa perf/results/m3_correctness_<id>/correctness_rows.csv --stream-hw-gbs 266.5   # rewrite compare.md etc.
+bash perf/archive.sh perf/results/m3_opt_<id> perf/results/m3_correctness_<id> \
+    perf/results/m3_papi_opt_<id> --report       # -> archive/m3/<job>/, report/data/{optimised,ladder,correctness,kernels_papi}.csv
+/usr/bin/python3 ../report/make_assets.py         # tab_results, tab_ladder, tab_kernels_opt, fig_m3_layouts
+```
+
+Knobs: `m3_opt`: `LADDER` ("base flags cell mom opt"), `VARIANTS` ("base opt"), `REPS` (5),
+`STREAM_HW_GBS`, `DDRC`, `QA`. `m3_correctness`: `VARIANTS` ("opt flags cell mom"; `opt` and `base`
+run the full `matrix.correctness`, the others its C 64x2 row), `BASELINE`, `TOL` (1e-6 %); a
+mismatch is recorded in the `gate` column, it does not abort the job. `m3_papi`: `VARIANT`
+(opt). `build.sh`: `PAPI=off`, `SRC_ROOT`. `export_variants.sh`: `CONF`, `SRC_ROOT`. `sync.sh`:
+`CLUSTER`, `REMOTE`, `RSYNC_ARGS`. `archive.sh`: `ARCHIVE`, `REPORT_DATA`, `VARIANT`.
+
+Read first: `m3_correctness_<id>/qa_check.txt` (does every variant reproduce the baseline
+deviation 0.5726209E-02 %?) and `m3_opt_<id>/compare.md` (archive 34797 vs the same-job base
+rerun vs opt per layout, the ladder at 64x2, the plan prediction -29.3 % bytes / 1.983 TB).
+`optimised.csv` has one row per (variant, layout, THP); `make_assets.py` shows variant `opt`, THP on.
+In the optimised build both halves of the split advec_mom kernel count under the PAPI region
+`advec_mom` (696 calls) and `reset_field`/`revert` have no C region (field swap).
+
+### Baseline jobs (rerun only if the machine or the toolchain changes)
+
+```bash
+sbatch perf/smoke.sh                              # ~1 min; then cat perf/results/smoke_<id>.log
 sbatch perf/jobs/m3_stream_ddrc.sbatch            # write-allocate + hardware STREAM ceiling (~15 min)
-sbatch perf/jobs/m3_correctness.sbatch            # clover_bm.in deviation vs archive/m3 baseline (~5 min)
-sbatch perf/jobs/m3_baseline.sbatch               # 5 layouts x THP on/off x 5 reps, Fortran ref (~40 min)
-sbatch perf/jobs/m3_papi.sbatch                   # per-kernel counters at 64x2 and 1x128 THP off (~15 min)
-# once m3_stream_ddrc has run, pass its ceiling to the baseline for the %-of-roof column:
-STREAM_HW_GBS=<dram_node_hw> sbatch perf/jobs/m3_baseline.sbatch
+STREAM_HW_GBS=266.5 sbatch perf/jobs/m3_baseline.sbatch   # 5 layouts x THP on/off x 5 reps, Fortran ref (~40 min)
 ```
 
 **Run everything with `sbatch`, never `srun bash job`:** a second MPI program inside one
@@ -69,19 +110,20 @@ STREAM_HW_GBS=<dram_node_hw> sbatch perf/jobs/m3_baseline.sbatch
 commands (`build.sh`, `lscpu`). All jobs are independent and can be queued at once.
 
 Every M3 job writes `perf/results/<job>_<id>/` with `system.txt` (lscpu, numactl, THP,
-modules), `environment.txt`, `results.csv` (one row per repetition: wall, grind, QA
-deviation, `dram_GB`, `busiest_over_mean`), `profiler.csv`, `summary.txt`/`summary.md`, and
-per case `rep<i>.out`, `rep<i>.log`, `rep<i>.ddrc.csv`.
+modules), `environment.txt` (binary md5, variant, build info), `results.csv` (one row per
+repetition: wall, grind, QA deviation, `dram_GB`, `busiest_over_mean`, `variant`), `profiler.csv`,
+`summary.txt`/`summary.md`, and per case `rep<i>.out`, `rep<i>.log`, `rep<i>.ddrc.csv`.
+`m3_opt` and `m3_correctness` nest one such directory per variant (`layouts/<v>/`, `ladder/<v>/`, `<v>/`).
 
-Then, on any machine with Python 3 (+ matplotlib for the figures):
+Other analysis commands (Python 3; matplotlib only for the figures):
 
 ```bash
 python3 -I perf/analysis/plan_bytes.py --csv report/data/plan.csv
-python3 -I perf/baseline/summarize.py perf/results/m3_baseline_<id> --md --stream-hw-gbs <dram_node_hw>
-python3 -I perf/baseline/qa_check.py perf/results/m3_correctness_<id>/results.csv perf/archive/m3/correctness_baseline.csv
+python3 -I perf/baseline/summarize.py perf/results/m3_opt_<id>/layouts/opt --md --stream-hw-gbs 266.5
+python3 -I perf/baseline/qa_check.py perf/results/m3_correctness_<id>/opt/results.csv perf/archive/m3/correctness_baseline.csv
 python3 perf/roofline/roofline.py --machine perf/archive/roofline/roofline-34735/machine.csv \
     --machine perf/archive/roofline/roofline-34746/machine.csv \
-    --results perf/results/m3_baseline_<id> --kernels c --hw --hw-roof <dram_node_hw>
+    --results perf/results/m3_opt_<id>/layouts/opt --kernels c --hw --hw-roof 266.5
 ```
 
 ## Harness (`baseline/`)

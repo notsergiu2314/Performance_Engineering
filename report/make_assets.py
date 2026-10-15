@@ -308,20 +308,29 @@ def esc(s):
 
 
 def tab_correctness():
-    """One row per kernel set: the deviation is identical at every layout and repetition."""
+    """One row per kernel set and build variant (correctness.csv columns variant,gate are optional:
+    rows without them are the baseline). The deviation is identical at every layout and repetition;
+    if a variant's rows disagree, every value is listed and the gate column says MISMATCH."""
     groups = {}
     for r in rows("correctness.csv"):
-        g = groups.setdefault(r["kernels"], dict(qa=r["qa_pct"], layouts=[], runs=0, jobs=set()))
-        assert g["qa"] == r["qa_pct"], (r["kernels"], r["qa_pct"])
+        key = (r["kernels"], r.get("variant") or "base")
+        g = groups.setdefault(key, dict(qa=[], layouts=[], runs=0, jobs=set(), gate=set()))
+        if r["qa_pct"] not in g["qa"]:
+            g["qa"].append(r["qa_pct"])
         layout = r["layout"].split(" THP")[0]
         if layout not in g["layouts"]:
             g["layouts"].append(layout)
         g["runs"] += int(r["reps"])
         g["jobs"].add(r["source"])
-    lines = [r"\begin{tabular}{lrrl}", r"\toprule",
-             r"kernels & runs & deviation (\%) & layouts (all identical) \\", r"\midrule"]
-    for k, g in groups.items():
-        lines.append(f"{k} & {g['runs']} & {g['qa']} & {esc(', '.join(g['layouts']))} \\\\")
+        g["gate"].add(r.get("gate") or "ok")
+    multi = len({v for _, v in groups}) > 1
+    lines = [r"\begin{tabular}{l" + ("l" if multi else "") + r"rrl" + ("l" if multi else "") + r"}", r"\toprule",
+             r"kernels & " + (r"build & " if multi else "") + r"runs & deviation (\%) & layouts (all identical)"
+             + (r" & gate" if multi else "") + r" \\", r"\midrule"]
+    for (k, v), g in groups.items():
+        gate = "ok" if g["gate"] == {"ok"} else esc("/".join(sorted(g["gate"])))
+        lines.append(f"{k} & " + (f"{esc(v)} & " if multi else "") + f"{g['runs']} & {esc(' / '.join(g['qa']))} & "
+                     f"{esc(', '.join(g['layouts']))}" + (f" & {gate}" if multi else "") + r" \\")
     lines += [r"\bottomrule", r"\end{tabular}"]
     tex("tab_correctness.tex", "\n".join(lines) + "\n")
 
@@ -392,7 +401,7 @@ def fig_m3_layouts():
     hw = C.get("dram_node_hw")
     floor = APP_BYTES_MODEL / ((hw or BW_NODE * 4 / 3) * 1e9)
     ax.axhline(floor, color=INK2, lw=1, ls="--", label=f"baseline memory floor {floor:.1f} s")
-    ax.set_ylim(0, 1.3 * max(float(r["max_s"]) for r in data))
+    ax.set_ylim(0, 1.3 * max(float(r["max_s"]) for r in data + opt))
     ax.set_xticks(xs)
     ax.set_xticklabels(layouts)
     ax.set_xlabel("MPI ranks x OpenMP threads")
@@ -402,10 +411,62 @@ def fig_m3_layouts():
     save(fig, "fig_m3_layouts")
 
 
-def optimised_rows():
-    """data/optimised.csv: layout,ranks,threads,variant,n,median_s,min_s,max_s,dram_TB,qa_ok,source (optional)."""
+OPT_VARIANT = "opt"   # the build the Results section shows (perf/variants.conf)
+
+
+def optimised_rows(variant=OPT_VARIANT, thp="on"):
+    """data/optimised.csv (perf/analysis/variants.py): layout,ranks,threads,thp,variant,n,median_s,
+    min_s,max_s,dram_TB,hw_GBs,busiest_over_mean,qa_ok,source. One variant, THP on, unless asked."""
     p = DATA / "optimised.csv"
-    return [r for r in rows("optimised.csv") if r["median_s"]] if p.exists() else []
+    if not p.exists():
+        return []
+    return [r for r in rows("optimised.csv") if r["median_s"]
+            and r.get("variant", variant) == variant and r.get("thp", "on") == thp]
+
+
+def ladder_rows():
+    """data/ladder.csv (perf/analysis/variants.py): variant,description,n,median_s,min_s,max_s,dram_TB,
+    hw_GBs,time_vs_base_pct,bytes_vs_base_pct,source."""
+    p = DATA / "ladder.csv"
+    return [r for r in rows("ladder.csv") if r["median_s"]] if p.exists() else []
+
+
+def tab_ladder():
+    """Per-change attribution at 64x2: the commit ladder of perf/variants.conf."""
+    lines = [r"\begin{tabular}{lp{6.2cm}rrrr}", r"\toprule",
+             r"build & changes & wall (s) & DRAM & bytes vs & time vs \\",
+             r" & & median (min--max) & (TB) & base (\%) & base (\%) \\", r"\midrule"]
+    lad = ladder_rows()
+    if not lad:
+        lines.append(r"\multicolumn{6}{l}{not measured yet (perf/jobs/m3\_opt.sbatch writes data/ladder.csv)} \\")
+    for r in lad:
+        dram = f"{float(r['dram_TB']):.3f}" if r["dram_TB"] else "--"
+        b = f"${float(r['bytes_vs_base_pct']):+.1f}$" if r["bytes_vs_base_pct"] else "--"
+        t = f"${float(r['time_vs_base_pct']):+.1f}$" if r["time_vs_base_pct"] else "--"
+        lines.append(f"{esc(r['variant'])} & {esc(r['description'])} & {float(r['median_s']):.2f} "
+                     f"({float(r['min_s']):.2f}--{float(r['max_s']):.2f}) & {dram} & {b} & {t} \\\\")
+    lines += [r"\bottomrule", r"\end{tabular}"]
+    tex("tab_ladder.tex", "\n".join(lines) + "\n")
+
+
+def tab_kernels_opt(variant=OPT_VARIANT):
+    """Per-kernel time, IPC and back-end stall at 64x2, baseline against the optimised build
+    (columns *_64x2_<variant> of kernels_papi.csv, perf/archive.sh --report). Written only when present."""
+    tcol = f"time_64x2_{variant}"
+    if not any(tcol in r and r[tcol] for r in KP.values()):
+        return
+    lines = [r"\begin{tabular}{lrrrrrrr}", r"\toprule",
+             r"kernel & \multicolumn{3}{c}{time (s)} & \multicolumn{2}{c}{IPC} & \multicolumn{2}{c}{back-end stall (\%)} \\",
+             r" & base & " + esc(variant) + r" & ratio & base & " + esc(variant) + r" & base & " + esc(variant) + r" \\", r"\midrule"]
+    for k, r in sorted(KP.items(), key=lambda kv: -float(kv[1]["time_64x2"] or 0)):
+        tb, to = float(r["time_64x2"] or "nan"), float(r.get(tcol) or "nan")
+        cell = lambda v, nd=2: f"{float(v):.{nd}f}" if v not in ("", None) else "--"
+        ratio = f"{tb / to:.2f}" if to == to and to else "--"
+        lines.append(f"{esc(k)} & {cell(r['time_64x2'])} & {cell(r.get(tcol))} & {ratio} & "
+                     f"{cell(r['ipc_64x2'])} & {cell(r.get(f'ipc_64x2_{variant}'))} & "
+                     f"{cell(r['be_stall_64x2'], 0)} & {cell(r.get(f'be_stall_64x2_{variant}'), 0)} \\\\")
+    lines += [r"\bottomrule", r"\end{tabular}"]
+    tex("tab_kernels_opt.tex", "\n".join(lines) + "\n")
 
 
 def tab_results():
@@ -476,6 +537,8 @@ if __name__ == "__main__":
     tab_plan()
     tab_m3_baseline()
     tab_results()
+    tab_ladder()
+    tab_kernels_opt()
     fig_m3_layouts()
     # not in the report any more (M1/M2 material, data still in data/): fig_scaling(), fig_stream(),
     # fig_placement(), tab_placement(), tab_configs()

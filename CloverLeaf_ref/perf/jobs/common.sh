@@ -57,6 +57,22 @@ record_system() {
   } > "$out/system.txt" 2>&1
 }
 
+# One-time setup for jobs that run the matrix harness (perf/baseline/baseline.sh) one or
+# more times in an allocation: THP-off launcher, DDR-controller events, system description.
+#   prepare_harness <out dir>     exports NOTHP, NOTHP_VERBOSE, DDRC_EVENTS (unless DDRC=off)
+prepare_harness() {
+  local out="$1"
+  mkdir -p "$out"
+  export NOTHP=${NOTHP:-$out/nothp}
+  [ -x "$NOTHP" ] || gcc -O2 "$PERF_ROOT/microbench/nothp.c" -o "$NOTHP"
+  export NOTHP_VERBOSE=1
+  if [ "${DDRC:-auto}" != off ]; then
+    DDRC_EVENTS=$(ddrc_events); export DDRC_EVENTS
+    [ -n "$DDRC_EVENTS" ] || echo "warning: no hisi_sccl*_ddrc* events visible to perf; dram_GB will be NA"
+  fi
+  record_system "$out"
+}
+
 # Comma separated list of the HiSilicon DDR controller flux events available
 # to perf (empty if the uncore PMU is not exposed).
 ddrc_events() {

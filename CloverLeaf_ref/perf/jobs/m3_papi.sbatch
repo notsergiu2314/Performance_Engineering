@@ -10,21 +10,30 @@
 # Per-kernel hardware counters (kernels/papi_prof.c) at the M3 baseline layout 64x2 and at
 # the pure-OpenMP reference 1x128 with THP off (perf/baseline/matrix.papi), through the
 # same harness as m3_baseline so placement is identical. Three event sets as in M1
-# (m1_papi.sbatch): ipc, mix, stall. One base-binary run per layout gives the
-# instrumentation overhead. Output: $OUT/<set>/<tag>/papi_prof_<pid>.csv (one per rank)
-# and summary.txt (analysis/papi_summary.py, max over threads and ranks).
-# Submit from CloverLeaf_ref: sbatch perf/jobs/m3_papi.sbatch
+# (m1_papi.sbatch): ipc, mix, stall. One uninstrumented run per layout gives the
+# instrumentation overhead. Output: $OUT/<set>/<tag>/papi_prof_<pid>.csv (one per rank),
+# $OUT/<set>/<tag>.papi.csv (analysis/papi_summary.py --csv, one row per region) and
+# summary.txt (max over threads and ranks).
+# Knobs: VARIANT (opt): binaries perf/bin/clover_<VARIANT>_papi and clover_<VARIANT>
+# (perf/build.sh); output perf/results/m3_papi_<VARIANT>_<jobid>. The baseline run is job
+# 34798 (variant base). Note for the optimised kernels: both halves of the split advec_mom
+# kernel count under region advec_mom (696 calls instead of 348), and reset_field/revert
+# have no C region any more (field swap, no kernel call).
+# Submit from CloverLeaf_ref: VARIANT=opt sbatch perf/jobs/m3_papi.sbatch
 set -eo pipefail
 source "$SLURM_SUBMIT_DIR/perf/jobs/common.sh"
 set -u
-OUT="$PERF_ROOT/results/m3_papi_$SLURM_JOB_ID"
-mkdir -p "$OUT"
-record_system "$OUT"
-papi_avail -a > "$OUT/papi_avail.txt" 2>&1 || true
-
-export NOTHP="$OUT/nothp"
-gcc -O2 "$PERF_ROOT/microbench/nothp.c" -o "$NOTHP"
+VARIANT="${VARIANT:-opt}"
+OUT="$PERF_ROOT/results/m3_papi_${VARIANT}_$SLURM_JOB_ID"
+PAPI_BIN="$PERF_ROOT/bin/clover_${VARIANT}_papi"
+BASE_BIN="$PERF_ROOT/bin/clover_$VARIANT"
+for b in "$PAPI_BIN" "$BASE_BIN"; do
+  [ -x "$b" ] || { echo "missing $b: run 'srun -p cn-ib -N 1 bash perf/build.sh $VARIANT'" >&2; exit 1; }
+done
 export REPS=1 DDRC=off
+prepare_harness "$OUT"
+papi_avail -a > "$OUT/papi_avail.txt" 2>&1 || true
+echo "job $SLURM_JOB_ID on $SLURM_JOB_NODELIST: variant $VARIANT -> $OUT"
 MATRIX="$PERF_ROOT/baseline/matrix.papi"
 
 declare -A SETS=(
@@ -34,21 +43,21 @@ declare -A SETS=(
 )
 for set in ipc mix stall; do
   export PROF_EVENTS="${SETS[$set]}"
-  CLOVER_BIN="$PERF_ROOT/bin/clover_papi" OUT_DIR="$OUT/$set" bash "$PERF_ROOT/baseline/baseline.sh" "$MATRIX"
+  CLOVER_BIN="$PAPI_BIN" VARIANT="$VARIANT" OUT_DIR="$OUT/$set" bash "$PERF_ROOT/baseline/baseline.sh" "$MATRIX"
 done
 unset PROF_EVENTS
-# overhead check: same layouts, uninstrumented binary
-CLOVER_BIN="$PERF_ROOT/bin/clover_base" OUT_DIR="$OUT/base" bash "$PERF_ROOT/baseline/baseline.sh" "$MATRIX"
+# overhead check: same layouts, the uninstrumented binary of the same variant
+CLOVER_BIN="$BASE_BIN" VARIANT="$VARIANT" OUT_DIR="$OUT/uninstrumented" bash "$PERF_ROOT/baseline/baseline.sh" "$MATRIX"
 
 {
   for set in ipc mix stall; do
     for d in "$OUT/$set"/clover_*/; do
       echo "=== $set $(basename "$d")"
-      python3 "$PERF_ROOT/analysis/papi_summary.py" "$d"
+      python3 -I "$PERF_ROOT/analysis/papi_summary.py" "$d" --csv "${d%/}.papi.csv"
     done
   done
-  echo "=== wall clock, PAPI build (ipc set) vs base build"
-  for f in "$OUT/ipc/results.csv" "$OUT/base/results.csv"; do
+  echo "=== wall clock, PAPI build (ipc set) vs uninstrumented build"
+  for f in "$OUT/ipc/results.csv" "$OUT/uninstrumented/results.csv"; do
     echo "-- $f"; cut -d, -f1,8,12 "$f"
   done
 } > "$OUT/summary.txt" 2>&1

@@ -29,21 +29,26 @@
 \@writefile{toc}{\contentsline {section}{\numberline {3}Kernel Improvements}{5}{section.3}\protected@file@percent }
 \newlabel{sec:impr}{{3}{5}{Kernel Improvements}{section.3}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.1}What the analysis allows}{5}{subsection.3.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}Byte reductions}{5}{subsection.3.2}\protected@file@percent }
-\newlabel{sec:bytes}{{3.2}{5}{Byte reductions}{subsection.3.2}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {5}{\ignorespaces Kernel changes and their predicted effect on hardware bytes (write-allocate model, bm3840, 87 steps; floor at 266.5\,GB/s{}; measured baseline 2.83\,TB, 11.3\,s). Cumulative = all byte changes up to that row; for the streaming-store bound, cumulative = on top of all five.}}{6}{table.5}\protected@file@percent }
-\newlabel{tab:plan}{{5}{6}{Kernel changes and their predicted effect on hardware bytes (write-allocate model, bm3840, 87 steps; floor at 266.5\GBs {}; measured baseline 2.83\,TB, 11.3\,s). Cumulative = all byte changes up to that row; for the streaming-store bound, cumulative = on top of all five}{table.5}{}}
+\@writefile{toc}{\contentsline {subsubsection}{\numberline {3.1.1}Selection}{5}{subsubsection.3.1.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}Flop and byte counts per cell}{6}{subsection.3.2}\protected@file@percent }
+\newlabel{sec:count}{{3.2}{6}{Flop and byte counts per cell}{subsection.3.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.3}Byte reductions}{6}{subsection.3.3}\protected@file@percent }
+\newlabel{sec:bytes}{{3.3}{6}{Byte reductions}{subsection.3.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.4}Time-only changes}{9}{subsection.3.4}\protected@file@percent }
+\newlabel{sec:timeonly}{{3.4}{9}{Time-only changes}{subsection.3.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.5}Implementation status}{9}{subsection.3.5}\protected@file@percent }
+\newlabel{sec:status}{{3.5}{9}{Implementation status}{subsection.3.5}{}}
 \bibstyle{plain}
 \bibdata{refs}
 \bibcite{laukemann2023}{1}
-\@writefile{lot}{\contentsline {table}{\numberline {6}{\ignorespaces C kernels, bm3840: baseline (job 34797) against the optimised build at every layout, THP as installed. Speed-up = baseline median / optimised median.}}{8}{table.6}\protected@file@percent }
-\newlabel{tab:results}{{6}{8}{C kernels, bm3840: baseline (job 34797) against the optimised build at every layout, THP as installed. Speed-up = baseline median / optimised median}{table.6}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.3}Time-only changes}{8}{subsection.3.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.4}Implementation status}{8}{subsection.3.4}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {4}Results}{8}{section.4}\protected@file@percent }
-\newlabel{sec:res}{{4}{8}{Results}{section.4}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {5}Conclusions (draft)}{8}{section.5}\protected@file@percent }
 \bibcite{mallinson2013}{2}
-\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Wall clock per layout (median, bars min--max): C baseline, C optimised where measured, Fortran for reference. The dashed line is the memory floor of the baseline byte count at 266.5\,GB/s{}.}}{9}{figure.2}\protected@file@percent }
-\newlabel{fig:results}{{2}{9}{Wall clock per layout (median, bars min--max): C baseline, C optimised where measured, Fortran for reference. The dashed line is the memory floor of the baseline byte count at 266.5\GBs {}}{figure.2}{}}
-\gdef \@abspage@last{9}
+\@writefile{lot}{\contentsline {table}{\numberline {5}{\ignorespaces Per-change attribution at 64$\times $2 (bm3840, five repetitions under the DDR-controller counters, one node, one job): the commit ladder of \texttt  {perf/variants.conf}, each build against the baseline build of the same job. Filled from \texttt  {data/ladder.csv} (\texttt  {perf/jobs/m3\_opt.sbatch}).}}{13}{table.5}\protected@file@percent }
+\newlabel{tab:ladder}{{5}{13}{Per-change attribution at 64$\times $2 (bm3840, five repetitions under the DDR-controller counters, one node, one job): the commit ladder of \texttt {perf/variants.conf}, each build against the baseline build of the same job. Filled from \texttt {data/ladder.csv} (\texttt {perf/jobs/m3\_opt.sbatch})}{table.5}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {6}{\ignorespaces C kernels, bm3840: baseline (job 34797) against the optimised build at every layout, THP as installed. Speed-up = baseline median / optimised median.}}{13}{table.6}\protected@file@percent }
+\newlabel{tab:results}{{6}{13}{C kernels, bm3840: baseline (job 34797) against the optimised build at every layout, THP as installed. Speed-up = baseline median / optimised median}{table.6}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4}Results}{13}{section.4}\protected@file@percent }
+\newlabel{sec:res}{{4}{13}{Results}{section.4}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {5}Conclusions (draft)}{13}{section.5}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Wall clock per layout (median, bars min--max): C baseline, C optimised where measured, Fortran for reference. The dashed line is the memory floor of the baseline byte count at 266.5\,GB/s{}.}}{14}{figure.2}\protected@file@percent }
+\newlabel{fig:results}{{2}{14}{Wall clock per layout (median, bars min--max): C baseline, C optimised where measured, Fortran for reference. The dashed line is the memory floor of the baseline byte count at 266.5\GBs {}}{figure.2}{}}
+\gdef \@abspage@last{14}

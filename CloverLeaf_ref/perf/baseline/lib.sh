@@ -7,6 +7,9 @@ _baseline_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 : "${PERF_ROOT:=$(cd "$_baseline_dir/.." && pwd)}"      # CloverLeaf_ref/perf
 : "${CLOVER_ROOT:=$(cd "$PERF_ROOT/.." && pwd)}"        # CloverLeaf_ref
 : "${CLOVER_BIN:=$PERF_ROOT/bin/clover_base}"           # what perf/build.sh produces
+# Build variant label (perf/variants.conf): "base", "opt", ...; recorded in results.csv.
+# Default: the binary's name without the clover_ prefix and the _papi suffix.
+: "${VARIANT:=$(basename "$CLOVER_BIN" | sed -e 's/^clover_//' -e 's/_papi$//')}"; export VARIANT
 : "${DECK_DIR:=$CLOVER_ROOT/InputDecks}"
 : "${REPS:=5}"                       # best-of-5; median is reported as well
 : "${OUT_DIR:=$PWD/results}"

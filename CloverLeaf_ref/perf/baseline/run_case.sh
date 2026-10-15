@@ -8,7 +8,7 @@
 # jobs/common.sh ddrc_events) every repetition runs under system-wide `perf stat -a`
 # and the DRAM bytes moved are recorded next to the wall time.
 # Output (under $OUT_DIR):
-#   results.csv              one row per repetition
+#   results.csv              one row per repetition (last column: build variant, lib.sh VARIANT)
 #   profiler.csv             one row per profiler section per repetition
 #   <tag>/rep<i>.out         full clover.out of every repetition
 #   <tag>/rep<i>.log         mpirun stdout/stderr, including the core bindings
@@ -35,7 +35,7 @@ mkdir -p "$case_dir"
 make_deck "$DECK_DIR/$deck" "$case_dir/clover.in" "$kernels"
 export PROF_DIR=$case_dir          # where a PAPI build (clover_papi) writes papi_prof_<pid>.csv
 
-hdr="tag,deck,kernels,ranks,threads,thp,rep,wall,grind,first_step,qa_pct,qa,kernels_reported,dram_GB,busiest_over_mean,host,date"
+hdr="tag,deck,kernels,ranks,threads,thp,rep,wall,grind,first_step,qa_pct,qa,kernels_reported,dram_GB,busiest_over_mean,host,date,variant"
 [ -f "$OUT_DIR/results.csv" ] || echo "$hdr" > "$OUT_DIR/results.csv"
 [ -f "$OUT_DIR/profiler.csv" ] || echo "tag,rep,section,time,pct" > "$OUT_DIR/profiler.csv"
 
@@ -49,7 +49,7 @@ for i in $(seq 1 "$REPS"); do
   mv clover.out "rep$i.out"
   read -r wall grind first qa passed kern < <(parse_out "rep$i.out")
   read -r dram busiest < <(parse_ddrc "rep$i.ddrc.csv")
-  echo "$tag,$deck,$kernels,$ranks,$threads,$thp,$i,$wall,$grind,$first,$qa,$passed,$kern,$dram,$busiest,$(hostname),$(date -Is)" >> "$OUT_DIR/results.csv"
+  echo "$tag,$deck,$kernels,$ranks,$threads,$thp,$i,$wall,$grind,$first,$qa,$passed,$kern,$dram,$busiest,$(hostname),$(date -Is),$VARIANT" >> "$OUT_DIR/results.csv"
   parse_profiler "rep$i.out" | sed "s/^/$tag,$i,/" >> "$OUT_DIR/profiler.csv"
   printf '  %-44s rep %d  wall=%-8.3f grind=%s  qa=%s %s  dram=%s GB  (%s kernels)\n' "$tag" "$i" "$wall" "$grind" "$qa" "$passed" "$dram" "$kern"
 done

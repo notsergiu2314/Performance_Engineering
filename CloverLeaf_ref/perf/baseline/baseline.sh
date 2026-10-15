@@ -9,6 +9,7 @@
 #
 # Environment knobs (all optional, defaults in lib.sh):
 #   CLOVER_BIN   path to clover_leaf           DECK_DIR     directory with the .in decks
+#   VARIANT      build label for results.csv (default: from the binary name, lib.sh)
 #   REPS         repetitions per case (5)      OUT_DIR      where results go
 #   MPIRUN       launcher executable           MPIRUN_ARGS  extra mpirun flags
 #   SINGLE_RANK_PLACEMENT  mpirun placement flags for 1-rank cases (--bind-to none)
@@ -30,6 +31,8 @@ mkdir -p "$OUT_DIR"
   echo "host:        $(hostname)   cpus: $(nproc)"
   [ -n "${SLURM_JOB_ID:-}" ] && echo "slurm:       job $SLURM_JOB_ID on ${SLURM_JOB_NODELIST:-?}"
   echo "binary:      $CLOVER_BIN  ($(md5sum "$CLOVER_BIN" | cut -c1-12))"
+  echo "variant:     $VARIANT"
+  [ -f "$PERF_ROOT/bin/build_info_$VARIANT.txt" ] && sed 's/^/  build: /' "$PERF_ROOT/bin/build_info_$VARIANT.txt"
   echo "git:         $(git -C "$CLOVER_ROOT" rev-parse --short HEAD 2>/dev/null || echo n/a) ($(git -C "$CLOVER_ROOT" rev-parse --abbrev-ref HEAD 2>/dev/null || echo n/a))"
   echo "mpirun:      $("$MPIRUN" --version 2>/dev/null | head -1)  args: --map-by slot:PE=<threads> --bind-to core $MPIRUN_ARGS"
   echo "single rank: $SINGLE_RANK_PLACEMENT $MPIRUN_ARGS"

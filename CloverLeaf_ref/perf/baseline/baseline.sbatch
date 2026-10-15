@@ -36,17 +36,10 @@ export STREAM_HW_GBS=${STREAM_HW_GBS:-}
 mkdir -p "$OUT_DIR"
 echo "job $SLURM_JOB_ID on $SLURM_JOB_NODELIST, matrix $matrix, results -> $OUT_DIR"
 
-# THP-off launcher for the matrix rows that ask for it (prctl(PR_SET_THP_DISABLE) + exec).
-export NOTHP=${NOTHP:-$OUT_DIR/nothp}
-[ -x "$NOTHP" ] || gcc -O2 "$PERF_ROOT/microbench/nothp.c" -o "$NOTHP"
-export NOTHP_VERBOSE=1
-
-# DDR-controller counters (HiSilicon uncore PMU) around every repetition, if visible.
-if [ "${DDRC:-auto}" != off ]; then
-  DDRC_EVENTS=$(ddrc_events); export DDRC_EVENTS
-  [ -n "$DDRC_EVENTS" ] || echo "warning: no hisi_sccl*_ddrc* events visible to perf; dram_GB will be NA"
-fi
-record_system "$OUT_DIR"
+# THP-off launcher (prctl(PR_SET_THP_DISABLE) + exec) for the matrix rows that ask for it,
+# DDR-controller counters (HiSilicon uncore PMU) around every repetition when visible, and
+# the system description: jobs/common.sh prepare_harness.
+prepare_harness "$OUT_DIR"
 
 # Topology and placement sanity check at the top of the job log: four ranks
 # with 32 cores each should land on four distinct NUMA domains / two packages.

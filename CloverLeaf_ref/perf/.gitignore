@@ -7,3 +7,4 @@ __pycache__/
 
 # CloverLeaf_ref/.gitignore has "*job*", which would hide jobs/
 !jobs/
+src/
