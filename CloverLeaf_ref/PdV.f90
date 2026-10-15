@@ -131,7 +131,9 @@ CONTAINS
       CALL update_halo(fields,1)
     ENDIF
 
-    IF ( predict ) THEN
+    ! The C corrector rewrites density1/energy1 over the whole range revert would copy,
+    ! so the C path skips the revert. The Fortran kernels keep it unchanged.
+    IF ( predict .AND. .NOT. use_C_kernels ) THEN
       IF(profiler_on) kernel_time=timer()
       CALL revert()
       IF(profiler_on) profiler%revert=profiler%revert+(timer()-kernel_time)

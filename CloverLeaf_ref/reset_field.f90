@@ -57,22 +57,14 @@ CONTAINS
       ENDDO
   
     ELSEIF(use_C_kernels) THEN
+      ! The level-1 fields become the level-0 fields by exchanging the allocations
+      ! (O(1), no memory traffic) instead of copying 4 arrays; the C kernel
+      ! reset_field_kernel_c is therefore not called.
       DO tile=1,tiles_per_chunk
-
-
-        CALL reset_field_kernel_c(chunk%tiles(tile)%t_xmin,   &
-          chunk%tiles(tile)%t_xmax,     &
-          chunk%tiles(tile)%t_ymin,     &
-          chunk%tiles(tile)%t_ymax,     &
-          chunk%tiles(tile)%field%density0,  &
-          chunk%tiles(tile)%field%density1,  &
-          chunk%tiles(tile)%field%energy0,   &
-          chunk%tiles(tile)%field%energy1,   &
-          chunk%tiles(tile)%field%xvel0,     &
-          chunk%tiles(tile)%field%xvel1,     &
-          chunk%tiles(tile)%field%yvel0,     &
-          chunk%tiles(tile)%field%yvel1      )
-
+        CALL swap_field(chunk%tiles(tile)%field%density0, chunk%tiles(tile)%field%density1)
+        CALL swap_field(chunk%tiles(tile)%field%energy0,  chunk%tiles(tile)%field%energy1)
+        CALL swap_field(chunk%tiles(tile)%field%xvel0,    chunk%tiles(tile)%field%xvel1)
+        CALL swap_field(chunk%tiles(tile)%field%yvel0,    chunk%tiles(tile)%field%yvel1)
       ENDDO
     ENDIF
 
@@ -80,5 +72,18 @@ CONTAINS
     IF(profiler_on) profiler%reset=profiler%reset+(timer()-kernel_time)
 
   END SUBROUTINE reset_field
+
+  SUBROUTINE swap_field(a,b)
+
+    IMPLICIT NONE
+
+    REAL(KIND=8), ALLOCATABLE, INTENT(INOUT) :: a(:,:), b(:,:)
+    REAL(KIND=8), ALLOCATABLE :: t(:,:)
+
+    CALL MOVE_ALLOC(a,t)
+    CALL MOVE_ALLOC(b,a)
+    CALL MOVE_ALLOC(t,b)
+
+  END SUBROUTINE swap_field
 
 END MODULE reset_field_module
