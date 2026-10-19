@@ -1,0 +1,178 @@
+[cn15.guoehi.cluster:1575599] mca: base: components_register: registering framework btl components
+[cn15.guoehi.cluster:1575599] mca: base: components_register: found loaded component self
+[cn15.guoehi.cluster:1575598] mca: base: components_register: registering framework btl components
+[cn15.guoehi.cluster:1575598] mca: base: components_register: found loaded component self
+[cn15.guoehi.cluster:1575598] mca: base: components_register: component self register function successful
+[cn15.guoehi.cluster:1575599] mca: base: components_register: component self register function successful
+[cn15.guoehi.cluster:1575599] mca: base: components_register: found loaded component ofi
+[cn15.guoehi.cluster:1575598] mca: base: components_register: found loaded component ofi
+[cn15.guoehi.cluster:1575599] mca: base: components_register: component ofi register function successful
+[cn15.guoehi.cluster:1575598] mca: base: components_register: component ofi register function successful
+[cn15.guoehi.cluster:1575599] mca: base: components_register: found loaded component sm
+[cn15.guoehi.cluster:1575598] mca: base: components_register: found loaded component sm
+[cn15.guoehi.cluster:1575599] mca: base: components_register: component sm register function successful
+[cn15.guoehi.cluster:1575598] mca: base: components_register: component sm register function successful
+[cn15.guoehi.cluster:1575599] mca: base: components_register: found loaded component tcp
+[cn15.guoehi.cluster:1575598] mca: base: components_register: found loaded component tcp
+[cn15.guoehi.cluster:1575599] mca: base: components_register: component tcp register function successful
+[cn15.guoehi.cluster:1575598] mca: base: components_register: component tcp register function successful
+[cn15.guoehi.cluster:1575598] mca: base: components_register: found loaded component uct
+[cn15.guoehi.cluster:1575599] mca: base: components_register: found loaded component uct
+[cn15.guoehi.cluster:1575599] mca: base: components_register: component uct register function successful
+[cn15.guoehi.cluster:1575598] mca: base: components_register: component uct register function successful
+[cn15.guoehi.cluster:1575598] mca: base: components_open: opening btl components
+[cn15.guoehi.cluster:1575599] mca: base: components_open: opening btl components
+[cn15.guoehi.cluster:1575599] mca: base: components_open: found loaded component self
+[cn15.guoehi.cluster:1575599] mca: base: components_open: component self open function successful
+[cn15.guoehi.cluster:1575599] mca: base: components_open: found loaded component ofi
+[cn15.guoehi.cluster:1575598] mca: base: components_open: found loaded component self
+[cn15.guoehi.cluster:1575598] mca: base: components_open: component self open function successful
+[cn15.guoehi.cluster:1575598] mca: base: components_open: found loaded component ofi
+[cn15.guoehi.cluster:1575598] mca: base: components_open: component ofi open function successful
+[cn15.guoehi.cluster:1575598] mca: base: components_open: found loaded component sm
+[cn15.guoehi.cluster:1575598] mca: base: components_open: component sm open function successful
+[cn15.guoehi.cluster:1575598] mca: base: components_open: found loaded component tcp
+[cn15.guoehi.cluster:1575599] mca: base: components_open: component ofi open function successful
+[cn15.guoehi.cluster:1575599] mca: base: components_open: found loaded component sm
+[cn15.guoehi.cluster:1575599] mca: base: components_open: component sm open function successful
+[cn15.guoehi.cluster:1575599] mca: base: components_open: found loaded component tcp
+[cn15.guoehi.cluster:1575599] mca: base: components_open: component tcp open function successful
+[cn15.guoehi.cluster:1575599] mca: base: components_open: found loaded component uct
+[cn15.guoehi.cluster:1575598] mca: base: components_open: component tcp open function successful
+[cn15.guoehi.cluster:1575598] mca: base: components_open: found loaded component uct
+[cn15.guoehi.cluster:1575599] mca: base: components_open: component uct open function successful
+[cn15.guoehi.cluster:1575598] mca: base: components_open: component uct open function successful
+[cn15.guoehi.cluster:1575599] mca: base: components_register: registering framework pml components
+[cn15.guoehi.cluster:1575599] mca: base: components_register: found loaded component cm
+[cn15.guoehi.cluster:1575599] mca: base: components_register: component cm register function successful
+[cn15.guoehi.cluster:1575598] mca: base: components_register: registering framework pml components
+[cn15.guoehi.cluster:1575598] mca: base: components_register: found loaded component cm
+[cn15.guoehi.cluster:1575599] mca: base: components_register: found loaded component monitoring
+[cn15.guoehi.cluster:1575598] mca: base: components_register: component cm register function successful
+[cn15.guoehi.cluster:1575598] mca: base: components_register: found loaded component monitoring
+[cn15.guoehi.cluster:1575599] mca: base: components_register: component monitoring register function successful
+[cn15.guoehi.cluster:1575598] mca: base: components_register: component monitoring register function successful
+[cn15.guoehi.cluster:1575599] mca: base: components_register: found loaded component ob1
+[cn15.guoehi.cluster:1575598] mca: base: components_register: found loaded component ob1
+[cn15.guoehi.cluster:1575599] mca: base: components_register: component ob1 register function successful
+[cn15.guoehi.cluster:1575598] mca: base: components_register: component ob1 register function successful
+[cn15.guoehi.cluster:1575599] mca: base: components_register: found loaded component ucx
+[cn15.guoehi.cluster:1575598] mca: base: components_register: found loaded component ucx
+[cn15.guoehi.cluster:1575599] mca: base: components_register: component ucx register function successful
+[cn15.guoehi.cluster:1575598] mca: base: components_register: component ucx register function successful
+[cn15.guoehi.cluster:1575599] mca: base: components_register: found loaded component v
+[cn15.guoehi.cluster:1575598] mca: base: components_register: found loaded component v
+[cn15.guoehi.cluster:1575599] mca: base: components_register: component v register function successful
+[cn15.guoehi.cluster:1575598] mca: base: components_register: component v register function successful
+[cn15.guoehi.cluster:1575599] mca: base: components_open: opening pml components
+[cn15.guoehi.cluster:1575599] mca: base: components_open: found loaded component cm
+[cn15.guoehi.cluster:1575598] mca: base: components_open: opening pml components
+[cn15.guoehi.cluster:1575598] mca: base: components_open: found loaded component cm
+[cn15.guoehi.cluster:1575598] mca: base: components_open: component cm open function successful
+[cn15.guoehi.cluster:1575598] mca: base: components_open: found loaded component monitoring
+[cn15.guoehi.cluster:1575598] mca: base: components_open: component monitoring open function successful
+[cn15.guoehi.cluster:1575598] mca: base: components_open: found loaded component ob1
+[cn15.guoehi.cluster:1575599] mca: base: components_open: component cm open function successful
+[cn15.guoehi.cluster:1575599] mca: base: components_open: found loaded component monitoring
+[cn15.guoehi.cluster:1575599] mca: base: components_open: component monitoring open function successful
+[cn15.guoehi.cluster:1575599] mca: base: components_open: found loaded component ob1
+[cn15.guoehi.cluster:1575599] mca: base: components_open: component ob1 open function successful
+[cn15.guoehi.cluster:1575599] mca: base: components_open: found loaded component ucx
+[cn15.guoehi.cluster:1575598] mca: base: components_open: component ob1 open function successful
+[cn15.guoehi.cluster:1575598] mca: base: components_open: found loaded component ucx
+[cn15.guoehi.cluster:1575599] mca: base: components_open: component ucx open function successful
+[cn15.guoehi.cluster:1575599] mca: base: components_open: found loaded component v
+[cn15.guoehi.cluster:1575599] mca: base: components_open: component v open function successful
+[cn15.guoehi.cluster:1575598] mca: base: components_open: component ucx open function successful
+[cn15.guoehi.cluster:1575598] mca: base: components_open: found loaded component v
+[cn15.guoehi.cluster:1575598] mca: base: components_open: component v open function successful
+[cn15.guoehi.cluster:1575599] select: initializing pml component cm
+[cn15.guoehi.cluster:1575598] select: initializing pml component cm
+[cn15.guoehi.cluster:1575599] select: init returned priority 25
+[cn15.guoehi.cluster:1575599] select: component monitoring not in the include list
+[cn15.guoehi.cluster:1575599] select: initializing pml component ob1
+[cn15.guoehi.cluster:1575599] select: initializing btl component self
+[cn15.guoehi.cluster:1575599] select: init of component self returned success
+[cn15.guoehi.cluster:1575599] select: initializing btl component ofi
+[cn15.guoehi.cluster:1575598] select: init returned priority 25
+[cn15.guoehi.cluster:1575598] select: component monitoring not in the include list
+[cn15.guoehi.cluster:1575598] select: initializing pml component ob1
+[cn15.guoehi.cluster:1575598] select: initializing btl component self
+[cn15.guoehi.cluster:1575598] select: init of component self returned success
+[cn15.guoehi.cluster:1575598] select: initializing btl component ofi
+[cn15.guoehi.cluster:1575599] select: init of component ofi returned failure
+[cn15.guoehi.cluster:1575598] select: init of component ofi returned failure
+[cn15.guoehi.cluster:1575599] mca: base: close: component ofi closed
+[cn15.guoehi.cluster:1575599] mca: base: close: unloading component ofi
+[cn15.guoehi.cluster:1575599] select: initializing btl component sm
+[cn15.guoehi.cluster:1575598] mca: base: close: component ofi closed
+[cn15.guoehi.cluster:1575598] mca: base: close: unloading component ofi
+[cn15.guoehi.cluster:1575598] select: initializing btl component sm
+[cn15.guoehi.cluster:1575598] select: init of component sm returned success
+[cn15.guoehi.cluster:1575598] select: initializing btl component tcp
+[cn15.guoehi.cluster:1575599] select: init of component sm returned success
+[cn15.guoehi.cluster:1575599] select: initializing btl component tcp
+[cn15.guoehi.cluster:1575599] btl:tcp: 0x36816810: if eth0 kidx 2 cnt 0 addr 192.168.23.25 IPv4 bw 1000 lt 100
+[cn15.guoehi.cluster:1575598] btl:tcp: 0xbdd5140: if eth0 kidx 2 cnt 0 addr 192.168.23.25 IPv4 bw 1000 lt 100
+[cn15.guoehi.cluster:1575599] btl:tcp: 0x36813be0: if ib0 kidx 6 cnt 0 addr 10.31.7.25 IPv4 bw 100000 lt 100
+[cn15.guoehi.cluster:1575599] btl: tcp: exchange: 0 2 IPv4 192.168.23.25
+[cn15.guoehi.cluster:1575599] btl: tcp: exchange: 1 6 IPv4 10.31.7.25
+[cn15.guoehi.cluster:1575598] btl:tcp: 0xbfb43d0: if ib0 kidx 6 cnt 0 addr 10.31.7.25 IPv4 bw 100000 lt 100
+[cn15.guoehi.cluster:1575599] select: init of component tcp returned success
+[cn15.guoehi.cluster:1575599] select: initializing btl component uct
+[cn15.guoehi.cluster:1575598] btl: tcp: exchange: 0 2 IPv4 192.168.23.25
+[cn15.guoehi.cluster:1575598] btl: tcp: exchange: 1 6 IPv4 10.31.7.25
+[cn15.guoehi.cluster:1575598] select: init of component tcp returned success
+[cn15.guoehi.cluster:1575598] select: initializing btl component uct
+[cn15.guoehi.cluster:1575599] select: init of component uct returned success
+[cn15.guoehi.cluster:1575599] select: init returned priority 20
+[cn15.guoehi.cluster:1575599] select: initializing pml component ucx
+[cn15.guoehi.cluster:1575598] select: init of component uct returned success
+[cn15.guoehi.cluster:1575598] select: init returned priority 20
+[cn15.guoehi.cluster:1575598] select: initializing pml component ucx
+[cn15.guoehi.cluster:1575599] select: init returned priority 51
+[cn15.guoehi.cluster:1575599] select: component v not in the include list
+[cn15.guoehi.cluster:1575599] selected ucx best priority 51
+[cn15.guoehi.cluster:1575599] select: component ucx selected
+[cn15.guoehi.cluster:1575598] select: init returned priority 51
+[cn15.guoehi.cluster:1575598] select: component v not in the include list
+[cn15.guoehi.cluster:1575598] selected ucx best priority 51
+[cn15.guoehi.cluster:1575598] select: component ucx selected
+[cn15.guoehi.cluster:1575599] select: component cm not selected / finalized
+[cn15.guoehi.cluster:1575599] select: component ob1 not selected / finalized
+[cn15.guoehi.cluster:1575599] mca: base: close: component cm closed
+[cn15.guoehi.cluster:1575599] mca: base: close: unloading component cm
+[cn15.guoehi.cluster:1575599] mca: base: close: unloading component monitoring
+[cn15.guoehi.cluster:1575599] mca: base: close: component ob1 closed
+[cn15.guoehi.cluster:1575599] mca: base: close: unloading component ob1
+[cn15.guoehi.cluster:1575599] mca: base: close: component v closed
+[cn15.guoehi.cluster:1575599] mca: base: close: unloading component v
+[cn15.guoehi.cluster:1575598] select: component cm not selected / finalized
+[cn15.guoehi.cluster:1575598] select: component ob1 not selected / finalized
+[cn15.guoehi.cluster:1575598] mca: base: close: component cm closed
+[cn15.guoehi.cluster:1575598] mca: base: close: unloading component cm
+[cn15.guoehi.cluster:1575598] mca: base: close: unloading component monitoring
+[cn15.guoehi.cluster:1575598] mca: base: close: component ob1 closed
+[cn15.guoehi.cluster:1575598] mca: base: close: unloading component ob1
+[cn15.guoehi.cluster:1575598] mca: base: close: component v closed
+[cn15.guoehi.cluster:1575598] mca: base: close: unloading component v
+[cn15.guoehi.cluster:1575599] mca: base: close: component ucx closed
+[cn15.guoehi.cluster:1575599] mca: base: close: unloading component ucx
+[cn15.guoehi.cluster:1575598] mca: base: close: component ucx closed
+[cn15.guoehi.cluster:1575598] mca: base: close: unloading component ucx
+[cn15.guoehi.cluster:1575598] mca: base: close: component self closed
+[cn15.guoehi.cluster:1575598] mca: base: close: unloading component self
+[cn15.guoehi.cluster:1575598] mca: base: close: component sm closed
+[cn15.guoehi.cluster:1575598] mca: base: close: unloading component sm
+[cn15.guoehi.cluster:1575598] mca: base: close: component tcp closed
+[cn15.guoehi.cluster:1575598] mca: base: close: unloading component tcp
+[cn15.guoehi.cluster:1575598] mca: base: close: component uct closed
+[cn15.guoehi.cluster:1575598] mca: base: close: unloading component uct
+[cn15.guoehi.cluster:1575599] mca: base: close: component self closed
+[cn15.guoehi.cluster:1575599] mca: base: close: unloading component self
+[cn15.guoehi.cluster:1575599] mca: base: close: component sm closed
+[cn15.guoehi.cluster:1575599] mca: base: close: unloading component sm
+[cn15.guoehi.cluster:1575599] mca: base: close: component tcp closed
+[cn15.guoehi.cluster:1575599] mca: base: close: unloading component tcp
+[cn15.guoehi.cluster:1575599] mca: base: close: component uct closed
+[cn15.guoehi.cluster:1575599] mca: base: close: unloading component uct

@@ -1,0 +1,27 @@
+job=35062 partition=cn-eth nodes=cn20
+ntasks=2 ntasks_per_node=2
+date=2026-10-19T23:03:59+00:00
+gcc (GCC) 14.1.0
+mpiexec (Open MPI) 5.0.3
+--- network devices
+lo               UNKNOWN        00:00:00:00:00:00 <LOOPBACK,UP,LOWER_UP> 
+eth0             UP             a4:16:e7:ef:45:93 <BROADCAST,MULTICAST,UP,LOWER_UP> 
+eth1             DOWN           a4:16:e7:ef:45:94 <NO-CARRIER,BROADCAST,MULTICAST,UP> 
+eth2             DOWN           a4:16:e7:ef:45:95 <NO-CARRIER,BROADCAST,MULTICAST,UP> 
+eth3             DOWN           a4:16:e7:ef:45:96 <NO-CARRIER,BROADCAST,MULTICAST,UP> 
+eth4             UP             b8:ce:f6:2e:42:c0 <BROADCAST,MULTICAST,UP,LOWER_UP> 
+CA 'mlx5_0'
+		State: Active
+		Rate: 100
+--- MPI transports built in
+                 MCA btl: self (MCA v2.1.0, API v3.3.0, Component v5.0.3)
+                 MCA btl: ofi (MCA v2.1.0, API v3.3.0, Component v5.0.3)
+                 MCA btl: sm (MCA v2.1.0, API v3.3.0, Component v5.0.3)
+                 MCA btl: tcp (MCA v2.1.0, API v3.3.0, Component v5.0.3)
+                 MCA btl: uct (MCA v2.1.0, API v3.3.0, Component v5.0.3)
+                 MCA mtl: ofi (MCA v2.1.0, API v2.0.0, Component v5.0.3)
+                 MCA pml: cm (MCA v2.1.0, API v2.1.0, Component v5.0.3)
+                 MCA pml: monitoring (MCA v2.1.0, API v2.1.0, Component v5.0.3)
+                 MCA pml: ob1 (MCA v2.1.0, API v2.1.0, Component v5.0.3)
+                 MCA pml: ucx (MCA v2.1.0, API v2.1.0, Component v5.0.3)
+                 MCA pml: v (MCA v2.1.0, API v2.1.0, Component v5.0.3)
