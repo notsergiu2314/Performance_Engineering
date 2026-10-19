@@ -1,0 +1,120 @@
+Lmod has detected the following error: The following module(s) are unknown:
+"GCC"
+
+Please check the spelling or version number. Also try "module spider ..."
+It is also possible your cache file is out-of-date; it may help to try:
+  $ module --ignore_cache load "GCC"
+
+Also make sure that all modulefiles written in TCL start with the string
+#%Module
+
+
+
+g++ (GCC) 8.5.0 20210514 (Red Hat 8.5.0-28)
+mkdir -p bin
+g++ -O2 -std=c++17 -mcpu=native -DLAYOUT=SMALL_BASE    -DSPLIT=0 ds_bench.cpp -o bin/small_base
+g++ -O2 -std=c++17 -mcpu=native -DLAYOUT=SMALL_ALIGN   -DSPLIT=1 ds_bench.cpp -o bin/small_opt
+g++ -O2 -std=c++17 -mcpu=native -DLAYOUT=SMALL_REORDER -DSPLIT=0 ds_bench.cpp -o bin/small_reorder
+g++ -O2 -std=c++17 -mcpu=native -DLAYOUT=SMALL_ALIGN   -DSPLIT=0 ds_bench.cpp -o bin/small_align
+g++ -O2 -std=c++17 -mcpu=native -DLAYOUT=SMALL_BASE    -DSPLIT=1 ds_bench.cpp -o bin/small_split
+g++ -O2 -std=c++17 -mcpu=native -DLAYOUT=BIG_BASE      -DSPLIT=0 ds_bench.cpp -o bin/big_base
+g++ -O2 -std=c++17 -mcpu=native -DLAYOUT=BIG_PAD       -DSPLIT=1 ds_bench.cpp -o bin/big_opt
+g++ -O2 -std=c++17 -mcpu=native -DLAYOUT=BIG_PAD       -DSPLIT=0 ds_bench.cpp -o bin/big_pad
+g++ -O2 -std=c++17 -mcpu=native -DLAYOUT=BIG_BASE      -DSPLIT=1 ds_bench.cpp -o bin/big_split
+[12:55:46] variant=small_base sizeof=72 alignof=8 count=16384 reps=0 init_s=0.000195 sort_s=0.000000 perm_s=0.000000 per_rep_s=0.000000 check=ok
+[12:55:47] variant=small_base sizeof=72 alignof=8 count=16384 reps=0 init_s=0.000194 sort_s=0.000000 perm_s=0.000000 per_rep_s=0.000000 check=ok
+[12:55:47] variant=small_base sizeof=72 alignof=8 count=16384 reps=0 init_s=0.000195 sort_s=0.000000 perm_s=0.000000 per_rep_s=0.000000 check=ok
+[12:55:47] variant=small_base sizeof=72 alignof=8 count=16384 reps=0 init_s=0.000196 sort_s=0.000000 perm_s=0.000000 per_rep_s=0.000000 check=ok
+[12:55:47] variant=small_base sizeof=72 alignof=8 count=16384 reps=0 init_s=0.000199 sort_s=0.000000 perm_s=0.000000 per_rep_s=0.000000 check=ok
+[12:55:47] variant=small_base sizeof=72 alignof=8 count=16384 reps=0 init_s=0.000194 sort_s=0.000000 perm_s=0.000000 per_rep_s=0.000000 check=ok
+[12:55:48] variant=small_base sizeof=72 alignof=8 count=16384 reps=2000 init_s=0.000195 sort_s=0.924285 perm_s=0.000000 per_rep_s=0.000462 check=ok
+[12:55:49] variant=small_base sizeof=72 alignof=8 count=16384 reps=2000 init_s=0.000196 sort_s=0.919548 perm_s=0.000000 per_rep_s=0.000460 check=ok
+[12:55:50] variant=small_base sizeof=72 alignof=8 count=16384 reps=2000 init_s=0.000199 sort_s=0.913629 perm_s=0.000000 per_rep_s=0.000457 check=ok
+[12:55:51] variant=small_base sizeof=72 alignof=8 count=16384 reps=2000 init_s=0.000196 sort_s=0.914830 perm_s=0.000000 per_rep_s=0.000457 check=ok
+[12:55:52] variant=small_base sizeof=72 alignof=8 count=16384 reps=2000 init_s=0.000196 sort_s=0.923426 perm_s=0.000000 per_rep_s=0.000462 check=ok
+[12:55:53] variant=small_base sizeof=72 alignof=8 count=16384 reps=2000 init_s=0.000198 sort_s=0.916233 perm_s=0.000000 per_rep_s=0.000458 check=ok
+[12:55:53] variant=small_align sizeof=64 alignof=64 count=16384 reps=0 init_s=0.000192 sort_s=0.000000 perm_s=0.000000 per_rep_s=0.000000 check=ok
+[12:55:53] variant=small_align sizeof=64 alignof=64 count=16384 reps=0 init_s=0.000208 sort_s=0.000000 perm_s=0.000000 per_rep_s=0.000000 check=ok
+[12:55:53] variant=small_align sizeof=64 alignof=64 count=16384 reps=0 init_s=0.000201 sort_s=0.000000 perm_s=0.000000 per_rep_s=0.000000 check=ok
+[12:55:53] variant=small_align sizeof=64 alignof=64 count=16384 reps=0 init_s=0.000190 sort_s=0.000000 perm_s=0.000000 per_rep_s=0.000000 check=ok
+[12:55:53] variant=small_align sizeof=64 alignof=64 count=16384 reps=0 init_s=0.000197 sort_s=0.000000 perm_s=0.000000 per_rep_s=0.000000 check=ok
+[12:55:54] variant=small_align sizeof=64 alignof=64 count=16384 reps=0 init_s=0.000197 sort_s=0.000000 perm_s=0.000000 per_rep_s=0.000000 check=ok
+[12:55:54] variant=small_align sizeof=64 alignof=64 count=16384 reps=2000 init_s=0.000191 sort_s=0.747115 perm_s=0.000000 per_rep_s=0.000374 check=ok
+[12:55:55] variant=small_align sizeof=64 alignof=64 count=16384 reps=2000 init_s=0.000208 sort_s=0.743476 perm_s=0.000000 per_rep_s=0.000372 check=ok
+[12:55:56] variant=small_align sizeof=64 alignof=64 count=16384 reps=2000 init_s=0.000200 sort_s=0.742074 perm_s=0.000000 per_rep_s=0.000371 check=ok
+[12:55:57] variant=small_align sizeof=64 alignof=64 count=16384 reps=2000 init_s=0.000202 sort_s=0.745319 perm_s=0.000000 per_rep_s=0.000373 check=ok
+[12:55:58] variant=small_align sizeof=64 alignof=64 count=16384 reps=2000 init_s=0.000196 sort_s=0.742577 perm_s=0.000000 per_rep_s=0.000371 check=ok
+[12:55:58] variant=small_align sizeof=64 alignof=64 count=16384 reps=2000 init_s=0.000199 sort_s=0.744013 perm_s=0.000000 per_rep_s=0.000372 check=ok
+[12:55:58] variant=small_align_split sizeof=64 alignof=64 count=16384 reps=0 init_s=0.000191 sort_s=0.000000 perm_s=0.000000 per_rep_s=0.000000 check=ok
+[12:55:59] variant=small_align_split sizeof=64 alignof=64 count=16384 reps=0 init_s=0.000204 sort_s=0.000000 perm_s=0.000000 per_rep_s=0.000000 check=ok
+[12:55:59] variant=small_align_split sizeof=64 alignof=64 count=16384 reps=0 init_s=0.000194 sort_s=0.000000 perm_s=0.000000 per_rep_s=0.000000 check=ok
+[12:55:59] variant=small_align_split sizeof=64 alignof=64 count=16384 reps=0 init_s=0.000194 sort_s=0.000000 perm_s=0.000000 per_rep_s=0.000000 check=ok
+[12:55:59] variant=small_align_split sizeof=64 alignof=64 count=16384 reps=0 init_s=0.000199 sort_s=0.000000 perm_s=0.000000 per_rep_s=0.000000 check=ok
+[12:55:59] variant=small_align_split sizeof=64 alignof=64 count=16384 reps=0 init_s=0.000197 sort_s=0.000000 perm_s=0.000000 per_rep_s=0.000000 check=ok
+[12:56:00] variant=small_align_split sizeof=64 alignof=64 count=16384 reps=2000 init_s=0.000208 sort_s=0.499825 perm_s=0.186086 per_rep_s=0.000343 check=ok
+[12:56:00] variant=small_align_split sizeof=64 alignof=64 count=16384 reps=2000 init_s=0.000192 sort_s=0.497498 perm_s=0.186110 per_rep_s=0.000342 check=ok
+[12:56:01] variant=small_align_split sizeof=64 alignof=64 count=16384 reps=2000 init_s=0.000190 sort_s=0.497061 perm_s=0.187016 per_rep_s=0.000342 check=ok
+[12:56:02] variant=small_align_split sizeof=64 alignof=64 count=16384 reps=2000 init_s=0.000195 sort_s=0.498934 perm_s=0.186194 per_rep_s=0.000343 check=ok
+[12:56:03] variant=small_align_split sizeof=64 alignof=64 count=16384 reps=2000 init_s=0.000189 sort_s=0.498649 perm_s=0.186174 per_rep_s=0.000342 check=ok
+[12:56:04] variant=small_align_split sizeof=64 alignof=64 count=16384 reps=2000 init_s=0.000191 sort_s=0.499675 perm_s=0.185938 per_rep_s=0.000343 check=ok
+[12:56:04] variant=small_base sizeof=72 alignof=8 count=1048576 reps=0 init_s=0.015074 sort_s=0.000000 perm_s=0.000000 per_rep_s=0.000000 check=ok
+[12:56:04] variant=small_base sizeof=72 alignof=8 count=1048576 reps=0 init_s=0.015057 sort_s=0.000000 perm_s=0.000000 per_rep_s=0.000000 check=ok
+[12:56:04] variant=small_base sizeof=72 alignof=8 count=1048576 reps=0 init_s=0.014990 sort_s=0.000000 perm_s=0.000000 per_rep_s=0.000000 check=ok
+[12:56:04] variant=small_base sizeof=72 alignof=8 count=1048576 reps=0 init_s=0.015147 sort_s=0.000000 perm_s=0.000000 per_rep_s=0.000000 check=ok
+[12:56:04] variant=small_base sizeof=72 alignof=8 count=1048576 reps=0 init_s=0.014822 sort_s=0.000000 perm_s=0.000000 per_rep_s=0.000000 check=ok
+[12:56:04] variant=small_base sizeof=72 alignof=8 count=1048576 reps=0 init_s=0.014832 sort_s=0.000000 perm_s=0.000000 per_rep_s=0.000000 check=ok
+[12:56:05] variant=small_base sizeof=72 alignof=8 count=1048576 reps=20 init_s=0.014965 sort_s=1.279764 perm_s=0.000000 per_rep_s=0.063988 check=ok
+[12:56:07] variant=small_base sizeof=72 alignof=8 count=1048576 reps=20 init_s=0.015427 sort_s=1.279133 perm_s=0.000000 per_rep_s=0.063957 check=ok
+[12:56:08] variant=small_base sizeof=72 alignof=8 count=1048576 reps=20 init_s=0.014984 sort_s=1.280873 perm_s=0.000000 per_rep_s=0.064044 check=ok
+[12:56:10] variant=small_base sizeof=72 alignof=8 count=1048576 reps=20 init_s=0.015392 sort_s=1.279133 perm_s=0.000000 per_rep_s=0.063957 check=ok
+[12:56:11] variant=small_base sizeof=72 alignof=8 count=1048576 reps=20 init_s=0.015509 sort_s=1.280842 perm_s=0.000000 per_rep_s=0.064042 check=ok
+[12:56:12] variant=small_base sizeof=72 alignof=8 count=1048576 reps=20 init_s=0.015254 sort_s=1.279570 perm_s=0.000000 per_rep_s=0.063978 check=ok
+[12:56:12] variant=small_align sizeof=64 alignof=64 count=1048576 reps=0 init_s=0.014455 sort_s=0.000000 perm_s=0.000000 per_rep_s=0.000000 check=ok
+[12:56:13] variant=small_align sizeof=64 alignof=64 count=1048576 reps=0 init_s=0.014984 sort_s=0.000000 perm_s=0.000000 per_rep_s=0.000000 check=ok
+[12:56:13] variant=small_align sizeof=64 alignof=64 count=1048576 reps=0 init_s=0.014751 sort_s=0.000000 perm_s=0.000000 per_rep_s=0.000000 check=ok
+[12:56:13] variant=small_align sizeof=64 alignof=64 count=1048576 reps=0 init_s=0.014445 sort_s=0.000000 perm_s=0.000000 per_rep_s=0.000000 check=ok
+[12:56:13] variant=small_align sizeof=64 alignof=64 count=1048576 reps=0 init_s=0.015099 sort_s=0.000000 perm_s=0.000000 per_rep_s=0.000000 check=ok
+[12:56:13] variant=small_align sizeof=64 alignof=64 count=1048576 reps=0 init_s=0.014395 sort_s=0.000000 perm_s=0.000000 per_rep_s=0.000000 check=ok
+[12:56:14] variant=small_align sizeof=64 alignof=64 count=1048576 reps=20 init_s=0.014394 sort_s=1.065691 perm_s=0.000000 per_rep_s=0.053285 check=ok
+[12:56:15] variant=small_align sizeof=64 alignof=64 count=1048576 reps=20 init_s=0.014435 sort_s=1.066115 perm_s=0.000000 per_rep_s=0.053306 check=ok
+[12:56:16] variant=small_align sizeof=64 alignof=64 count=1048576 reps=20 init_s=0.014923 sort_s=1.065066 perm_s=0.000000 per_rep_s=0.053253 check=ok
+[12:56:18] variant=small_align sizeof=64 alignof=64 count=1048576 reps=20 init_s=0.014894 sort_s=1.067180 perm_s=0.000000 per_rep_s=0.053359 check=ok
+[12:56:19] variant=small_align sizeof=64 alignof=64 count=1048576 reps=20 init_s=0.014860 sort_s=1.071261 perm_s=0.000000 per_rep_s=0.053563 check=ok
+[12:56:20] variant=small_align sizeof=64 alignof=64 count=1048576 reps=20 init_s=0.015202 sort_s=1.066447 perm_s=0.000000 per_rep_s=0.053322 check=ok
+[12:56:20] variant=small_align_split sizeof=64 alignof=64 count=1048576 reps=0 init_s=0.014450 sort_s=0.000000 perm_s=0.000000 per_rep_s=0.000000 check=ok
+[12:56:20] variant=small_align_split sizeof=64 alignof=64 count=1048576 reps=0 init_s=0.014427 sort_s=0.000000 perm_s=0.000000 per_rep_s=0.000000 check=ok
+[12:56:20] variant=small_align_split sizeof=64 alignof=64 count=1048576 reps=0 init_s=0.014927 sort_s=0.000000 perm_s=0.000000 per_rep_s=0.000000 check=ok
+[12:56:20] variant=small_align_split sizeof=64 alignof=64 count=1048576 reps=0 init_s=0.014497 sort_s=0.000000 perm_s=0.000000 per_rep_s=0.000000 check=ok
+[12:56:20] variant=small_align_split sizeof=64 alignof=64 count=1048576 reps=0 init_s=0.014448 sort_s=0.000000 perm_s=0.000000 per_rep_s=0.000000 check=ok
+[12:56:20] variant=small_align_split sizeof=64 alignof=64 count=1048576 reps=0 init_s=0.014425 sort_s=0.000000 perm_s=0.000000 per_rep_s=0.000000 check=ok
+[12:56:21] variant=small_align_split sizeof=64 alignof=64 count=1048576 reps=20 init_s=0.014887 sort_s=0.543444 perm_s=0.184487 per_rep_s=0.036397 check=ok
+[12:56:22] variant=small_align_split sizeof=64 alignof=64 count=1048576 reps=20 init_s=0.014468 sort_s=0.540152 perm_s=0.183822 per_rep_s=0.036199 check=ok
+[12:56:23] variant=small_align_split sizeof=64 alignof=64 count=1048576 reps=20 init_s=0.014485 sort_s=0.539142 perm_s=0.186190 per_rep_s=0.036267 check=ok
+[12:56:24] variant=small_align_split sizeof=64 alignof=64 count=1048576 reps=20 init_s=0.014696 sort_s=0.538662 perm_s=0.184855 per_rep_s=0.036176 check=ok
+[12:56:25] variant=small_align_split sizeof=64 alignof=64 count=1048576 reps=20 init_s=0.015041 sort_s=0.540997 perm_s=0.184647 per_rep_s=0.036282 check=ok
+[12:56:25] variant=small_align_split sizeof=64 alignof=64 count=1048576 reps=20 init_s=0.014631 sort_s=0.539876 perm_s=0.184866 per_rep_s=0.036237 check=ok
+[12:56:26] variant=big_base sizeof=131080 alignof=8 count=16384 reps=0 init_s=0.203431 sort_s=0.000000 perm_s=0.000000 per_rep_s=0.000000 check=ok
+[12:56:26] variant=big_base sizeof=131080 alignof=8 count=16384 reps=0 init_s=0.205616 sort_s=0.000000 perm_s=0.000000 per_rep_s=0.000000 check=ok
+[12:56:26] variant=big_base sizeof=131080 alignof=8 count=16384 reps=0 init_s=0.207338 sort_s=0.000000 perm_s=0.000000 per_rep_s=0.000000 check=ok
+[12:56:27] variant=big_base sizeof=131080 alignof=8 count=16384 reps=0 init_s=0.206630 sort_s=0.000000 perm_s=0.000000 per_rep_s=0.000000 check=ok
+[12:56:27] variant=big_base sizeof=131080 alignof=8 count=16384 reps=0 init_s=0.207143 sort_s=0.000000 perm_s=0.000000 per_rep_s=0.000000 check=ok
+[12:56:27] variant=big_base sizeof=131080 alignof=8 count=16384 reps=0 init_s=0.208603 sort_s=0.000000 perm_s=0.000000 per_rep_s=0.000000 check=ok
+[12:56:31] variant=big_base sizeof=131080 alignof=8 count=16384 reps=4 init_s=0.208761 sort_s=3.745715 perm_s=0.000000 per_rep_s=0.936429 check=ok
+[12:56:35] variant=big_base sizeof=131080 alignof=8 count=16384 reps=4 init_s=0.207111 sort_s=3.743935 perm_s=0.000000 per_rep_s=0.935984 check=ok
+[12:56:39] variant=big_base sizeof=131080 alignof=8 count=16384 reps=4 init_s=0.207217 sort_s=3.744854 perm_s=0.000000 per_rep_s=0.936213 check=ok
+[12:56:43] variant=big_base sizeof=131080 alignof=8 count=16384 reps=4 init_s=0.206386 sort_s=3.744941 perm_s=0.000000 per_rep_s=0.936235 check=ok
+[12:56:47] variant=big_base sizeof=131080 alignof=8 count=16384 reps=4 init_s=0.205427 sort_s=3.743678 perm_s=0.000000 per_rep_s=0.935920 check=ok
+[12:56:51] variant=big_base sizeof=131080 alignof=8 count=16384 reps=4 init_s=0.204903 sort_s=3.705878 perm_s=0.000000 per_rep_s=0.926469 check=ok
+[12:56:52] variant=big_pad_split sizeof=131136 alignof=64 count=16384 reps=0 init_s=0.161555 sort_s=0.000000 perm_s=0.000000 per_rep_s=0.000000 check=ok
+[12:56:52] variant=big_pad_split sizeof=131136 alignof=64 count=16384 reps=0 init_s=0.162096 sort_s=0.000000 perm_s=0.000000 per_rep_s=0.000000 check=ok
+[12:56:52] variant=big_pad_split sizeof=131136 alignof=64 count=16384 reps=0 init_s=0.161799 sort_s=0.000000 perm_s=0.000000 per_rep_s=0.000000 check=ok
+[12:56:52] variant=big_pad_split sizeof=131136 alignof=64 count=16384 reps=0 init_s=0.162135 sort_s=0.000000 perm_s=0.000000 per_rep_s=0.000000 check=ok
+[12:56:53] variant=big_pad_split sizeof=131136 alignof=64 count=16384 reps=0 init_s=0.161595 sort_s=0.000000 perm_s=0.000000 per_rep_s=0.000000 check=ok
+[12:56:53] variant=big_pad_split sizeof=131136 alignof=64 count=16384 reps=0 init_s=0.162226 sort_s=0.000000 perm_s=0.000000 per_rep_s=0.000000 check=ok
+[12:56:54] variant=big_pad_split sizeof=131136 alignof=64 count=16384 reps=4 init_s=0.162877 sort_s=0.001708 perm_s=1.147307 per_rep_s=0.287254 check=ok
+[12:56:56] variant=big_pad_split sizeof=131136 alignof=64 count=16384 reps=4 init_s=0.162972 sort_s=0.001699 perm_s=1.146403 per_rep_s=0.287025 check=ok
+[12:56:57] variant=big_pad_split sizeof=131136 alignof=64 count=16384 reps=4 init_s=0.162685 sort_s=0.001709 perm_s=1.147432 per_rep_s=0.287285 check=ok
+[12:56:58] variant=big_pad_split sizeof=131136 alignof=64 count=16384 reps=4 init_s=0.163720 sort_s=0.001715 perm_s=1.147836 per_rep_s=0.287388 check=ok
+[12:57:00] variant=big_pad_split sizeof=131136 alignof=64 count=16384 reps=4 init_s=0.162425 sort_s=0.001702 perm_s=1.147677 per_rep_s=0.287345 check=ok
+[12:57:01] variant=big_pad_split sizeof=131136 alignof=64 count=16384 reps=4 init_s=0.163086 sort_s=0.001705 perm_s=1.147497 per_rep_s=0.287301 check=ok
+done: results/35013

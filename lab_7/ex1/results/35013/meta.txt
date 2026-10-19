@@ -1,0 +1,25 @@
+host=cn15.guoehi.cluster
+date=2026-10-19T12:55:46+00:00
+cpu=2
+trials=3
+perf=perf
+evgroups:
+task-clock,cycles,instructions,L1-dcache-loads,L1-dcache-load-misses,l2d_cache_refill,dTLB-load-misses
+task-clock,cycles,l2d_cache,ll_cache_rd,ll_cache_miss_rd,stall_backend,branch-misses
+cases:
+small_base 16384 2000
+small_align 16384 2000
+small_opt 16384 2000
+small_base 1048576 20
+small_align 1048576 20
+small_opt 1048576 20
+big_base 16384 4
+big_opt 16384 4
+lscpu:
+Architecture:        aarch64
+CPU(s):              128
+Model name:          Kunpeng-920
+L1d cache:           64K
+L2 cache:            512K
+L3 cache:            32768K
+pagesize=65536

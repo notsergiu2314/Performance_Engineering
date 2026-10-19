@@ -1,0 +1,9 @@
+# started on Mon Oct 19 12:55:53 2026
+
+1.39,msec,task-clock,1389310,100.00,0.558,CPUs utilized
+3599046,,cycles,1392760,100.00,2.591,GHz
+257123,,l2d_cache,1392760,100.00,185.072,M/sec
+41512,,ll_cache_rd,1392760,100.00,29.880,M/sec
+18840,,ll_cache_miss_rd,1392760,100.00,13.561,M/sec
+1575165,,stall_backend,1392760,100.00,1.134,G/sec
+25855,,branch-misses,1392760,100.00,,

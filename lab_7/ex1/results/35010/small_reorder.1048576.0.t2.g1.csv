@@ -1,0 +1,9 @@
+# started on Mon Oct 19 12:45:43 2026
+
+18.00,msec,task-clock,18003990,100.00,0.911,CPUs utilized
+46775215,,cycles,18007950,100.00,2.598,GHz
+27812462,,instructions,18007950,100.00,0.59,insn per cycle
+15410055,,L1-dcache-loads,18007950,100.00,855.924,M/sec
+1136844,,L1-dcache-load-misses,18007950,100.00,7.38,of all L1-dcache accesses
+3316724,,l2d_cache_refill,18007950,100.00,184.222,M/sec
+39668,,dTLB-load-misses,18007950,100.00,,

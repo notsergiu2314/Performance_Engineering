@@ -7,6 +7,7 @@
 \usepackage{xcolor}
 \usepackage{hyperref}
 \usepackage{graphicx}
+\usepackage{booktabs}
 
 % code block style
 \usepackage{listings}
@@ -42,7 +43,7 @@
 \newcommand{\comment}[1]{\noindent \textcolor{blue}{\textit{#1}} \par}
 
 % Header information
-\title{\Large{\sc{Performance Engineering}}\\[2mm] Lab 6}
+\title{\Large{\sc{Performance Engineering}}\\[2mm] Lab 7}
 \author{Jort Oosterveld S5545781 \& Sergiu Preda S6778542 \\ Group 11}
 
 \begin{document}
@@ -55,45 +56,171 @@
 \begin{lstlisting}[language=C++, caption=Data structures Small and Big]
 const int n = 16384;
 
-struct Small {
-    char flg1;
+struct Small {          
+    char flg1;          
     double x[7];
-    char fig2;
-}
+    char flg2;
+};
 
-struct Big {
-    int rank;
-    double x[n]
-}
+struct Big {            
+    int rank;           
+    double x[n];
+};
 \end{lstlisting}
+
+Both structures are sorted with \texttt{std::sort}; the comparator reads one key field
+(\texttt{x[0]} resp.\ \texttt{rank}) and the swaps move the whole records.
 
 % ================================ a ==================================
 \subsection{a.}
+Which of the following techniques can be used for optimizing the data structures \texttt{Small} and \texttt{Big}?
 \begin{itemize}
-    \item \textbf{Data packing:} \\
+    \item \textbf{Data packing}
         \begin{itemize}
-            \comment{Assumes that the data structure has default area size per field of 64 bit}
-            \item \textbf{Small:} yes, packs the two char flag fields into one 64-bit area, instead of two separate ones. Used in combination with padding here to pad to a 64-bit area. Also used in combination with field reordering to enable the packing, since in the current implementation, the chars cannot be packed when the double array is in between.
-            \item \textbf{Big:} no, data packing does not help in this case, since there are no fields that can fit together in the default area that the \texttt{Big} struct allocates per field (64 bit).
+            \item \textbf{Small:} No. Merging the flags into one bit-field saves one byte, which the 8-byte
+                alignment of \texttt{x} rounds away again (the record stays 64~B after
+                re-ordering). Forcing packed chars misaligns the doubles, which reduces
+                performance.
+            \item \textbf{Big:} No, but \texttt{rank} could be a 16-bit \texttt{short},
+                because its value is always $< n$, which saves only 2 bytes in a huge structure.
         \end{itemize}
-    \item \textbf{Data padding:}
+    \item \textbf{Data padding}
         \begin{itemize}
-                \item \textbf{Small:} Yes, used in combination with data packing. If used on its own, would increase the size of the struct in memory and would not improve resource usage, but would make memory access more efficient by aligning the fields to a 64-bit size.
-                \item \textbf{Big:} yes, used here to align the 32-bit \texttt{rank} to the 64-bit doubles, for more streamlined memory access.
-            \end{itemize}
-    \item \textbf{Data Field reordering:}
+            \item \textbf{Small:} Yes, if we use a 64B align, so that every record is exactly one
+                line instead of parts of two different records.
+            \item \textbf{Big:} Yes, small performance increase from aligning to 64B.
+        \end{itemize}
+    \item \textbf{Field re-ordering}
         \begin{itemize}
-                \item \textbf{Small:} Yes, used in combination with packing, reordering enables the packing in this case.
-                \item \textbf{Big:} no, reordering does not enable optimizations in the \texttt{Big} case.
-            \end{itemize}
-    \item \textbf{Data Structure Splitting:}
+            \item \textbf{Small:} Yes, if we move the flags, the holes in the structure disappear
+            \item \textbf{Big:} No. Moving \texttt{rank} behind the array exchanges the
+                4B hole for 4B of tail padding, so the size stays the same.
+        \end{itemize}
+    \item \textbf{Structure splitting}
         \begin{itemize}
-                \item \textbf{Small:} Yes, splitting flags and array optimizes access to the flags by not loading array into cache each time.
-                \item \textbf{Big:} yes, splitting optimizes access to rank in the same way as with small.
-            \end{itemize}
+            \item \textbf{Small:} Yes, the sort only reads \texttt{x[0]}, so a hot
+                array of (\texttt{x[0]}, index) pairs (16~B) can be sorted and the
+                permutation applied to the 64/72B records once. The swaps then move 16
+                instead of 72~B, at the price of one extra pass and a changed layout for
+                the rest of the program. We expect to see a small gain, since the whole vector
+                fits in L1/L2 already.
+
+            \item \textbf{Big:} Yes, the comparator reads only 4B out of a 128B record,
+                having to fetch a new page every time. Every
+                swap copies $3 \times 128$KiB. Splitting \texttt{rank} (plus an index)
+                from the payload lets the sort work on only the small keys, instead of the whole
+                structure. The payload is permuted once afterwards.
+        \end{itemize}
 \end{itemize}
 
+% ================================ b ==================================
+\subsection{b.}
+We combine the techniques that a) identified as useful: for \texttt{Small} field
+re-ordering, cache-line alignment and structure splitting, and for \texttt{Big} cache-line
+padding and structure splitting (Listing~\ref{lst:opt}).
 
+\begin{lstlisting}[language=C++, caption={Snippets of the optimized layouts and the split sort. 
+    \texttt{v[]} is the original array of either Big or Small, of type \texttt{Rec}.
+    \texttt{cnt} is the length of \texttt{v[]}, , }, label=lst:opt]
+using Key = double;
+
+// 64 B, one line per record
+struct alignas(64) Small { 
+    double x[7]; 
+    char flg1; 
+    char flg2; 
+};
+// cache-line aligned
+struct alignas(64) Big { 
+    int rank; 
+    double x[n]; 
+};             
+
+// hot part: 16 B (Small), 8 B (Big)
+struct KeyIdx { 
+    Key k; 
+    uint32_t i;
+};
+
+std::vector<KeyIdx> ki(cnt);
+for (uint32_t i = 0; i < cnt; i++) {
+    ki[i] = {key(v[i]), i};
+}
+
+std::sort(ki.begin(), ki.end(), [](auto &a, auto &b) { return a.k < b.k; });
+
+// position p must receive record ki[p].i: follow every cycle with one temporary
+std::unique_ptr<Rec> tmp(new Rec);
+for (uint32_t p = 0; p < cnt; p++) {
+    if (done[p] || ki[p].i == p) { 
+        done[p] = 1; 
+        continue; 
+    }
+    memcpy(tmp.get(), &v[p], sizeof(Rec));
+    for (uint32_t cur = p;;) {
+        uint32_t src = ki[cur].i;
+        done[cur] = 1;
+        if (src == p) { 
+            memcpy(&v[cur], tmp.get(), sizeof(Rec));
+            break; 
+        }
+        memcpy(&v[cur], &v[src], sizeof(Rec));
+        cur = src;
+    }
+}
+\end{lstlisting}
+
+The sort works on the hot array of (key, index) pairs. Carrying the original index in the hot part keeps the link to the
+cold part (the unchanged record vector) at a cost of 4~B per record, and lets the sort
+itself move only 16~B (\texttt{Small}) or 8~B (\texttt{Big}) per swap. The permutation
+step then makes the end state identical to the original benchmark, so the comparison is fair.
+
+% ================================ c ==================================
+\subsection{c.}
+\textbf(Setup:) One cn-ib node of HAICGU (cn15, Kunpeng 920 at 2.6~GHz: 64~KB
+L1d, 512~KB private L2, 32~MB L3, 64~KiB pages), GCC~8.5.0 \texttt{-O2 -mcpu=native},
+\texttt{perf}~4.18, with the process pinned to one core. Every configuration runs three times
+with two event groups of at most six events, so that \texttt{perf} does not have to make estimates by multiplexing counters.
+The results were all within a margin of $<1\%$ of each other.
+The counters of a run with $R$ sorts minus those of a run with
+$R=0$ (allocate and initialise only), divided by $R$, give the values per sort below.
+``L3 reads/misses'' are the ARM events \texttt{ll\_cache\_rd} and
+\texttt{ll\_cache\_miss\_rd}.
+
+\input{tables/tab_small_16384.tex}
+\input{tables/tab_small_1048576.tex}
+\input{tables/tab_big_16384.tex}
+
+\textbf{Small, 16\,384 records (Table~\ref{tab:small16384}):} The vector 
+fully fits in L1/L2, so L3 read misses and dTLB misses are zero for both
+versions, and the baseline is not DRAM-bound. The
+optimized version is therefore only $1.34\times$ faster. 
+The sort itself now touches 256~KB of 16-B
+key/index pairs instead of 1.2~MB of records, so the L1d misses drop $4\times$ and the L2
+refills by 31\,\%. The 64-B, line-aligned records make the permutation cheap because each 
+record is one full cache line and no copy crosses a line boundary.
+L1d loads drop by 24\,\% and instructions by 7\,\%: the data moved per
+swap shrinks from 72 to 16~B, and the final permutation moves every record only once.
+
+\textbf{Small, $2^{20}$ records (Table~\ref{tab:small1048576}):} The vector now exceeds
+L3 cache, and the performance increase grows to $1.77\times$. The baseline
+reads 209~MB from DRAM per sort. In the optimized version the 16-MB key array stays in
+L3 while it is sorted and the permutation is the only pass that streams the records from DRAM.
+L3 read misses decrease by 37\,\%, the remaining 132~MB being the permutation
+and the part of the key sort that also needs L3 cache.
+
+\textbf{Big (Table~\ref{tab:big16384}):} The 2~GiB vector is many times bigger than L3.
+Instructions and L1d loads are the copy loops, and the time follows them.
+The baseline reads 67M times from RAM. The optimized version sorts the 128~KB of (\texttt{rank}, index) pairs
+in 0.43~ms, $2000\times$ faster than the sort of records. Permuting the records takes
+287~ms. It reads every record exactly once, so only reads from DRAM half the time of the baseline.
+The optimized code writes only once as well, so instructions and L1d loads decrease by $3.1\times$.
+The L2 accesses drop $3.4\times$, more than the loads, because the padded, line-aligned records 
+are copied without any access spanning more than a cache line. The total speedup is about $3.3\times$.
+A consumer that can work through the index array would skip the permutation and get the
+full $2000\times$. dTLB misses are small in both versions thanks to the 64~KiB pages (one
+record spans three pages) and still fall $3.4\times$. The remaining counters are left in for
+completeness.
 
 \section{MPI Point-To-Point Communication Benchmarking}
 

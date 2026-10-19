@@ -1,0 +1,28 @@
+\begin{table}[htbp]\centering\small
+\begin{tabular}{lrr}
+\toprule
+per sort & base & optimized \\
+\midrule
+record size [B] & 72 & 64 \\
+time per sort [ms] & 64 & 36.2 \\
+\quad of which key sort [ms] & -- & 27 \\
+\quad of which permutation [ms] & -- & 9.24 \\
+speed-up vs.\ base & 1.00 & 1.77 \\
+cycles & 167\,M & 95.4\,M \\
+instructions & 166\,M & 154\,M \\
+L1d loads & 67.3\,M & 52.9\,M \\
+L1d load misses & 4.47\,M & 783\,k \\
+L2 accesses & 32.6\,M & 17.6\,M \\
+L2 refills & 10.8\,M & 4.56\,M \\
+L3 reads & 10.8\,M & 4.22\,M \\
+L3 read misses & 3.27\,M & 2.06\,M \\
+dTLB load misses & 8.71\,k & 4.66\,k \\
+backend stall cycles & 31.1\,M & 39.7\,M \\
+branch misses & 157\,k & 149\,k \\
+IPC & 0.99 & 1.62 \\
+L1d miss rate [\%] & 6.6 & 1.5 \\
+backend stall [\% cycles] & 19 & 42 \\
+\bottomrule
+\end{tabular}
+\caption{\texttt{Small}: counters per sort of 1\,048\,576 records (median of 3 trials, reps=0 run subtracted).}\label{tab:small1048576}
+\end{table}
