@@ -1,0 +1,13 @@
+# generated 2026-10-16T10:00:50 by perf/analysis/variants.py from perf/results/m3_opt_34938
+# baseline archive: m3_baseline_34797; qa_ok: gate verdict of perf/results/m3_correctness_34937/correctness_rows.csv
+# variant base: binary md5 57396505a5e9, node cn17, job 34938: M3 baseline source and CFLAGS (measured in job 34797)
+# variant flags: binary md5 691e1555e193, node cn17, job 34938: T2 only: -fno-math-errno -fno-trapping-math (no kernel change)
+# variant cell: binary md5 06895463df66, node cn17, job 34938: flags + advec_cell register temporaries, dead post_vol store, reset/revert by field swap
+# variant mom: binary md5 b8de910ea938, node cn17, job 34938: flags + advec_mom helper hoist, dead pre_vol store, calc_dt fused reduction (not cell)
+# variant opt: binary md5 1594b80e3650, node cn17, job 34938: all changes (merge of cell and mom)
+variant,description,n,median_s,min_s,max_s,dram_TB,hw_GBs,time_vs_base_pct,bytes_vs_base_pct,source
+base,M3 baseline source and CFLAGS (measured in job 34797),5,11.310,11.243,11.328,2.828,250.0,0.0,0.0,"job 34938 (m3_opt ladder, base)"
+flags,T2 only: -fno-math-errno -fno-trapping-math (no kernel change),5,11.283,11.271,11.343,2.846,252.3,-0.2,0.7,"job 34938 (m3_opt ladder, flags)"
+cell,"flags + advec_cell register temporaries, dead post_vol store, reset/revert by field swap",5,9.922,9.839,9.936,2.486,250.6,-12.3,-12.1,"job 34938 (m3_opt ladder, cell)"
+mom,"flags + advec_mom helper hoist, dead pre_vol store, calc_dt fused reduction (not cell)",5,9.539,9.537,9.617,2.405,252.1,-15.7,-14.9,"job 34938 (m3_opt ladder, mom)"
+opt,all changes (merge of cell and mom),5,8.252,8.231,8.326,2.043,247.5,-27.0,-27.8,"job 34938 (m3_opt ladder, opt)"

@@ -1,0 +1,120 @@
+tag,rep,section,time,pct
+clover_bm_c_r64_t2,1,Timestep,1.4036,10.2096
+clover_bm_c_r64_t2,1,Ideal Gas,0.5764,4.1926
+clover_bm_c_r64_t2,1,Viscosity,1.0183,7.4068
+clover_bm_c_r64_t2,1,PdV,1.7217,12.5236
+clover_bm_c_r64_t2,1,Revert,0.0000,0.0000
+clover_bm_c_r64_t2,1,Acceleration,0.5193,3.7770
+clover_bm_c_r64_t2,1,Fluxes,0.2441,1.7757
+clover_bm_c_r64_t2,1,Cell Advection,2.1990,15.9954
+clover_bm_c_r64_t2,1,Momentum Advection,3.7477,27.2601
+clover_bm_c_r64_t2,1,Reset,0.0008,0.0056
+clover_bm_c_r64_t2,1,Summary,0.0183,0.1332
+clover_bm_c_r64_t2,1,Visit,0.0000,0.0000
+clover_bm_c_r64_t2,1,Tile Halo Exchange,0.0020,0.0145
+clover_bm_c_r64_t2,1,Self Halo Exchange,0.0010,0.0069
+clover_bm_c_r64_t2,1,MPI Halo Exchange,2.2885,16.6459
+clover_bm_c_r64_t2,1,Total,13.7406,99.9469
+clover_bm_c_r64_t2,1,The Rest,0.0073,0.0531
+clover_bm_c_r1_t128,1,Timestep,1.4802,3.2045
+clover_bm_c_r1_t128,1,Ideal Gas,1.5288,3.3098
+clover_bm_c_r1_t128,1,Viscosity,1.6260,3.5201
+clover_bm_c_r1_t128,1,PdV,2.2784,4.9325
+clover_bm_c_r1_t128,1,Revert,0.0000,0.0000
+clover_bm_c_r1_t128,1,Acceleration,1.0736,2.3242
+clover_bm_c_r1_t128,1,Fluxes,0.8257,1.7875
+clover_bm_c_r1_t128,1,Cell Advection,4.3394,9.3944
+clover_bm_c_r1_t128,1,Momentum Advection,7.6250,16.5075
+clover_bm_c_r1_t128,1,Reset,0.0013,0.0029
+clover_bm_c_r1_t128,1,Summary,0.1722,0.3728
+clover_bm_c_r1_t128,1,Visit,0.0000,0.0000
+clover_bm_c_r1_t128,1,Tile Halo Exchange,0.0025,0.0054
+clover_bm_c_r1_t128,1,Self Halo Exchange,24.5090,53.0599
+clover_bm_c_r1_t128,1,MPI Halo Exchange,0.0093,0.0200
+clover_bm_c_r1_t128,1,Total,45.4714,98.4416
+clover_bm_c_r1_t128,1,The Rest,0.7198,1.5584
+clover_bm_c_r4_t32,1,Timestep,1.2926,5.1778
+clover_bm_c_r4_t32,1,Ideal Gas,0.6431,2.5762
+clover_bm_c_r4_t32,1,Viscosity,1.1387,4.5612
+clover_bm_c_r4_t32,1,PdV,1.8961,7.5955
+clover_bm_c_r4_t32,1,Revert,0.0000,0.0000
+clover_bm_c_r4_t32,1,Acceleration,0.5109,2.0463
+clover_bm_c_r4_t32,1,Fluxes,0.1772,0.7099
+clover_bm_c_r4_t32,1,Cell Advection,2.4537,9.8288
+clover_bm_c_r4_t32,1,Momentum Advection,4.0595,16.2615
+clover_bm_c_r4_t32,1,Reset,0.0013,0.0053
+clover_bm_c_r4_t32,1,Summary,0.1616,0.6474
+clover_bm_c_r4_t32,1,Visit,0.0000,0.0000
+clover_bm_c_r4_t32,1,Tile Halo Exchange,0.0018,0.0072
+clover_bm_c_r4_t32,1,Self Halo Exchange,0.3143,1.2590
+clover_bm_c_r4_t32,1,MPI Halo Exchange,12.3021,49.2791
+clover_bm_c_r4_t32,1,Total,24.9528,99.9551
+clover_bm_c_r4_t32,1,The Rest,0.0112,0.0449
+clover_bm_c_r32_t4,1,Timestep,1.3020,9.5236
+clover_bm_c_r32_t4,1,Ideal Gas,0.5939,4.3438
+clover_bm_c_r32_t4,1,Viscosity,1.0005,7.3181
+clover_bm_c_r32_t4,1,PdV,1.6373,11.9759
+clover_bm_c_r32_t4,1,Revert,0.0000,0.0000
+clover_bm_c_r32_t4,1,Acceleration,0.5057,3.6990
+clover_bm_c_r32_t4,1,Fluxes,0.2024,1.4806
+clover_bm_c_r32_t4,1,Cell Advection,2.1848,15.9806
+clover_bm_c_r32_t4,1,Momentum Advection,3.5820,26.1997
+clover_bm_c_r32_t4,1,Reset,0.0007,0.0053
+clover_bm_c_r32_t4,1,Summary,0.0186,0.1359
+clover_bm_c_r32_t4,1,Visit,0.0000,0.0000
+clover_bm_c_r32_t4,1,Tile Halo Exchange,0.0029,0.0213
+clover_bm_c_r32_t4,1,Self Halo Exchange,0.0978,0.7156
+clover_bm_c_r32_t4,1,MPI Halo Exchange,2.5347,18.5393
+clover_bm_c_r32_t4,1,Total,13.6635,99.9386
+clover_bm_c_r32_t4,1,The Rest,0.0084,0.0614
+clover_bm_c_r128_t1,1,Timestep,2.2153,15.6283
+clover_bm_c_r128_t1,1,Ideal Gas,0.5985,4.2221
+clover_bm_c_r128_t1,1,Viscosity,0.9343,6.5912
+clover_bm_c_r128_t1,1,PdV,1.8155,12.8080
+clover_bm_c_r128_t1,1,Revert,0.0000,0.0000
+clover_bm_c_r128_t1,1,Acceleration,0.5792,4.0860
+clover_bm_c_r128_t1,1,Fluxes,0.3538,2.4963
+clover_bm_c_r128_t1,1,Cell Advection,2.0350,14.3559
+clover_bm_c_r128_t1,1,Momentum Advection,3.4115,24.0670
+clover_bm_c_r128_t1,1,Reset,0.0008,0.0060
+clover_bm_c_r128_t1,1,Summary,0.0244,0.1721
+clover_bm_c_r128_t1,1,Visit,0.0000,0.0000
+clover_bm_c_r128_t1,1,Tile Halo Exchange,0.0027,0.0188
+clover_bm_c_r128_t1,1,Self Halo Exchange,0.0009,0.0064
+clover_bm_c_r128_t1,1,MPI Halo Exchange,2.1966,15.4964
+clover_bm_c_r128_t1,1,Total,14.1685,99.9543
+clover_bm_c_r128_t1,1,The Rest,0.0065,0.0457
+clover_bm_c_r64_t2_thpoff,1,Timestep,1.5427,11.2375
+clover_bm_c_r64_t2_thpoff,1,Ideal Gas,0.5752,4.1903
+clover_bm_c_r64_t2_thpoff,1,Viscosity,0.9714,7.0764
+clover_bm_c_r64_t2_thpoff,1,PdV,1.7102,12.4578
+clover_bm_c_r64_t2_thpoff,1,Revert,0.0000,0.0000
+clover_bm_c_r64_t2_thpoff,1,Acceleration,0.5249,3.8240
+clover_bm_c_r64_t2_thpoff,1,Fluxes,0.2468,1.7975
+clover_bm_c_r64_t2_thpoff,1,Cell Advection,2.1674,15.7887
+clover_bm_c_r64_t2_thpoff,1,Momentum Advection,3.6538,26.6163
+clover_bm_c_r64_t2_thpoff,1,Reset,0.0007,0.0050
+clover_bm_c_r64_t2_thpoff,1,Summary,0.0186,0.1354
+clover_bm_c_r64_t2_thpoff,1,Visit,0.0000,0.0000
+clover_bm_c_r64_t2_thpoff,1,Tile Halo Exchange,0.0021,0.0154
+clover_bm_c_r64_t2_thpoff,1,Self Halo Exchange,0.0009,0.0069
+clover_bm_c_r64_t2_thpoff,1,MPI Halo Exchange,2.3055,16.7946
+clover_bm_c_r64_t2_thpoff,1,Total,13.7203,99.9457
+clover_bm_c_r64_t2_thpoff,1,The Rest,0.0075,0.0543
+clover_bm_fortran_r64_t2,1,Timestep,1.3770,9.8334
+clover_bm_fortran_r64_t2,1,Ideal Gas,0.6137,4.3829
+clover_bm_fortran_r64_t2,1,Viscosity,0.9913,7.0791
+clover_bm_fortran_r64_t2,1,PdV,1.4571,10.4052
+clover_bm_fortran_r64_t2,1,Revert,0.0589,0.4210
+clover_bm_fortran_r64_t2,1,Acceleration,0.4663,3.3298
+clover_bm_fortran_r64_t2,1,Fluxes,0.2322,1.6579
+clover_bm_fortran_r64_t2,1,Cell Advection,2.2082,15.7694
+clover_bm_fortran_r64_t2,1,Momentum Advection,3.8459,27.4640
+clover_bm_fortran_r64_t2,1,Reset,0.3917,2.7972
+clover_bm_fortran_r64_t2,1,Summary,0.0200,0.1425
+clover_bm_fortran_r64_t2,1,Visit,0.0000,0.0000
+clover_bm_fortran_r64_t2,1,Tile Halo Exchange,0.0023,0.0164
+clover_bm_fortran_r64_t2,1,Self Halo Exchange,0.0009,0.0064
+clover_bm_fortran_r64_t2,1,MPI Halo Exchange,2.3296,16.6359
+clover_bm_fortran_r64_t2,1,Total,13.9950,99.9411
+clover_bm_fortran_r64_t2,1,The Rest,0.0083,0.0589

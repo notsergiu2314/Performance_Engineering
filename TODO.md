@@ -57,13 +57,11 @@ node_flux, node_mass_post, node_mass_pre) out of velocity loop, these do not nee
 Next step, the cluster run:
 
   bash perf/export_variants.sh && CLUSTER=<host> bash perf/sync.sh      # laptop
-  srun -p cn-ib -N 1 -t 00:30:00 bash perf/build.sh                     # cluster, from 
-  CloverLeaf_ref/
+  srun -p cn-ib -N 1 -t 00:30:00 bash perf/build.sh                     # cluster, from CloverLeaf_ref/
   sbatch perf/jobs/m3_correctness.sbatch
   sbatch perf/jobs/m3_opt.sbatch
   VARIANT=opt sbatch perf/jobs/m3_papi.sbatch
-  bash perf/archive.sh perf/results/m3_opt_<id> perf/results/m3_correctness_<id>
-  perf/results/m3_papi_opt_<id> --report
+  bash perf/archive.sh perf/results/m3_opt_<id> perf/results/m3_correctness_<id> perf/results/m3_papi_opt_<id> --report
   /usr/bin/python3 ../report/make_assets.py
 
   Read qa_check.txt and compare.md first. The tab_kernels_opt.tex table is generated but not yet

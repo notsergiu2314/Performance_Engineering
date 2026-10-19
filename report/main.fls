@@ -3,7 +3,7 @@ INPUT /etc/texmf/web2c/texmf.cnf
 INPUT /usr/share/texmf/web2c/texmf.cnf
 INPUT /usr/share/texlive/texmf-dist/web2c/texmf.cnf
 INPUT /var/lib/texmf/web2c/pdftex/pdflatex.fmt
-INPUT /home/jort/Performance_Engineering/report/main.tex
+INPUT main.tex
 OUTPUT main.log
 INPUT /usr/share/texlive/texmf-dist/tex/latex/base/article.cls
 INPUT /usr/share/texlive/texmf-dist/tex/latex/base/article.cls
@@ -233,6 +233,14 @@ INPUT ./figures/fig_m3_layouts.pdf
 INPUT ./figures/fig_m3_layouts.pdf
 INPUT ./figures/fig_m3_layouts.pdf
 INPUT ./figures/fig_m3_layouts.pdf
+INPUT ./tables/tab_kernels_opt.tex
+INPUT ./tables/tab_kernels_opt.tex
+INPUT tables/tab_kernels_opt.tex
+INPUT ./figures/fig_roofline_opt.pdf
+INPUT ./figures/fig_roofline_opt.pdf
+INPUT ./figures/fig_roofline_opt.pdf
+INPUT ./figures/fig_roofline_opt.pdf
+INPUT ./figures/fig_roofline_opt.pdf
 INPUT ./main.bbl
 INPUT ./main.bbl
 INPUT main.bbl

@@ -1,0 +1,35 @@
+tag,rep,section,time,pct
+clover_bm16_short_c_r64_t2,1,Timestep,0.5981,7.1300
+clover_bm16_short_c_r64_t2,1,Ideal Gas,0.4188,4.9926
+clover_bm16_short_c_r64_t2,1,Viscosity,0.3537,4.2162
+clover_bm16_short_c_r64_t2,1,PdV,1.4199,16.9255
+clover_bm16_short_c_r64_t2,1,Revert,0.0000,0.0000
+clover_bm16_short_c_r64_t2,1,Acceleration,0.5870,6.9969
+clover_bm16_short_c_r64_t2,1,Fluxes,0.3836,4.5729
+clover_bm16_short_c_r64_t2,1,Cell Advection,1.6273,19.3988
+clover_bm16_short_c_r64_t2,1,Momentum Advection,2.7059,32.2554
+clover_bm16_short_c_r64_t2,1,Reset,0.0001,0.0014
+clover_bm16_short_c_r64_t2,1,Summary,0.0363,0.4328
+clover_bm16_short_c_r64_t2,1,Visit,0.0000,0.0000
+clover_bm16_short_c_r64_t2,1,Tile Halo Exchange,0.0003,0.0040
+clover_bm16_short_c_r64_t2,1,Self Halo Exchange,0.0260,0.3102
+clover_bm16_short_c_r64_t2,1,MPI Halo Exchange,0.2312,2.7559
+clover_bm16_short_c_r64_t2,1,Total,8.3882,99.9926
+clover_bm16_short_c_r64_t2,1,The Rest,0.0006,0.0074
+clover_bm16_short_c_r1_t128_thpoff,1,Timestep,0.5462,5.2855
+clover_bm16_short_c_r1_t128_thpoff,1,Ideal Gas,0.4818,4.6626
+clover_bm16_short_c_r1_t128_thpoff,1,Viscosity,0.4376,4.2353
+clover_bm16_short_c_r1_t128_thpoff,1,PdV,1.6542,16.0083
+clover_bm16_short_c_r1_t128_thpoff,1,Revert,0.0000,0.0000
+clover_bm16_short_c_r1_t128_thpoff,1,Acceleration,0.6417,6.2100
+clover_bm16_short_c_r1_t128_thpoff,1,Fluxes,0.3861,3.7363
+clover_bm16_short_c_r1_t128_thpoff,1,Cell Advection,2.0416,19.7572
+clover_bm16_short_c_r1_t128_thpoff,1,Momentum Advection,3.3376,32.2988
+clover_bm16_short_c_r1_t128_thpoff,1,Reset,0.0001,0.0011
+clover_bm16_short_c_r1_t128_thpoff,1,Summary,0.0328,0.3179
+clover_bm16_short_c_r1_t128_thpoff,1,Visit,0.0000,0.0000
+clover_bm16_short_c_r1_t128_thpoff,1,Tile Halo Exchange,0.0006,0.0056
+clover_bm16_short_c_r1_t128_thpoff,1,Self Halo Exchange,0.7449,7.2089
+clover_bm16_short_c_r1_t128_thpoff,1,MPI Halo Exchange,0.0009,0.0085
+clover_bm16_short_c_r1_t128_thpoff,1,Total,10.3061,99.7360
+clover_bm16_short_c_r1_t128_thpoff,1,The Rest,0.0273,0.2640

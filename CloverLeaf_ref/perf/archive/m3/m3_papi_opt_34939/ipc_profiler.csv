@@ -1,0 +1,35 @@
+tag,rep,section,time,pct
+clover_bm16_short_c_r64_t2,1,Timestep,0.5737,6.9526
+clover_bm16_short_c_r64_t2,1,Ideal Gas,0.4361,5.2848
+clover_bm16_short_c_r64_t2,1,Viscosity,0.2927,3.5471
+clover_bm16_short_c_r64_t2,1,PdV,1.3647,16.5394
+clover_bm16_short_c_r64_t2,1,Revert,0.0000,0.0000
+clover_bm16_short_c_r64_t2,1,Acceleration,0.5607,6.7956
+clover_bm16_short_c_r64_t2,1,Fluxes,0.3857,4.6740
+clover_bm16_short_c_r64_t2,1,Cell Advection,1.6631,20.1560
+clover_bm16_short_c_r64_t2,1,Momentum Advection,2.7457,33.2774
+clover_bm16_short_c_r64_t2,1,Reset,0.0001,0.0012
+clover_bm16_short_c_r64_t2,1,Summary,0.0267,0.3238
+clover_bm16_short_c_r64_t2,1,Visit,0.0000,0.0000
+clover_bm16_short_c_r64_t2,1,Tile Halo Exchange,0.0003,0.0038
+clover_bm16_short_c_r64_t2,1,Self Halo Exchange,0.0000,0.0006
+clover_bm16_short_c_r64_t2,1,MPI Halo Exchange,0.2009,2.4353
+clover_bm16_short_c_r64_t2,1,Total,8.2504,99.9917
+clover_bm16_short_c_r64_t2,1,The Rest,0.0007,0.0083
+clover_bm16_short_c_r1_t128_thpoff,1,Timestep,0.5707,5.3132
+clover_bm16_short_c_r1_t128_thpoff,1,Ideal Gas,0.5113,4.7600
+clover_bm16_short_c_r1_t128_thpoff,1,Viscosity,0.4487,4.1774
+clover_bm16_short_c_r1_t128_thpoff,1,PdV,1.7001,15.8262
+clover_bm16_short_c_r1_t128_thpoff,1,Revert,0.0000,0.0000
+clover_bm16_short_c_r1_t128_thpoff,1,Acceleration,0.6631,6.1732
+clover_bm16_short_c_r1_t128_thpoff,1,Fluxes,0.4027,3.7492
+clover_bm16_short_c_r1_t128_thpoff,1,Cell Advection,2.0907,19.4632
+clover_bm16_short_c_r1_t128_thpoff,1,Momentum Advection,3.4664,32.2691
+clover_bm16_short_c_r1_t128_thpoff,1,Reset,0.0001,0.0007
+clover_bm16_short_c_r1_t128_thpoff,1,Summary,0.0343,0.3195
+clover_bm16_short_c_r1_t128_thpoff,1,Visit,0.0000,0.0000
+clover_bm16_short_c_r1_t128_thpoff,1,Tile Halo Exchange,0.0006,0.0058
+clover_bm16_short_c_r1_t128_thpoff,1,Self Halo Exchange,0.8093,7.5337
+clover_bm16_short_c_r1_t128_thpoff,1,MPI Halo Exchange,0.0013,0.0121
+clover_bm16_short_c_r1_t128_thpoff,1,Total,10.6994,99.6033
+clover_bm16_short_c_r1_t128_thpoff,1,The Rest,0.0426,0.3967

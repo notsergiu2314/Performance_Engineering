@@ -63,6 +63,7 @@ FMA_CORE, FMA_NODE = C["fma_core"], C["fma_node"]
 DIV_CORE, DIV_NODE = C["div_core"], C["div_node"]
 
 # --------------------------------------------------------------- kernels
+OPT_VARIANT = "opt"   # the build the Results section shows (perf/variants.conf)
 KP = {r["kernel"]: r for r in rows("kernels_papi.csv")}
 MODEL = {k.name: k for k in kernel_model.KERNELS}
 WA = 1
@@ -252,6 +253,60 @@ def fig_roofline():
     save(fig, "fig_roofline")
 
 
+def opt_model():
+    """Per-kernel byte model of the optimised build: kernel_model.KERNELS with the byte changes of
+    perf/analysis/plan_bytes.py applied (the same edits that produced data/plan.csv)."""
+    import plan_bytes  # noqa: E402  (perf/analysis is on sys.path)
+    ks = kernel_model.KERNELS
+    for _, fn, kind in plan_bytes.CHANGES:
+        if kind == "bytes":
+            ks = fn(ks)
+    return {k.name: k for k in ks}
+
+
+def fig_roofline_opt(variant=OPT_VARIANT):
+    """Node roofline at 64x2, baseline (left) against the optimised build (right): kernels from the
+    PAPI region times (kernels_papi.csv time_64x2 / time_64x2_<variant>) and the byte model of each
+    build; the whole application from the measured DRAM bytes and wall clock."""
+    tcol = f"time_64x2_{variant}"
+    if not any(r.get(tcol) for r in KP.values()):
+        return
+    models = {"base": MODEL, variant: opt_model()}
+    skip = {"reset_field", "revert", "update_halo"}
+    fig, axes = plt.subplots(1, 2, figsize=(6.6, 3.2), sharey=True)
+    panels = [(axes[0], "time_64x2", "base", BLUE, "(a) baseline, 64x2"),
+              (axes[1], tcol, variant, AQUA, f"(b) optimised, 64x2")]
+    app = {"base": next(r for r in m3_rows() if r["kernels"] == "c" and r["thp"] == "on" and r["layout"] == "64x2"),
+           variant: next((r for r in optimised_rows(variant) if r["layout"] == "64x2"), None)}
+    for ax, col, build, color, title in panels:
+        roof(ax, BW_NODE, FMA_NODE, [(DIV_NODE, "vector divide", ":")], 0.08, 10, title, 1.5, 4000)
+        model = models[build]
+        for name in KP:
+            if name in skip or name not in model or not KP[name].get(col) or not model[name].calls_per_step:
+                continue
+            k = model[name]
+            n = CELLS * STEPS * k.calls_per_step
+            flops, nbytes = n * k.flops_per_cell(), n * k.bytes_per_cell(WA)
+            t = float(KP[name][col])
+            ai, gf = flops / nbytes, flops / t * 1e-9
+            ax.scatter([ai], [gf], s=30, color=color, edgecolor="white", lw=1, zorder=4)
+            dx, dy = OFFS_B.get(NUM[name], (6, 3))
+            ax.annotate(str(NUM[name]), (ai, gf), xytext=(dx, dy), textcoords="offset points",
+                        fontsize=7, color=INK, ha="center", va="center", zorder=6)
+        r = app[build]
+        if r and r["dram_TB"]:
+            nbytes, t = float(r["dram_TB"]) * 1e12, float(r["median_s"])
+            ax.scatter([APP_FLOPS / nbytes], [APP_FLOPS / t * 1e-9], s=70, marker="D", facecolors="none",
+                       edgecolors=ORANGE, linewidths=1.6, zorder=5, label="whole application (measured bytes)")
+        ax.scatter([], [], s=30, color=color, edgecolor="white", lw=1, label=f"kernels, {build} build")
+        ax.legend(loc="lower right", fontsize=6.5, handletextpad=0.3)
+    axes[0].set_ylabel("performance (GFLOP/s)")
+    fig.tight_layout()
+    for ax in axes:
+        slope_label(ax, fig, BW_NODE, 0.1)
+    save(fig, "fig_roofline_opt")
+
+
 # ================================================================== tables
 def tab_kernels():
     tot1 = sum(float(r["time_1x1"]) for r in KP.values())
@@ -411,9 +466,6 @@ def fig_m3_layouts():
     save(fig, "fig_m3_layouts")
 
 
-OPT_VARIANT = "opt"   # the build the Results section shows (perf/variants.conf)
-
-
 def optimised_rows(variant=OPT_VARIANT, thp="on"):
     """data/optimised.csv (perf/analysis/variants.py): layout,ranks,threads,thp,variant,n,median_s,
     min_s,max_s,dram_TB,hw_GBs,busiest_over_mean,qa_ok,source. One variant, THP on, unless asked."""
@@ -433,7 +485,7 @@ def ladder_rows():
 
 def tab_ladder():
     """Per-change attribution at 64x2: the commit ladder of perf/variants.conf."""
-    lines = [r"\begin{tabular}{lp{6.2cm}rrrr}", r"\toprule",
+    lines = [r"\begin{tabular}{lp{5.4cm}rrrr}", r"\toprule",
              r"build & changes & wall (s) & DRAM & bytes vs & time vs \\",
              r" & & median (min--max) & (TB) & base (\%) & base (\%) \\", r"\midrule"]
     lad = ladder_rows()
@@ -540,6 +592,7 @@ if __name__ == "__main__":
     tab_ladder()
     tab_kernels_opt()
     fig_m3_layouts()
+    fig_roofline_opt()
     # not in the report any more (M1/M2 material, data still in data/): fig_scaling(), fig_stream(),
     # fig_placement(), tab_placement(), tab_configs()
     numbers()

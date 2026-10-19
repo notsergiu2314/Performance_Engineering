@@ -1,0 +1,18 @@
+tag,rep,section,time,pct
+clover_bm_c_r64_t2,1,Timestep,1.6385,10.7701
+clover_bm_c_r64_t2,1,Ideal Gas,0.6038,3.9689
+clover_bm_c_r64_t2,1,Viscosity,1.0087,6.6302
+clover_bm_c_r64_t2,1,PdV,1.7091,11.2338
+clover_bm_c_r64_t2,1,Revert,0.0786,0.5165
+clover_bm_c_r64_t2,1,Acceleration,0.4796,3.1523
+clover_bm_c_r64_t2,1,Fluxes,0.2418,1.5893
+clover_bm_c_r64_t2,1,Cell Advection,2.5588,16.8188
+clover_bm_c_r64_t2,1,Momentum Advection,3.8585,25.3617
+clover_bm_c_r64_t2,1,Reset,0.4054,2.6644
+clover_bm_c_r64_t2,1,Summary,0.0252,0.1655
+clover_bm_c_r64_t2,1,Visit,0.0000,0.0000
+clover_bm_c_r64_t2,1,Tile Halo Exchange,0.0022,0.0142
+clover_bm_c_r64_t2,1,Self Halo Exchange,0.0009,0.0057
+clover_bm_c_r64_t2,1,MPI Halo Exchange,2.5947,17.0550
+clover_bm_c_r64_t2,1,Total,15.2057,99.9464
+clover_bm_c_r64_t2,1,The Rest,0.0081,0.0536
