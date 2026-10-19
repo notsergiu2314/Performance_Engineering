@@ -28,12 +28,12 @@ only. Baseline build: GCC 14.1.0 (HAICGU default module) `-O3 -march=native -fun
 | Path | Purpose |
 |---|---|
 | `env.sh`, `build.sh` | modules; `build.sh [VARIANT...]` builds `bin/clover_<variant>` and `bin/clover_<variant>_papi` from `src/<variant>/`, with `bin/build_info_<variant>.txt` and `bin/vec_report_<variant>.txt` |
-| `variants.conf`, `export_variants.sh`, `sync.sh` | the commit ladder of the M3 optimisations (`base`, `flags`, `cell`, `mom`, `opt`); `export_variants.sh` exports each ref's sources into `src/<variant>/` (gitignored) because the cluster copy has no git; `sync.sh` rsyncs the tree to the cluster |
+| `variants.conf`, `export_variants.sh`, `sync.sh` | the commit ladder of the M3 optimisations (`base`, `flags`, `cell`, `mom`, `opt`, `optnf`; `pdv` = the merged tip with the unmeasured PdV change); `export_variants.sh` exports each ref's sources into `src/<variant>/` (gitignored) because the cluster copy has no git; `sync.sh` rsyncs the tree to the cluster |
 | `archive.sh` | copies job summaries into `archive/m3/<job>/` and, with `--report`, the aggregated rows into `../../report/data/` (`analysis/report_data.py`) |
 | `smoke.sh` | pre-flight job (quick deck, base and PAPI builds) |
 | `inputs/` | decks used by the sergiu-style jobs (`bm3840`, `bm960`, `quick`, `clover_bm`) |
-| `baseline/` | matrix harness (mpirun only, env-var configured): `baseline.sh` → `run_case.sh` → `lib.sh`, `summarize.py`, `qa_check.py`, `baseline.sbatch`, matrices `matrix.m3`, `matrix.layouts` (C at the five layouts, THP off only at 1x128), `matrix.ladder` (C 64x2), `matrix.correctness`, `matrix.papi`, `matrix.cluster` (M1 sweep), `matrix.laptop`. Every row of `results.csv` carries the build `variant` (last column) |
-| `jobs/` | Slurm jobs. M3: `m3_stream_ddrc`, `m3_baseline`, `m3_correctness` (per variant), `m3_opt` (ladder + layouts, base against opt in one job), `m3_papi` (per variant). M1/M2 (historical, still runnable): `m1_baseline`, `m1_perf`, `m1_papi`, `m2_stream`, `m2_peak`, `m3_numa`, `m3_thp`; `common.sh` = `run_clover`, `record_system`, `ddrc_events`, `prepare_harness` |
+| `baseline/` | matrix harness (mpirun only, env-var configured): `baseline.sh` → `run_case.sh` → `lib.sh`, `summarize.py`, `qa_check.py`, `baseline.sbatch`, matrices `matrix.m3`, `matrix.layouts` (C at the five layouts, THP off only at 1x128), `matrix.ladder` (C 64x2), `matrix.m3_64x2` (bm3840 at 64x2 only, quick A/B of one binary), `matrix.correctness`, `matrix.papi`, `matrix.cluster` (M1 sweep), `matrix.laptop`. Every row of `results.csv` carries the build `variant` (last column) |
+| `jobs/` | Slurm jobs. M3: `m3_stream_ddrc`, `m3_baseline`, `m3_correctness` (per variant), `m3_opt` (ladder + layouts, base against opt in one job), `m3_papi` (per variant), `m3_flagbisect` (3 source revisions x 3 C-flag sets on `clover_bm.in` at 64x2, job 34936), `m3_gate_off` (equivalence gate of the checked-out commit against the original kernels with `-ffp-contract=off`, three layouts). M1/M2 (historical, still runnable): `m1_baseline`, `m1_perf`, `m1_papi`, `m2_stream`, `m2_peak`, `m3_numa`, `m3_thp`; `common.sh` = `run_clover`, `record_system`, `ddrc_events`, `prepare_harness` |
 | `microbench/` | `nothp.c` (THP off per process tree), `peak_flops.c` (FMA/mul/div ceilings), `membw.c` + `peak_fma.c` (jort STREAM-style and FMA ceilings) |
 | `roofline/` | jort ceilings harness (`machine.sbatch`, `machine.sh`, `build.sh`) and `roofline.py` (per-section roofline; `--hw` mode for hardware bytes) |
 | `analysis/` | `variants.py` (base vs optimised: `optimised.csv`, `ladder.csv`, `compare.md`), `report_data.py` (into `report/data/`), `clover_profile.py`, `papi_summary.py`, `ddrc_summary.py`, `stream_summary.py`, `stream_ddrc.py`, `kernel_model.py`, `plan_bytes.py`, `roofline.py` (sergiu per-kernel roofline) |
@@ -48,6 +48,11 @@ meshes only and is not planned.
 
 ## Runbook (HAICGU, from `CloverLeaf_ref/`)
 
+Submit from the dev node (`ssh guoehi-dev`, a login shell): the login node `guoehi` has no
+`/software` mount and its `MODULEPATH` lacks the Stages/2024 tree, and a batch job inherits the
+submitting shell's `MODULEPATH`, so a job submitted there fails in `env.sh` with "GCC unknown"
+(jobs 35014/35015). From the laptop: `ssh guoehi-dev 'bash -lc "cd ~/CloverLeaf_ref && sbatch ..."'`.
+
 The M3 baseline jobs ran on 2026-10-13 (smoke 34794; `m3_stream_ddrc` 34795, `m3_correctness` 34796,
 `m3_baseline` 34797, `m3_papi` 34798); their summaries are in `archive/m3/` and the aggregated
 rows in `../../report/data/`. The hardware ceiling is `STREAM_HW_GBS=266.5`.
@@ -60,7 +65,8 @@ advec_cell temporaries and dead store + reset/revert field swap), `mom` = 88fce3
 advec_mom hoist and dead store + calc_dt fused reduction), `opt` = 787baa1 (everything, with the
 T2 flags; measured in jobs 34937-34939), `optnf` = 8d7d81f (opt with the baseline CFLAGS: the T2
 flags bought nothing and alone move the `clover_bm.in` deviation, jobs 34937/34999; branch-free
-upwind loop and nowait kept). The cluster copy is an rsync copy without git, so the sources are
+upwind loop and nowait kept), `pdv` = 51dd171 (the merged tip: optnf + Sergiu's PdV change d2b00e6,
+`volume_change` kept in a register, model -1.5 % bytes; measured in jobs 35012/35016/35017, the reported build). The cluster copy is an rsync copy without git, so the sources are
 exported locally first.
 
 ```bash
@@ -111,16 +117,49 @@ OPT_VARIANT=optnf /usr/bin/python3 ../report/make_assets.py                    #
 ```
 Outcome (jobs 35002 correctness, 35003 m3_opt, 35004 m3_papi, cn16, 2026-10-19, archived): `optnf` passes
 the gate 7 of 7 at every layout, keeps the bytes (2.052 vs 2.043 TB) and is 3.6 % slower than `opt` at 64x2
-(8.56 vs 8.25 s; the vectorised sqrt of calc_dt and ideal_gas). `optnf` is the reported build
-(`OPT_VARIANT=optnf`, columns `*_64x2_optnf` in `kernels_papi.csv`); `data/ladder.csv` and
+(8.56 vs 8.25 s; the vectorised sqrt of calc_dt and ideal_gas). `optnf` was the reported build until `pdv`
+(below; `OPT_VARIANT=<variant>`, columns `*_64x2_<variant>` in `kernels_papi.csv`); `data/ladder.csv` and
 `data/optimised.csv` keep the job-34938 rows and carry the optnf rows next to them (`report_data.py`
 appends variants instead of overwriting).
+
+Mechanism of the flag effect (Sergiu's bisect, job 34936, `jobs/m3_flagbisect.sbatch`): built with
+`-ffp-contract=off`, the original kernels (59cdd3b), the advec_cell edits (ff83119) and the merged tip
+(787baa1) all give 1.99e-13 %, so the kernel edits are arithmetically the originals and both
+deviations (0.0057 % baseline flags, 0.038 % with the two flags) are what GCC's default
+`-ffp-contract=fast` makes of the code; the flags change where it fuses. `jobs/m3_gate_off.sbatch`
+runs that equivalence check (original vs checked-out commit, contraction off, three layouts) for a new commit.
+
+### The PdV build (`pdv`, the reported build)
+Commit d2b00e6 (merged in 51dd171, after the optnf measurements) keeps `volume_change` in a register in
+both PdV passes: -32 B/cell/step, model -1.5 % of the bytes. Same procedure as optnf; gate first
+(submit from the dev node, see the top of the runbook):
+```bash
+bash perf/export_variants.sh pdv && CLUSTER=<host> bash perf/sync.sh          # laptop
+srun -p cn-ib -N 1 -t 00:30:00 bash perf/build.sh pdv                          # cluster, from CloverLeaf_ref/
+VARIANTS=pdv FULL="base opt optnf pdv" sbatch perf/jobs/m3_correctness.sbatch  # full matrix; expect 0.5726209E-02 %
+LADDER="base optnf pdv" VARIANTS="base pdv" sbatch perf/jobs/m3_opt.sbatch     # bytes and time
+VARIANT=pdv sbatch perf/jobs/m3_papi.sbatch                                    # per-kernel counters (optional)
+# laptop, after copying perf/results back:
+python3 -I perf/analysis/variants.py --run perf/results/m3_opt_<id> --opt pdv \
+    --qa perf/results/m3_correctness_<id>/correctness_rows.csv --stream-hw-gbs 266.5
+VARIANT=pdv bash perf/archive.sh perf/results/m3_correctness_<id> perf/results/m3_opt_<id> \
+    [perf/results/m3_papi_pdv_<id>] --report
+OPT_VARIANT=pdv /usr/bin/python3 ../report/make_assets.py                      # Results section from the pdv rows
+```
+Outcome (jobs 35012 correctness, 35016 m3_opt on cn15, 35017 m3_papi on cn16, 2026-10-19, archived):
+`pdv` passes the gate 7 of 7 at every layout; 64x2: 8.25 s and 2.012 TB against its own base rerun
+(11.22 s), -28.8 % bytes and -26.5 % time, 1.37x against the archived baseline (1.36-1.37x at the
+balanced layouts, 1.33x at 1x128 THP on, 1.35x THP off), 244 GB/s = 91 % of the ceiling, 9 % above
+its floor (7.55 s). Per kernel (PAPI): both PdV passes 1.13x, advec_mom 1.60x, advec_cell 1.45x. The
+PdV bytes buy back exactly what the flags were worth: `pdv` without the flags equals `opt` with them
+(8.25 s). `pdv` is the reported build (`OPT_VARIANT=pdv`, `*_64x2_pdv` columns). Jobs 35014/35015
+were the same two jobs submitted from the login node; they failed in `env.sh` (no module tree).
 
 Read first: `m3_correctness_<id>/qa_check.txt` (does every variant reproduce the baseline
 deviation 0.5726209E-02 %? Job 34999 showed that the `base` binary does at every layout and that
 every build with `-fno-math-errno -fno-trapping-math` gives 0.3835202E-01 %: the flags, not the
-kernel changes, move the value; the next variant to gate is the kernel changes with the baseline
-CFLAGS) and `m3_opt_<id>/compare.md` (archive 34797 vs the same-job base
+kernel changes, move the value; `optnf`, the kernel changes with the baseline CFLAGS, passes, job
+35002) and `m3_opt_<id>/compare.md` (archive 34797 vs the same-job base
 rerun vs opt per layout, the ladder at 64x2, the plan prediction -29.3 % bytes / 1.983 TB).
 `optimised.csv` has one row per (variant, layout, THP); `make_assets.py` shows variant `opt`, THP on.
 In the optimised build both halves of the split advec_mom kernel count under the PAPI region

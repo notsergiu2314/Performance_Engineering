@@ -9,5 +9,6 @@ cell & flags + advec\_cell register temporaries, dead post\_vol store, reset/rev
 mom & flags + advec\_mom helper hoist, dead pre\_vol store, calc\_dt fused reduction (not cell) & 9.54 (9.54--9.62) & 2.405 & $-14.9$ & $-15.7$ \\
 opt & all changes (merge of cell and mom) & 8.25 (8.23--8.33) & 2.043 & $-27.8$ & $-27.0$ \\
 optnf & opt with the baseline CFLAGS (no -fno-math-errno -fno-trapping-math) & 8.56 (8.53--8.63) & 2.052 & $-27.4$ & $-24.3$ \\
+pdv & optnf + PdV volume\_change kept in a register & 8.25 (8.25--8.37) & 2.012 & $-28.8$ & $-26.5$ \\
 \bottomrule
 \end{tabular}

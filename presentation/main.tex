@@ -316,7 +316,7 @@ for (k...) {
 \begin{frame}{Ladder at 64$\times$2: the wall clock follows the bytes}
   \begin{columns}[T]
     \begin{column}{0.67\textwidth}
-      \footnotesize
+      \footnotesize\setlength{\tabcolsep}{4pt}
       \begin{tabular}{llrrrr}
         \toprule
         build & contents & wall (s) & TB & bytes & time \\
@@ -326,24 +326,24 @@ for (k...) {
         cell  & flags $+$ (2) (3) (4)              &  9.92 & 2.49 & $-12.1$\,\% & $-12.3$\,\% \\
         mom   & flags $+$ (1) (3) (5)              &  9.54 & 2.41 & $-14.9$\,\% & $-15.7$\,\% \\
         opt   & all, with the flags                & 8.25 & 2.04 & $-27.8$\,\% & $-27.0$\,\% \\
-        \textbf{optnf} & all, baseline flags         & \textbf{8.56} & \textbf{2.05} & \good{$-27.4$\,\%} & \good{$-24.3$\,\%} \\
+        optnf & all, baseline flags                & 8.56 & 2.05 & $-27.4$\,\% & $-24.3$\,\% \\
+        \textbf{pdv} & optnf $+$ PdV scalar & \textbf{8.25} & \textbf{2.01} & \good{$-28.8$\,\%} & \good{$-26.5$\,\%} \\
         \bottomrule
       \end{tabular}
-      \vspace{0.2cm}
-
-      \scriptsize jobs 34938 and 35003 (optnf), one node, 5 repetitions per build (spread $\le 1$\,\%), every one under the DDR counters
+      \par\vspace{0.1cm}
+      \scriptsize jobs 34938, 35003 (optnf), 35016 (pdv): one node, 5 repetitions per build (spread $\le 1$\,\%), DDR counters on
     \end{column}
     \begin{column}{0.33\textwidth}
       \begin{itemize}
-        \item the two kernel lines add up; merged: $-27.4$\,\% bytes against the \textbf{$-29.3$\,\% the model predicted}
+        \item the lines add up: $-28.8$\,\% bytes against the \textbf{$-30.8$\,\% the model predicted}
         \item every build sustains 240--252\GBs: still on the roof, so time $\propto$ bytes
-        \item the flags: nothing on the baseline, 3.6\,\% on the optimised kernels, and they break the gate (next slides); \textbf{optnf} is the final build
-        \item \good{1.32$\times$} at 64$\times$2: 11.32\,s to 8.56\,s
+        \item the flags: 0\,\% on the baseline, 3.6\,\% on the optimised kernels, and they break the gate; \textbf{pdv} is the final build
+        \item \good{1.37$\times$} at 64$\times$2: 11.32\,s to 8.26\,s
       \end{itemize}
     \end{column}
   \end{columns}
 \end{frame}
-\note{8:00. The model predicted within two points. That is the main methodological result. opt is the flagged build, optnf the final one; the 0.3 s between them is what the flags buy.}
+\note{8:00. The model predicted within two points. That is the main methodological result. opt is the flagged build; optnf drops the flags, pdv adds Sergiu's PdV scalar and is the final one. The 0.3 s the flags bought, the PdV bytes buy back.}
 
 \begin{frame}{Every layout, every kernel}
   \begin{columns}[T]
@@ -353,7 +353,7 @@ for (k...) {
         \begin{tabular}{lccccc}
           \toprule
           layout & 64$\times$2 & 32$\times$4 & 128$\times$1 & 4$\times$32 & 1$\times$128 \\
-          speed-up & 1.32 & 1.32 & 1.32 & 1.33 & 1.51 \\
+          speed-up & 1.37 & 1.36 & 1.36 & 1.37 & 1.33 \\
           \bottomrule
         \end{tabular}
       \end{center}
@@ -362,25 +362,26 @@ for (k...) {
       \footnotesize
       \begin{tabular}{lrrr}
         \toprule
-        kernel & base (s) & opt (s) & ratio \\
+        kernel & base (s) & pdv (s) & ratio \\
         \midrule
-        \kernel{advec\_mom}  & 4.19 & 2.67 & \textbf{1.57} \\
-        \kernel{advec\_cell} & 2.42 & 1.66 & \textbf{1.46} \\
-        \kernel{calc\_dt}    & 0.66 & 0.62 & 1.06 \\
-        \kernel{ideal\_gas}  & 0.58 & 0.54 & 1.07 \\
+        \kernel{advec\_mom}  & 4.19 & 2.62 & \textbf{1.60} \\
+        \kernel{advec\_cell} & 2.42 & 1.67 & \textbf{1.45} \\
+        \kernel{pdv} (both passes) & 1.32 & 1.17 & 1.13 \\
+        \kernel{calc\_dt}    & 0.66 & 0.62 & 1.05 \\
+        \kernel{ideal\_gas}  & 0.58 & 0.54 & 1.06 \\
         \kernel{reset} $+$ \kernel{revert} & 0.57 & -- & gone \\
-        \kernel{pdv} $+$ \kernel{accel.} $+$ \kernel{flux} & 2.27 & 2.38 & 0.95 \\
+        \kernel{accel.} $+$ \kernel{flux} & 0.95 & 1.00 & 0.95 \\
         \bottomrule
       \end{tabular}
-      \par\vspace{0.2cm}
-      \scriptsize PAPI region times at 64$\times$2, jobs 34798 and 35004 (optnf)
-      \vspace{0.2cm}
+      \par\vspace{0.05cm}
+      \scriptsize PAPI region times at 64$\times$2, jobs 34798 and 35017 (pdv)
+      \vspace{0.05cm}
 
       \normalsize
       \begin{itemize}
         \item the same quarter of the traffic gone at every layout, the same speed-up
         \item optimised C is now \textbf{faster than the Fortran reference at every layout}
-        \item the application moved \emph{up} the roof, not off it: 90\,\% of the ceiling, 11\,\% above the floor of its own bytes
+        \item the application moved \emph{up} the roof, not off it: 91\,\% of the ceiling, 9\,\% above the floor of its own bytes
       \end{itemize}
     \end{column}
   \end{columns}
@@ -393,28 +394,28 @@ for (k...) {
       \textbf{Gate on \texttt{clover\_bm.in} ($960^2$, 2955 steps)}
       \begin{itemize}
         \item the ladder's baseline binary reproduces the archived reference (0.0057\,\%) at every layout
-        \item every build with the two compiler flags, flags-only included, gives \emph{one and the same} other value (0.038\,\%): the flags alone move it
-        \item \textbf{optnf}, the kernel changes with the baseline flags, reproduces the reference at every layout (7 of 7)
+        \item every build with the two compiler flags, flags-only included, gives \emph{one and the same} other value (0.038\,\%): the flags alone move it (GCC's multiply-add contraction; bisect, job 34936)
+        \item \textbf{optnf} (kernel changes, baseline flags) and \textbf{pdv} (optnf $+$ PdV scalar) reproduce the reference at every layout (7 of 7 each)
         \item the flags were worth 3.6\,\% on top (vectorised \texttt{sqrt} in \kernel{calc\_dt}, \kernel{ideal\_gas}): a measured trade-off, decided for reproducibility
       \end{itemize}
     \end{column}
     \begin{column}{0.5\textwidth}
       \textbf{Limitations and next steps}
       \begin{itemize}
-        \item still on the bandwidth roof: 90\,\% of 266.5\GBs, floor 7.7\,s; \kernel{pdv}, \kernel{accelerate}, \kernel{flux\_calc}, \kernel{viscosity} untouched: half of the remaining bytes
+        \item still on the bandwidth roof: 91\,\% of 266.5\GBs, floor 7.6\,s; \kernel{accelerate}, \kernel{flux\_calc}, \kernel{viscosity} untouched: the next bytes to remove
         \item read-for-ownership of the C stores: up to $-23$\,\% more bytes with explicit streaming stores
-        \item \texttt{nowait} and branch-free upwind loop still open in \kernel{advec\_cell}: worth at most 11\,\%
+        \item \texttt{nowait} and branch-free upwind loop still open in \kernel{advec\_cell}: worth at most 9\,\%
       \end{itemize}
     \end{column}
   \end{columns}
 \end{frame}
-\note{9:15. The base binary reproduces the reference, the flags-only build does not, every kernel change on top of the flags gives exactly the flags value: the flags are the cause. optnf (same kernels, baseline flags) passes 7 of 7. The flags are worth 3.6 percent, in calc_dt and ideal_gas, and we chose the gate over them.}
+\note{9:15. The base binary reproduces the reference, the flags-only build does not, every kernel change on top of the flags gives exactly the flags value: the flags are the cause. optnf (same kernels, baseline flags) passes 7 of 7. The flags are worth 3.6 percent, in calc\_dt and ideal\_gas, and we chose the gate over them. Sergiu's bisect with contraction off shows the mechanism: FMA fusion. Sergiu's PdV scalar passed the gate too and is the final build.}
 
 \begin{frame}{Conclusions}
   \begin{enumerate}
     \item The C kernels are memory-bound (0.2\,flop/B against a 5\,flop/B ridge) and the baseline already sustains 94\,\% of the 266.5\GBs{} hardware ceiling: \textbf{only fewer bytes can make it faster}.
-    \item An analytic byte model, validated by the DDR counters to 1\,\%, predicted five changes at $-29$\,\% of the traffic; measured: $-27.4$\,\%.
-    \item The wall clock followed the bytes: \textbf{1.32$\times$ at 64$\times$2, 1.32--1.51$\times$ at every layout}; the optimised C build beats the Fortran reference everywhere and passes the gate.
+    \item An analytic byte model, validated by the DDR counters to 1\,\%, predicted five changes at $-29$\,\% of the traffic, six at $-31$\,\%; measured: $-28.8$\,\%.
+    \item The wall clock followed the bytes: \textbf{1.37$\times$ at 64$\times$2, 1.33--1.37$\times$ at every layout}; the optimised C build beats the Fortran reference everywhere and passes the gate.
     \item The two compiler flags are worth 3.6\,\% on the optimised kernels but break bitwise reproducibility of the reference: dropped, as a measured trade-off. The next lever is the read-for-ownership of the stores, not instruction-side work.
   \end{enumerate}
   \vspace{0.8cm}

@@ -58,8 +58,10 @@ reference (job 34999); the builds with `-fno-math-errno -fno-trapping-math` give
 (job 34937); `optnf` (commit 8d7d81f, kernel changes with the baseline CFLAGS) passes 7 of 7
 (job 35002), keeps the bytes and is 3.6 % slower than `opt` (job 35003: 8.56 vs 8.25 s, 1.32x
 vs the archived baseline). `optnf` is the reported build; report, data, tables, figures and the
-presentation are updated (`OPT_VARIANT=optnf make_assets.py`). Open: nothing on the cluster side;
-report polish (listings, conclusions prose), presentation rehearsal.
+presentation were updated. `pdv` (51dd171 = optnf + Sergiu's PdV scalar d2b00e6) measured 2026-10-19
+(jobs 35012/35016/35017): gate 7 of 7, 8.25 s, 2.012 TB, 1.37x at 64x2; it is the reported build
+(`OPT_VARIANT=pdv make_assets.py`), report, data, tables, figures and slides carry its numbers. Open:
+nothing on the cluster side; report polish (listings, conclusions prose), presentation rehearsal.
 
 - advec_mom
 - calc_dt

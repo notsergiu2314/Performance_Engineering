@@ -1,0 +1,159 @@
+=== ipc clover_bm16_short_c_r1_t128_thpoff
+region              calls    threads     time_s     share%        GHz  cyc_imbal        IPC
+advec_mom             522        128      3.167     29.889      2.573      1.001      0.235
+advec_cell            174        128      2.241     21.149      2.550      1.012      0.291
+ideal_gas             185        128      0.819      7.725      2.259      1.015      0.293
+pdv_correct            87        128      0.771      7.275      2.586      1.002      0.178
+pdv_predict            87        128      0.708      6.682      2.591      1.003      0.177
+update_halo           523        128      0.700      6.608      2.547      1.005      0.114
+accelerate             87        128      0.675      6.372      2.580      1.003      0.218
+calc_dt                87        128      0.611      5.766      2.577      1.005      0.528
+viscosity              87        128      0.464      4.376      2.501      1.028      0.635
+flux_calc              87        128      0.402      3.798      2.581      1.002      0.143
+field_summary          10        128      0.038      0.359      2.595      1.003      0.295
+raw event totals (all threads):
+  advec_mom      PAPI_TOT_CYC=1.042e+12  PAPI_TOT_INS=2.45e+11
+  advec_cell     PAPI_TOT_CYC=7.31e+11  PAPI_TOT_INS=2.129e+11
+  ideal_gas      PAPI_TOT_CYC=1.871e+11  PAPI_TOT_INS=5.478e+10
+  pdv_correct    PAPI_TOT_CYC=2.538e+11  PAPI_TOT_INS=4.508e+10
+  pdv_predict    PAPI_TOT_CYC=2.344e+11  PAPI_TOT_INS=4.14e+10
+  update_halo    PAPI_TOT_CYC=2.268e+11  PAPI_TOT_INS=2.588e+10
+  accelerate     PAPI_TOT_CYC=2.224e+11  PAPI_TOT_INS=4.85e+10
+  calc_dt        PAPI_TOT_CYC=2.001e+11  PAPI_TOT_INS=1.057e+11
+  viscosity      PAPI_TOT_CYC=1.474e+11  PAPI_TOT_INS=9.355e+10
+  flux_calc      PAPI_TOT_CYC=1.327e+11  PAPI_TOT_INS=1.897e+10
+  field_summary  PAPI_TOT_CYC=1.261e+10  PAPI_TOT_INS=3.712e+09
+=== ipc clover_bm16_short_c_r64_t2
+region              calls    threads     time_s     share%        GHz  cyc_imbal        IPC
+advec_mom             522        128      2.618     32.657      2.586      1.033      0.281
+advec_cell            174        128      1.668     20.808      2.585      1.028      0.365
+pdv_correct            87        128      0.634      7.912      2.588      1.016      0.230
+calc_dt                87        128      0.624      7.785      2.566      1.018      0.545
+accelerate             87        128      0.608      7.590      2.584      1.016      0.255
+pdv_predict            87        128      0.542      6.763      2.586      1.020      0.244
+ideal_gas             185        128      0.542      6.761      2.589      1.062      0.319
+flux_calc              87        128      0.386      4.821      2.586      1.020      0.157
+viscosity              87        128      0.325      4.056      2.578      1.218      0.961
+update_halo           523         56      0.038      0.472      2.610      1.801      0.602
+field_summary          10        128      0.030      0.377      2.581      1.046      0.430
+raw event totals (all threads):
+  advec_mom      PAPI_TOT_CYC=8.395e+11  PAPI_TOT_INS=2.361e+11
+  advec_cell     PAPI_TOT_CYC=5.357e+11  PAPI_TOT_INS=1.954e+11
+  pdv_correct    PAPI_TOT_CYC=2.07e+11  PAPI_TOT_INS=4.77e+10
+  calc_dt        PAPI_TOT_CYC=2.02e+11  PAPI_TOT_INS=1.101e+11
+  accelerate     PAPI_TOT_CYC=1.919e+11  PAPI_TOT_INS=4.892e+10
+  pdv_predict    PAPI_TOT_CYC=1.76e+11  PAPI_TOT_INS=4.293e+10
+  ideal_gas      PAPI_TOT_CYC=1.693e+11  PAPI_TOT_INS=5.406e+10
+  flux_calc      PAPI_TOT_CYC=1.237e+11  PAPI_TOT_INS=1.936e+10
+  viscosity      PAPI_TOT_CYC=8.857e+10  PAPI_TOT_INS=8.511e+10
+  update_halo    PAPI_TOT_CYC=3.047e+09  PAPI_TOT_INS=1.833e+09
+  field_summary  PAPI_TOT_CYC=9.478e+09  PAPI_TOT_INS=4.076e+09
+=== mix clover_bm16_short_c_r1_t128_thpoff
+region              calls    threads     time_s     share%   vec_ins%    fp_ins%    ld_ins%
+advec_mom             522        128      2.968     29.346     10.481     33.344     31.908
+advec_cell            174        128      2.034     20.111     10.607     24.895     23.000
+ideal_gas             185        128      0.896      8.857      0.001     50.329     15.837
+pdv_correct            87        128      0.742      7.336     62.505      0.011     45.581
+update_halo           523        128      0.712      7.041      0.089      0.011     16.671
+pdv_predict            87        128      0.699      6.911     59.402      0.012     29.616
+accelerate             87        128      0.646      6.386     38.113      0.020     52.207
+calc_dt                87        128      0.593      5.864      0.000     64.493     22.869
+viscosity              87        128      0.407      4.023      0.000     58.843     24.297
+flux_calc              87        128      0.379      3.746     40.207      0.014     39.892
+field_summary          10        128      0.038      0.379     50.193     21.520     25.918
+raw event totals (all threads):
+  advec_mom      PAPI_TOT_INS=2.319e+11  PAPI_LD_INS=7.4e+10  PAPI_SR_INS=1.285e+10  PAPI_FP_INS=7.733e+10  PAPI_VEC_INS=2.431e+10  PAPI_BR_MSP=7.687e+06
+  advec_cell     PAPI_TOT_INS=1.981e+11  PAPI_LD_INS=4.556e+10  PAPI_SR_INS=8.99e+09  PAPI_FP_INS=4.932e+10  PAPI_VEC_INS=2.101e+10  PAPI_BR_MSP=4.461e+06
+  ideal_gas      PAPI_TOT_INS=5.422e+10  PAPI_LD_INS=8.587e+09  PAPI_SR_INS=5.458e+09  PAPI_FP_INS=2.729e+10  PAPI_VEC_INS=3.384e+05  PAPI_BR_MSP=1.5e+06
+  pdv_correct    PAPI_TOT_INS=4.322e+10  PAPI_LD_INS=1.97e+10  PAPI_SR_INS=1.287e+09  PAPI_FP_INS=4.57e+06  PAPI_VEC_INS=2.701e+10  PAPI_BR_MSP=7.96e+05
+  update_halo    PAPI_TOT_INS=2.586e+10  PAPI_LD_INS=4.31e+09  PAPI_SR_INS=5.672e+07  PAPI_FP_INS=2.835e+06  PAPI_VEC_INS=2.296e+07  PAPI_BR_MSP=3.585e+06
+  pdv_predict    PAPI_TOT_INS=4.079e+10  PAPI_LD_INS=1.208e+10  PAPI_SR_INS=1.286e+09  PAPI_FP_INS=4.935e+06  PAPI_VEC_INS=2.423e+10  PAPI_BR_MSP=8.218e+05
+  accelerate     PAPI_TOT_INS=4.642e+10  PAPI_LD_INS=2.424e+10  PAPI_SR_INS=2.572e+09  PAPI_FP_INS=9.192e+06  PAPI_VEC_INS=1.769e+10  PAPI_BR_MSP=6.626e+05
+  calc_dt        PAPI_TOT_INS=1.035e+11  PAPI_LD_INS=2.366e+10  PAPI_SR_INS=1.246e+06  PAPI_FP_INS=6.673e+10  PAPI_VEC_INS=5.02e+05  PAPI_BR_MSP=9.436e+05
+  viscosity      PAPI_TOT_INS=8.96e+10  PAPI_LD_INS=2.177e+10  PAPI_SR_INS=1.284e+09  PAPI_FP_INS=5.272e+10  PAPI_VEC_INS=1.595e+05  PAPI_BR_MSP=8.594e+05
+  flux_calc      PAPI_TOT_INS=1.724e+10  PAPI_LD_INS=6.876e+09  PAPI_SR_INS=1.286e+09  PAPI_FP_INS=2.477e+06  PAPI_VEC_INS=6.93e+09  PAPI_BR_MSP=9.732e+05
+  field_summary  PAPI_TOT_INS=3.755e+09  PAPI_LD_INS=9.732e+08  PAPI_SR_INS=1.581e+05  PAPI_FP_INS=8.081e+08  PAPI_VEC_INS=1.885e+09  PAPI_BR_MSP=1.005e+05
+=== mix clover_bm16_short_c_r64_t2
+region              calls    threads     time_s     share%   vec_ins%    fp_ins%    ld_ins%
+advec_mom             522        128      2.651     32.903     10.027     32.998     31.418
+advec_cell            174        128      1.675     20.793     10.578     25.335     22.999
+pdv_correct            87        128      0.634      7.874     44.930      0.001     37.660
+calc_dt                87        128      0.622      7.725      0.003     60.645     22.485
+accelerate             87        128      0.602      7.471     35.291      0.144     49.986
+ideal_gas             185        128      0.549      6.815      0.001     50.527     15.822
+pdv_predict            87        128      0.543      6.744     55.421      0.001     28.706
+flux_calc              87        128      0.386      4.787     33.507      0.080     36.191
+viscosity              87        128      0.326      4.048      0.000     61.950     24.683
+update_halo           523         56      0.038      0.473      1.138      0.102     13.782
+field_summary          10        128      0.030      0.369     41.768     18.150     23.924
+raw event totals (all threads):
+  advec_mom      PAPI_TOT_INS=2.361e+11  PAPI_LD_INS=7.419e+10  PAPI_SR_INS=1.297e+10  PAPI_FP_INS=7.791e+10  PAPI_VEC_INS=2.368e+10  PAPI_BR_MSP=2e+07
+  advec_cell     PAPI_TOT_INS=1.954e+11  PAPI_LD_INS=4.495e+10  PAPI_SR_INS=9.041e+09  PAPI_FP_INS=4.951e+10  PAPI_VEC_INS=2.067e+10  PAPI_BR_MSP=1.369e+07
+  pdv_correct    PAPI_TOT_INS=4.769e+10  PAPI_LD_INS=1.796e+10  PAPI_SR_INS=1.308e+09  PAPI_FP_INS=2.614e+05  PAPI_VEC_INS=2.143e+10  PAPI_BR_MSP=2.787e+06
+  calc_dt        PAPI_TOT_INS=1.101e+11  PAPI_LD_INS=2.475e+10  PAPI_SR_INS=1.248e+06  PAPI_FP_INS=6.677e+10  PAPI_VEC_INS=2.862e+06  PAPI_BR_MSP=5.245e+06
+  accelerate     PAPI_TOT_INS=4.896e+10  PAPI_LD_INS=2.447e+10  PAPI_SR_INS=2.607e+09  PAPI_FP_INS=7.067e+07  PAPI_VEC_INS=1.728e+10  PAPI_BR_MSP=2.825e+06
+  ideal_gas      PAPI_TOT_INS=5.409e+10  PAPI_LD_INS=8.558e+09  PAPI_SR_INS=5.458e+09  PAPI_FP_INS=2.733e+10  PAPI_VEC_INS=3.266e+05  PAPI_BR_MSP=1.101e+07
+  pdv_predict    PAPI_TOT_INS=4.295e+10  PAPI_LD_INS=1.233e+10  PAPI_SR_INS=1.298e+09  PAPI_FP_INS=3.26e+05  PAPI_VEC_INS=2.38e+10  PAPI_BR_MSP=2.816e+06
+  flux_calc      PAPI_TOT_INS=1.938e+10  PAPI_LD_INS=7.015e+09  PAPI_SR_INS=1.296e+09  PAPI_FP_INS=1.554e+07  PAPI_VEC_INS=6.495e+09  PAPI_BR_MSP=8.145e+05
+  viscosity      PAPI_TOT_INS=8.51e+10  PAPI_LD_INS=2.1e+10  PAPI_SR_INS=1.284e+09  PAPI_FP_INS=5.272e+10  PAPI_VEC_INS=1.594e+05  PAPI_BR_MSP=3.09e+06
+  update_halo    PAPI_TOT_INS=1.897e+09  PAPI_LD_INS=2.615e+08  PAPI_SR_INS=4.585e+07  PAPI_FP_INS=1.938e+06  PAPI_VEC_INS=2.159e+07  PAPI_BR_MSP=8.647e+05
+  field_summary  PAPI_TOT_INS=4.07e+09  PAPI_LD_INS=9.738e+08  PAPI_SR_INS=1.695e+05  PAPI_FP_INS=7.388e+08  PAPI_VEC_INS=1.7e+09  PAPI_BR_MSP=3.268e+05
+=== stall clover_bm16_short_c_r1_t128_thpoff
+region              calls    threads     time_s     share%        GHz  cyc_imbal  be_stall%  fe_stall%
+advec_mom             522        128      3.159     29.651      2.578      1.002     91.032      0.083
+advec_cell            174        128      2.256     21.176      2.545      1.013     90.114      0.058
+ideal_gas             185        128      0.849      7.965      2.405      1.006     88.153      0.053
+pdv_correct            87        128      0.774      7.262      2.591      1.002     91.512      0.554
+pdv_predict            87        128      0.711      6.670      2.585      1.002     92.817      0.072
+update_halo           523        128      0.709      6.656      2.531      1.006     95.309      0.888
+accelerate             87        128      0.676      6.346      2.590      1.002     92.102      0.155
+calc_dt                87        128      0.614      5.766      2.581      1.005     80.784      0.032
+viscosity              87        128      0.463      4.345      2.484      1.031     76.104      0.034
+flux_calc              87        128      0.406      3.806      2.582      1.003     94.672      0.148
+field_summary          10        128      0.038      0.358      2.595      1.002     87.960      0.451
+raw event totals (all threads):
+  advec_mom      PAPI_TOT_CYC=1.041e+12  STALL_BACKEND=9.478e+11  STALL_FRONTEND=8.685e+08  BUS_ACCESS=2.112e+10  MEM_ACCESS=8.92e+10
+  advec_cell     PAPI_TOT_CYC=7.346e+11  STALL_BACKEND=6.62e+11  STALL_FRONTEND=4.294e+08  BUS_ACCESS=1.256e+10  MEM_ACCESS=5.731e+10
+  ideal_gas      PAPI_TOT_CYC=1.84e+11  STALL_BACKEND=1.622e+11  STALL_FRONTEND=9.734e+07  BUS_ACCESS=2.622e+09  MEM_ACCESS=1.407e+10
+  pdv_correct    PAPI_TOT_CYC=2.551e+11  STALL_BACKEND=2.335e+11  STALL_FRONTEND=1.412e+09  BUS_ACCESS=5.746e+09  MEM_ACCESS=2.135e+10
+  pdv_predict    PAPI_TOT_CYC=2.338e+11  STALL_BACKEND=2.17e+11  STALL_FRONTEND=1.673e+08  BUS_ACCESS=5.028e+09  MEM_ACCESS=1.347e+10
+  update_halo    PAPI_TOT_CYC=2.282e+11  STALL_BACKEND=2.175e+11  STALL_FRONTEND=2.027e+09  BUS_ACCESS=1.284e+08  MEM_ACCESS=4.397e+09
+  accelerate     PAPI_TOT_CYC=2.237e+11  STALL_BACKEND=2.06e+11  STALL_FRONTEND=3.463e+08  BUS_ACCESS=4.523e+09  MEM_ACCESS=2.719e+10
+  calc_dt        PAPI_TOT_CYC=2.012e+11  STALL_BACKEND=1.626e+11  STALL_FRONTEND=6.438e+07  BUS_ACCESS=3.053e+09  MEM_ACCESS=2.391e+10
+  viscosity      PAPI_TOT_CYC=1.461e+11  STALL_BACKEND=1.112e+11  STALL_FRONTEND=4.996e+07  BUS_ACCESS=1.764e+09  MEM_ACCESS=2.382e+10
+  flux_calc      PAPI_TOT_CYC=1.337e+11  STALL_BACKEND=1.266e+11  STALL_FRONTEND=1.983e+08  BUS_ACCESS=2.908e+09  MEM_ACCESS=8.506e+09
+  field_summary  PAPI_TOT_CYC=1.263e+10  STALL_BACKEND=1.111e+10  STALL_FRONTEND=5.702e+07  BUS_ACCESS=2.906e+08  MEM_ACCESS=9.694e+08
+=== stall clover_bm16_short_c_r64_t2
+region              calls    threads     time_s     share%        GHz  cyc_imbal  be_stall%  fe_stall%
+advec_mom             522        128      2.665     33.062      2.588      1.045     89.433      0.084
+advec_cell            174        128      1.678     20.815      2.587      1.032     87.938      0.060
+pdv_correct            87        128      0.639      7.932      2.587      1.016     91.585      0.060
+calc_dt                87        128      0.625      7.759      2.567      1.016     79.950      0.042
+accelerate             87        128      0.587      7.288      2.588      1.013     91.098      0.125
+ideal_gas             185        128      0.547      6.784      2.589      1.071     87.044      0.098
+pdv_predict            87        128      0.543      6.731      2.587      1.017     90.448      0.050
+flux_calc              87        128      0.381      4.732      2.590      1.020     94.604      0.082
+viscosity              87        128      0.326      4.047      2.580      1.218     63.353      0.068
+update_halo           523         56      0.038      0.474      2.614      1.814     41.435     38.337
+field_summary          10        128      0.030      0.377      2.591      1.079     84.519      0.101
+raw event totals (all threads):
+  advec_mom      PAPI_TOT_CYC=8.445e+11  STALL_BACKEND=7.553e+11  STALL_FRONTEND=7.135e+08  BUS_ACCESS=1.776e+10  MEM_ACCESS=8.716e+10
+  advec_cell     PAPI_TOT_CYC=5.372e+11  STALL_BACKEND=4.724e+11  STALL_FRONTEND=3.198e+08  BUS_ACCESS=1.078e+10  MEM_ACCESS=5.398e+10
+  pdv_correct    PAPI_TOT_CYC=2.074e+11  STALL_BACKEND=1.9e+11  STALL_FRONTEND=1.25e+08  BUS_ACCESS=4.74e+09  MEM_ACCESS=1.927e+10
+  calc_dt        PAPI_TOT_CYC=2.023e+11  STALL_BACKEND=1.617e+11  STALL_FRONTEND=8.475e+07  BUS_ACCESS=2.716e+09  MEM_ACCESS=2.476e+10
+  accelerate     PAPI_TOT_CYC=1.919e+11  STALL_BACKEND=1.748e+11  STALL_FRONTEND=2.405e+08  BUS_ACCESS=3.664e+09  MEM_ACCESS=2.708e+10
+  ideal_gas      PAPI_TOT_CYC=1.694e+11  STALL_BACKEND=1.474e+11  STALL_FRONTEND=1.665e+08  BUS_ACCESS=2.547e+09  MEM_ACCESS=1.401e+10
+  pdv_predict    PAPI_TOT_CYC=1.761e+11  STALL_BACKEND=1.593e+11  STALL_FRONTEND=8.79e+07  BUS_ACCESS=3.867e+09  MEM_ACCESS=1.364e+10
+  flux_calc      PAPI_TOT_CYC=1.239e+11  STALL_BACKEND=1.172e+11  STALL_FRONTEND=1.021e+08  BUS_ACCESS=2.68e+09  MEM_ACCESS=8.295e+09
+  viscosity      PAPI_TOT_CYC=8.886e+10  STALL_BACKEND=5.63e+10  STALL_FRONTEND=6.026e+07  BUS_ACCESS=1.359e+09  MEM_ACCESS=2.229e+10
+  update_halo    PAPI_TOT_CYC=3.058e+09  STALL_BACKEND=1.267e+09  STALL_FRONTEND=1.172e+09  BUS_ACCESS=4.491e+07  MEM_ACCESS=3.042e+08
+  field_summary  PAPI_TOT_CYC=9.345e+09  STALL_BACKEND=7.898e+09  STALL_FRONTEND=9.439e+06  BUS_ACCESS=2.451e+08  MEM_ACCESS=9.776e+08
+=== wall clock, PAPI build (ipc set) vs uninstrumented build
+-- /home/joosterveld/CloverLeaf_ref/perf/results/m3_papi_pdv_35017/ipc/results.csv
+tag,wall,qa
+clover_bm16_short_c_r64_t2,8.3531270027160645,PASSED
+clover_bm16_short_c_r1_t128_thpoff,10.635308980941772,PASSED
+-- /home/joosterveld/CloverLeaf_ref/perf/results/m3_papi_pdv_35017/uninstrumented/results.csv
+tag,wall,qa
+clover_bm16_short_c_r64_t2,8.2950561046600342,PASSED
+clover_bm16_short_c_r1_t128_thpoff,10.018855094909668,PASSED

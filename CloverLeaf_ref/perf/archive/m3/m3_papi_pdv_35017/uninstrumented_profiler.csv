@@ -1,0 +1,35 @@
+tag,rep,section,time,pct
+clover_bm16_short_c_r64_t2,1,Timestep,0.6512,7.8509
+clover_bm16_short_c_r64_t2,1,Ideal Gas,0.4880,5.8832
+clover_bm16_short_c_r64_t2,1,Viscosity,0.3679,4.4352
+clover_bm16_short_c_r64_t2,1,PdV,1.2132,14.6258
+clover_bm16_short_c_r64_t2,1,Revert,0.0000,0.0000
+clover_bm16_short_c_r64_t2,1,Acceleration,0.6229,7.5092
+clover_bm16_short_c_r64_t2,1,Fluxes,0.3808,4.5903
+clover_bm16_short_c_r64_t2,1,Cell Advection,1.6655,20.0785
+clover_bm16_short_c_r64_t2,1,Momentum Advection,2.6645,32.1217
+clover_bm16_short_c_r64_t2,1,Reset,0.0001,0.0010
+clover_bm16_short_c_r64_t2,1,Summary,0.0224,0.2701
+clover_bm16_short_c_r64_t2,1,Visit,0.0000,0.0000
+clover_bm16_short_c_r64_t2,1,Tile Halo Exchange,0.0004,0.0046
+clover_bm16_short_c_r64_t2,1,Self Halo Exchange,0.0001,0.0014
+clover_bm16_short_c_r64_t2,1,MPI Halo Exchange,0.2173,2.6197
+clover_bm16_short_c_r64_t2,1,Total,8.2944,99.9917
+clover_bm16_short_c_r64_t2,1,The Rest,0.0007,0.0083
+clover_bm16_short_c_r1_t128_thpoff,1,Timestep,0.6051,6.0399
+clover_bm16_short_c_r1_t128_thpoff,1,Ideal Gas,0.5528,5.5181
+clover_bm16_short_c_r1_t128_thpoff,1,Viscosity,0.4431,4.4226
+clover_bm16_short_c_r1_t128_thpoff,1,PdV,1.4638,14.6106
+clover_bm16_short_c_r1_t128_thpoff,1,Revert,0.0000,0.0000
+clover_bm16_short_c_r1_t128_thpoff,1,Acceleration,0.6498,6.4857
+clover_bm16_short_c_r1_t128_thpoff,1,Fluxes,0.3864,3.8565
+clover_bm16_short_c_r1_t128_thpoff,1,Cell Advection,2.0310,20.2715
+clover_bm16_short_c_r1_t128_thpoff,1,Momentum Advection,3.0425,30.3675
+clover_bm16_short_c_r1_t128_thpoff,1,Reset,0.0002,0.0017
+clover_bm16_short_c_r1_t128_thpoff,1,Summary,0.0357,0.3567
+clover_bm16_short_c_r1_t128_thpoff,1,Visit,0.0000,0.0000
+clover_bm16_short_c_r1_t128_thpoff,1,Tile Halo Exchange,0.0008,0.0084
+clover_bm16_short_c_r1_t128_thpoff,1,Self Halo Exchange,0.7638,7.6235
+clover_bm16_short_c_r1_t128_thpoff,1,MPI Halo Exchange,0.0009,0.0090
+clover_bm16_short_c_r1_t128_thpoff,1,Total,9.9759,99.5716
+clover_bm16_short_c_r1_t128_thpoff,1,The Rest,0.0429,0.4284

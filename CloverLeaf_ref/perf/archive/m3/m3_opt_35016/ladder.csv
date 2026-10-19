@@ -1,0 +1,9 @@
+# generated 2026-10-19T15:30:57 by perf/analysis/variants.py from perf/results/m3_opt_35016
+# baseline archive: m3_baseline_34797; qa_ok: gate verdict of perf/results/m3_correctness_35012/correctness_rows.csv
+# variant base: binary md5 57396505a5e9, node cn15, job 35016: M3 baseline source and CFLAGS (measured in job 34797)
+# variant optnf: binary md5 50ed04ebf03c, node cn15, job 35016: opt with the baseline CFLAGS (no -fno-math-errno -fno-trapping-math)
+# variant pdv: binary md5 92033b95020d, node cn15, job 35016: optnf + PdV volume_change in a register (d2b00e6; measured in jobs 35012/35016/35017)
+variant,description,n,median_s,min_s,max_s,dram_TB,hw_GBs,time_vs_base_pct,bytes_vs_base_pct,source
+base,M3 baseline source and CFLAGS (measured in job 34797),5,11.224,11.222,11.321,2.827,251.9,0.0,0.0,"job 35016 (m3_opt ladder, base)"
+optnf,opt with the baseline CFLAGS (no -fno-math-errno -fno-trapping-math),5,8.508,8.502,8.587,2.052,241.1,-24.2,-27.4,"job 35016 (m3_opt ladder, optnf)"
+pdv,optnf + PdV volume_change in a register (d2b00e6; measured in jobs 35012/35016/35017),5,8.253,8.251,8.372,2.012,243.8,-26.5,-28.8,"job 35016 (m3_opt ladder, pdv)"

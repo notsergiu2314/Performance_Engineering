@@ -1,0 +1,34 @@
+Results in /home/joosterveld/CloverLeaf_ref/perf/results/m3_correctness_35012/pdv  (7 runs, 7 cases)
+
+| case | deck | kernels | ranks | thr | thp | n | best_wall_s | median_s | spread | grind_ns/cell | qa_dev_% | qa | reported |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| clover_bm_c_r64_t2 | clover_bm.in | c | 64 | 2 | on | 1 | 13.699 | 13.699 | 0.0% | 5.03 | 5.73e-03 | FAILED | C |
+| clover_bm_c_r1_t128 | clover_bm.in | c | 1 | 128 | on | 1 | 42.529 | 42.529 | 0.0% | 15.62 | 5.73e-03 | FAILED | C |
+| clover_bm_c_r4_t32 | clover_bm.in | c | 4 | 32 | on | 1 | 29.689 | 29.689 | 0.0% | 10.90 | 5.73e-03 | FAILED | C |
+| clover_bm_c_r32_t4 | clover_bm.in | c | 32 | 4 | on | 1 | 14.043 | 14.043 | 0.0% | 5.16 | 5.73e-03 | FAILED | C |
+| clover_bm_c_r128_t1 | clover_bm.in | c | 128 | 1 | on | 1 | 14.067 | 14.067 | 0.0% | 5.17 | 5.73e-03 | FAILED | C |
+| clover_bm_c_r64_t2_thpoff | clover_bm.in | c | 64 | 2 | off | 1 | 13.560 | 13.560 | 0.0% | 4.98 | 5.73e-03 | FAILED | C |
+| clover_bm_fortran_r64_t2 | clover_bm.in | fortran | 64 | 2 | on | 1 | 14.446 | 14.446 | 0.0% | 5.30 | 1.79e-02 | FAILED | Fortran |
+
+C relative to Fortran (best wall, ratio > 1 means C slower; Fortran for reference only)
+| deck | ranks | thr | thp | fortran_s | c_s | c/fortran |
+|---|---|---|---|---|---|---|
+| clover_bm.in | 64 | 2 | on | 14.446 | 13.699 | 0.948 |
+
+Profiler split of best repetition (seconds, % of wall); sections under 1% omitted
+| section | clover_bm_c_r64_t2 | clover_bm_c_r1_t128 | clover_bm_c_r4_t32 | clover_bm_c_r32_t4 | clover_bm_c_r128_t1 | clover_bm_c_r64_t2_thpoff | clover_bm_fortran_r64_t2 |
+|---|---|---|---|---|---|---|---|
+| Timestep | 1.91 (14%) | 1.53 (4%) | 1.24 (4%) | 2.26 (16%) | 2.45 (17%) | 1.36 (10%) | 1.95 (13%) |
+| Ideal Gas | 0.59 (4%) | 1.29 (3%) | 0.79 (3%) | 0.65 (5%) | 0.63 (4%) | 0.59 (4%) | 0.61 (4%) |
+| Viscosity | 0.92 (7%) | 1.38 (3%) | 1.11 (4%) | 0.91 (6%) | 0.90 (6%) | 0.98 (7%) | 0.95 (7%) |
+| PdV | 1.68 (12%) | 1.76 (4%) | 1.67 (6%) | 1.68 (12%) | 1.68 (12%) | 1.55 (11%) | 1.49 (10%) |
+| Acceleration | 0.52 (4%) | 0.96 (2%) | 0.57 (2%) | 0.51 (4%) | 0.63 (4%) | 0.51 (4%) | 0.43 (3%) |
+| Fluxes | 0.23 (2%) | 0.63 (1%) | 0.25 (1%) | 0.19 (1%) | 0.32 (2%) | 0.25 (2%) | 0.23 (2%) |
+| Cell Advection | 2.05 (15%) | 4.01 (9%) | 2.71 (9%) | 2.12 (15%) | 2.15 (15%) | 2.25 (17%) | 2.02 (14%) |
+| Momentum Advection | 2.93 (21%) | 6.20 (15%) | 4.11 (14%) | 2.98 (21%) | 3.20 (23%) | 3.38 (25%) | 3.28 (23%) |
+| Reset | 0.00 (0%) | 0.00 (0%) | 0.00 (0%) | 0.00 (0%) | 0.00 (0%) | 0.00 (0%) | 0.37 (3%) |
+| Self Halo Exchange | 0.00 (0%) | 23.97 (56%) | 3.13 (11%) | 0.10 (1%) | 0.00 (0%) | 0.00 (0%) | 0.00 (0%) |
+| MPI Halo Exchange | 2.84 (21%) | 0.01 (0%) | 14.00 (47%) | 2.62 (19%) | 2.08 (15%) | 2.66 (20%) | 3.01 (21%) |
+| Total | 13.69 (100%) | 41.92 (99%) | 29.68 (100%) | 14.04 (100%) | 14.06 (100%) | 13.55 (100%) | 14.44 (100%) |
+| The Rest | 0.01 (0%) | 0.61 (1%) | 0.01 (0%) | 0.01 (0%) | 0.01 (0%) | 0.01 (0%) | 0.01 (0%) |
+

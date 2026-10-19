@@ -1,0 +1,35 @@
+tag,rep,section,time,pct
+clover_bm16_short_c_r64_t2,1,Timestep,0.6473,7.8407
+clover_bm16_short_c_r64_t2,1,Ideal Gas,0.5181,6.2754
+clover_bm16_short_c_r64_t2,1,Viscosity,0.3239,3.9226
+clover_bm16_short_c_r64_t2,1,PdV,1.2215,14.7951
+clover_bm16_short_c_r64_t2,1,Revert,0.0000,0.0000
+clover_bm16_short_c_r64_t2,1,Acceleration,0.5884,7.1271
+clover_bm16_short_c_r64_t2,1,Fluxes,0.3834,4.6436
+clover_bm16_short_c_r64_t2,1,Cell Advection,1.6677,20.1996
+clover_bm16_short_c_r64_t2,1,Momentum Advection,2.6404,31.9805
+clover_bm16_short_c_r64_t2,1,Reset,0.0001,0.0015
+clover_bm16_short_c_r64_t2,1,Summary,0.0309,0.3744
+clover_bm16_short_c_r64_t2,1,Visit,0.0000,0.0000
+clover_bm16_short_c_r64_t2,1,Tile Halo Exchange,0.0005,0.0057
+clover_bm16_short_c_r64_t2,1,Self Halo Exchange,0.0322,0.3901
+clover_bm16_short_c_r64_t2,1,MPI Halo Exchange,0.2010,2.4349
+clover_bm16_short_c_r64_t2,1,Total,8.2555,99.9913
+clover_bm16_short_c_r64_t2,1,The Rest,0.0007,0.0087
+clover_bm16_short_c_r1_t128_thpoff,1,Timestep,0.6229,5.8552
+clover_bm16_short_c_r1_t128_thpoff,1,Ideal Gas,0.5802,5.4534
+clover_bm16_short_c_r1_t128_thpoff,1,Viscosity,0.4734,4.4499
+clover_bm16_short_c_r1_t128_thpoff,1,PdV,1.5019,14.1175
+clover_bm16_short_c_r1_t128_thpoff,1,Revert,0.0000,0.0000
+clover_bm16_short_c_r1_t128_thpoff,1,Acceleration,0.6866,6.4537
+clover_bm16_short_c_r1_t128_thpoff,1,Fluxes,0.4169,3.9184
+clover_bm16_short_c_r1_t128_thpoff,1,Cell Advection,2.2804,21.4351
+clover_bm16_short_c_r1_t128_thpoff,1,Momentum Advection,3.2299,30.3604
+clover_bm16_short_c_r1_t128_thpoff,1,Reset,0.0001,0.0006
+clover_bm16_short_c_r1_t128_thpoff,1,Summary,0.0355,0.3335
+clover_bm16_short_c_r1_t128_thpoff,1,Visit,0.0000,0.0000
+clover_bm16_short_c_r1_t128_thpoff,1,Tile Halo Exchange,0.0007,0.0065
+clover_bm16_short_c_r1_t128_thpoff,1,Self Halo Exchange,0.7781,7.3135
+clover_bm16_short_c_r1_t128_thpoff,1,MPI Halo Exchange,0.0019,0.0183
+clover_bm16_short_c_r1_t128_thpoff,1,Total,10.6083,99.7160
+clover_bm16_short_c_r1_t128_thpoff,1,The Rest,0.0302,0.2840
