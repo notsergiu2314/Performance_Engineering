@@ -153,6 +153,7 @@ def main():
                     help="plan.csv with the byte-model prediction (row 'all byte changes together')")
     ap.add_argument("--conf", default=str(perf_root / "variants.conf"), help="variant order")
     ap.add_argument("--ref", default="base", help="reference variant for speed-ups (default base)")
+    ap.add_argument("--opt", default="opt", help="the optimised variant for the archive speed-ups and the plan comparison (default opt)")
     ap.add_argument("--out", help="output directory (default: --run or the first layouts dir)")
     a = ap.parse_args()
 
@@ -279,11 +280,11 @@ def main():
                              if refc and ac else "--")
             md.append("| " + " | ".join(cells) + " |")
         md.append("")
-        if archive and "opt" in lay:
-            md += ["Speed-up of opt against the archived baseline (the report's reference):", ""]
+        if archive and a.opt in lay:
+            md += [f"Speed-up of {a.opt} against the archived baseline (the report's reference):", ""]
             for rk, th, thp in keys:
                 key = (rk, th, thp, "c")
-                c, ac = lay["opt"][0].get(key), archive.get(key)
+                c, ac = lay[a.opt][0].get(key), archive.get(key)
                 if c and ac:
                     md.append(f"- {rk}x{th} thp={thp}: {ac['median_s'] / c['median_s']:.3f}x, bytes {spct(pct(c['dram_TB'], ac['dram_TB']))}")
             md.append("")
@@ -323,16 +324,16 @@ def main():
             base64 = archive.get(("64", "2", "on", "c"))
         opt64 = None
         for src in (lad, lay):
-            if "opt" in src:
-                opt64 = src["opt"][0].get(("64", "2", "on", "c"))
+            if a.opt in src:
+                opt64 = src[a.opt][0].get(("64", "2", "on", "c"))
                 if opt64:
                     break
         md.append(f"- predicted: {plan['pred_TB']} TB ({plan['cumulative_delta_pct']} % bytes), floor {plan['floor_s']} s")
         if opt64 and base64:
-            md.append(f"- measured opt at 64x2: {fmt(opt64['dram_TB']) or '--'} TB ({spct(pct(opt64['dram_TB'], base64['dram_TB']))} vs {a.ref}), "
+            md.append(f"- measured {a.opt} at 64x2: {fmt(opt64['dram_TB']) or '--'} TB ({spct(pct(opt64['dram_TB'], base64['dram_TB']))} vs {a.ref}), "
                       f"{opt64['median_s']:.2f} s ({spct(pct(opt64['median_s'], base64['median_s']))})")
         if a.stream_hw_gbs and opt64 and isnum(opt64["dram_TB"]):
-            md.append(f"- opt at 64x2 runs at {100 * opt64['hw_GBs'] / a.stream_hw_gbs:.0f} % of the {a.stream_hw_gbs:.0f} GB/s hardware ceiling; "
+            md.append(f"- {a.opt} at 64x2 runs at {100 * opt64['hw_GBs'] / a.stream_hw_gbs:.0f} % of the {a.stream_hw_gbs:.0f} GB/s hardware ceiling; "
                       f"memory floor for its bytes {opt64['dram_TB'] * 1000 / a.stream_hw_gbs:.2f} s")
         md.append("")
 

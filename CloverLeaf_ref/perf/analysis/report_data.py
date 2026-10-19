@@ -4,8 +4,10 @@
   python3 -I report_data.py --data ../../report/data [--optimised optimised.csv] [--ladder ladder.csv]
           [--correctness correctness_rows.csv] [--papi perf/results/m3_papi_opt_<id> --variant opt]
 
---optimised / --ladder   copied verbatim (they carry their '#' provenance header):
-                         data/optimised.csv, data/ladder.csv
+--optimised / --ladder   data/optimised.csv, data/ladder.csv: copied verbatim when absent (they carry
+                         their '#' provenance header); otherwise the rows of variants not yet present
+                         are appended (key: variant, layout, thp), existing rows and the first job's
+                         base rerun are kept, and the new file's provenance lines are added
 --correctness            rows of qa_check.py --csv appended to data/correctness.csv; the file
                          gets the columns variant,gate (existing rows: base, ok); rows already
                          present are not duplicated
@@ -51,9 +53,24 @@ def main():
     data.is_dir() or sys.exit(f"not a directory: {data}")
 
     for src, name in ((a.optimised, "optimised.csv"), (a.ladder, "ladder.csv")):
-        if src:
+        if not src:
+            continue
+        if not (data / name).exists():
             shutil.copyfile(src, data / name)
             print(f"{name}: copied from {src}")
+            continue
+        comments, header, rows = split(data / name)
+        ncomments, nh, new = split(src)
+        keycols = [c for c in ("variant", "layout", "thp") if c in header]
+        key = lambda r, h: tuple(r[h.index(c)] for c in keycols)
+        have = {key(r, header) for r in rows}
+        idx = [nh.index(c) for c in header]
+        added = [[r[i] for i in idx] for r in new if key(r, nh) not in have]
+        rows += added
+        comments += [c for c in ncomments if c not in comments]
+        comments.append(f"# {len(added)} rows appended from {src} (variants not present before; earlier rows kept)")
+        write(data / name, comments, header, rows)
+        print(f"{name}: {len(added)} rows appended from {src} ({[r[header.index('variant')] for r in added][:1]}...)")
 
     if a.correctness:
         comments, header, rows = split(data / "correctness.csv")

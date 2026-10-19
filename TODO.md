@@ -53,20 +53,13 @@ node_flux, node_mass_post, node_mass_pre) out of velocity loop, these do not nee
 
 **Jort**:
 
-```
-Next step, the cluster run:
-
-  bash perf/export_variants.sh && CLUSTER=<host> bash perf/sync.sh      # laptop
-  srun -p cn-ib -N 1 -t 00:30:00 bash perf/build.sh                     # cluster, from CloverLeaf_ref/
-  sbatch perf/jobs/m3_correctness.sbatch
-  sbatch perf/jobs/m3_opt.sbatch
-  VARIANT=opt sbatch perf/jobs/m3_papi.sbatch
-  bash perf/archive.sh perf/results/m3_opt_<id> perf/results/m3_correctness_<id> perf/results/m3_papi_opt_<id> --report
-  /usr/bin/python3 ../report/make_assets.py
-
-  Read qa_check.txt and compare.md first. The tab_kernels_opt.tex table is generated but not yet
-  referenced in main.tex.
-```
+Correctness gate, resolved 2026-10-19: the base binary reproduces the archived `clover_bm.in`
+reference (job 34999); the builds with `-fno-math-errno -fno-trapping-math` give 0.3835202E-01 %
+(job 34937); `optnf` (commit 8d7d81f, kernel changes with the baseline CFLAGS) passes 7 of 7
+(job 35002), keeps the bytes and is 3.6 % slower than `opt` (job 35003: 8.56 vs 8.25 s, 1.32x
+vs the archived baseline). `optnf` is the reported build; report, data, tables, figures and the
+presentation are updated (`OPT_VARIANT=optnf make_assets.py`). Open: nothing on the cluster side;
+report polish (listings, conclusions prose), presentation rehearsal.
 
 - advec_mom
 - calc_dt

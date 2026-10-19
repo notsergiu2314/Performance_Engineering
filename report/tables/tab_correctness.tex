@@ -2,12 +2,14 @@
 \toprule
 kernels & build & runs & deviation (\%) & layouts (all identical) & gate \\
 \midrule
-c & base & 16 & 0.5726209E-02 & 128x1, 4x32, 64x2, 1x128, 32x4 & ok \\
-fortran & base & 11 & 0.1787088E-01 & 128x1, 4x32, 64x2 & ok \\
+c & base & 22 & 0.5726209E-02 & 128x1, 4x32, 64x2, 1x128, 32x4 & ok \\
+fortran & base & 12 & 0.1787088E-01 & 128x1, 4x32, 64x2 & ok \\
 c & opt & 6 & 0.3835202E-01 & 64x2, 1x128, 4x32, 32x4, 128x1 & MISMATCH \\
 fortran & opt & 1 & 0.1787088E-01 & 64x2 & ok \\
 c & flags & 1 & 0.3835202E-01 & 64x2 & MISMATCH \\
 c & cell & 1 & 0.3835202E-01 & 64x2 & MISMATCH \\
 c & mom & 1 & 0.3835202E-01 & 64x2 & MISMATCH \\
+c & optnf & 6 & 0.5726209E-02 & 64x2, 1x128, 4x32, 32x4, 128x1 & ok \\
+fortran & optnf & 1 & 0.1787088E-01 & 64x2 & ok \\
 \bottomrule
 \end{tabular}

@@ -57,8 +57,11 @@ rows in `../../report/data/`. The hardware ceiling is `STREAM_HW_GBS=266.5`.
 Build variants (`variants.conf`): `base` = 3c20f85 (baseline source and CFLAGS, job 34797),
 `flags` = 59cdd3b (`-fno-math-errno -fno-trapping-math` only), `cell` = ff83119 (flags +
 advec_cell temporaries and dead store + reset/revert field swap), `mom` = 88fce34 (flags +
-advec_mom hoist and dead store + calc_dt fused reduction), `opt` = HEAD (everything). The
-cluster copy is an rsync copy without git, so the sources are exported locally first.
+advec_mom hoist and dead store + calc_dt fused reduction), `opt` = 787baa1 (everything, with the
+T2 flags; measured in jobs 34937-34939), `optnf` = 8d7d81f (opt with the baseline CFLAGS: the T2
+flags bought nothing and alone move the `clover_bm.in` deviation, jobs 34937/34999; branch-free
+upwind loop and nowait kept). The cluster copy is an rsync copy without git, so the sources are
+exported locally first.
 
 ```bash
 # laptop (git checkout)
@@ -84,14 +87,40 @@ bash perf/archive.sh perf/results/m3_opt_<id> perf/results/m3_correctness_<id> \
 ```
 
 Knobs: `m3_opt`: `LADDER` ("base flags cell mom opt"), `VARIANTS` ("base opt"), `REPS` (5),
-`STREAM_HW_GBS`, `DDRC`, `QA`. `m3_correctness`: `VARIANTS` ("opt flags cell mom"; `opt` and `base`
-run the full `matrix.correctness`, the others its C 64x2 row), `BASELINE`, `TOL` (1e-6 %); a
-mismatch is recorded in the `gate` column, it does not abort the job. `m3_papi`: `VARIANT`
-(opt). `build.sh`: `PAPI=off`, `SRC_ROOT`. `export_variants.sh`: `CONF`, `SRC_ROOT`. `sync.sh`:
-`CLUSTER`, `REMOTE`, `RSYNC_ARGS`. `archive.sh`: `ARCHIVE`, `REPORT_DATA`, `VARIANT`.
+`STREAM_HW_GBS`, `DDRC`, `QA`. `m3_correctness`: `VARIANTS` ("opt flags cell mom"), `FULL` ("base opt
+optnf": these run the full `matrix.correctness`, the others its C 64x2 row), `BASELINE`, `TOL`
+(1e-6 %); a mismatch is recorded in the `gate` column, it does not abort the job. `m3_papi`:
+`VARIANT` (opt). `build.sh`: `PAPI=off`, `SRC_ROOT`. `export_variants.sh`: `CONF`, `SRC_ROOT`.
+`sync.sh`: `CLUSTER`, `REMOTE`, `RSYNC_ARGS`. `archive.sh`: `ARCHIVE`, `REPORT_DATA`, `VARIANT`.
+`analysis/variants.py`: `--opt` (the variant compared with the archive and the plan, default opt).
+`report/make_assets.py`: `OPT_VARIANT` (env, default opt: the build the Results section shows).
+
+### The no-flags build (`optnf`)
+```bash
+bash perf/export_variants.sh optnf && CLUSTER=<host> bash perf/sync.sh        # laptop
+srun -p cn-ib -N 1 -t 00:30:00 bash perf/build.sh optnf                        # cluster, from CloverLeaf_ref/
+VARIANTS=optnf sbatch perf/jobs/m3_correctness.sbatch                          # full matrix; expect 0.5726209E-02 %
+LADDER="base opt optnf" VARIANTS="base optnf" sbatch perf/jobs/m3_opt.sbatch   # bytes and time without the flags
+VARIANT=optnf sbatch perf/jobs/m3_papi.sbatch                                  # per-kernel counters (optional)
+# laptop, after copying perf/results back:
+python3 -I perf/analysis/variants.py --run perf/results/m3_opt_<id> --opt optnf \
+    --qa perf/results/m3_correctness_<id>/correctness_rows.csv --stream-hw-gbs 266.5
+VARIANT=optnf bash perf/archive.sh perf/results/m3_correctness_<id> perf/results/m3_opt_<id> \
+    [perf/results/m3_papi_optnf_<id>] --report
+OPT_VARIANT=optnf /usr/bin/python3 ../report/make_assets.py                    # Results section from the optnf rows
+```
+Outcome (jobs 35002 correctness, 35003 m3_opt, 35004 m3_papi, cn16, 2026-10-19, archived): `optnf` passes
+the gate 7 of 7 at every layout, keeps the bytes (2.052 vs 2.043 TB) and is 3.6 % slower than `opt` at 64x2
+(8.56 vs 8.25 s; the vectorised sqrt of calc_dt and ideal_gas). `optnf` is the reported build
+(`OPT_VARIANT=optnf`, columns `*_64x2_optnf` in `kernels_papi.csv`); `data/ladder.csv` and
+`data/optimised.csv` keep the job-34938 rows and carry the optnf rows next to them (`report_data.py`
+appends variants instead of overwriting).
 
 Read first: `m3_correctness_<id>/qa_check.txt` (does every variant reproduce the baseline
-deviation 0.5726209E-02 %?) and `m3_opt_<id>/compare.md` (archive 34797 vs the same-job base
+deviation 0.5726209E-02 %? Job 34999 showed that the `base` binary does at every layout and that
+every build with `-fno-math-errno -fno-trapping-math` gives 0.3835202E-01 %: the flags, not the
+kernel changes, move the value; the next variant to gate is the kernel changes with the baseline
+CFLAGS) and `m3_opt_<id>/compare.md` (archive 34797 vs the same-job base
 rerun vs opt per layout, the ladder at 64x2, the plan prediction -29.3 % bytes / 1.983 TB).
 `optimised.csv` has one row per (variant, layout, THP); `make_assets.py` shows variant `opt`, THP on.
 In the optimised build both halves of the split advec_mom kernel count under the PAPI region

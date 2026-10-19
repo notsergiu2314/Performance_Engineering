@@ -1,0 +1,35 @@
+tag,rep,section,time,pct
+clover_bm16_short_c_r64_t2,1,Timestep,0.6516,7.7320
+clover_bm16_short_c_r64_t2,1,Ideal Gas,0.5093,6.0440
+clover_bm16_short_c_r64_t2,1,Viscosity,0.3289,3.9030
+clover_bm16_short_c_r64_t2,1,PdV,1.3986,16.5972
+clover_bm16_short_c_r64_t2,1,Revert,0.0000,0.0000
+clover_bm16_short_c_r64_t2,1,Acceleration,0.5855,6.9475
+clover_bm16_short_c_r64_t2,1,Fluxes,0.3857,4.5775
+clover_bm16_short_c_r64_t2,1,Cell Advection,1.6373,19.4295
+clover_bm16_short_c_r64_t2,1,Momentum Advection,2.6514,31.4634
+clover_bm16_short_c_r64_t2,1,Reset,0.0001,0.0013
+clover_bm16_short_c_r64_t2,1,Summary,0.0341,0.4048
+clover_bm16_short_c_r64_t2,1,Visit,0.0000,0.0000
+clover_bm16_short_c_r64_t2,1,Tile Halo Exchange,0.0004,0.0051
+clover_bm16_short_c_r64_t2,1,Self Halo Exchange,0.0322,0.3823
+clover_bm16_short_c_r64_t2,1,MPI Halo Exchange,0.2111,2.5050
+clover_bm16_short_c_r64_t2,1,Total,8.4264,99.9926
+clover_bm16_short_c_r64_t2,1,The Rest,0.0006,0.0074
+clover_bm16_short_c_r1_t128_thpoff,1,Timestep,0.6153,5.9108
+clover_bm16_short_c_r1_t128_thpoff,1,Ideal Gas,0.5847,5.6169
+clover_bm16_short_c_r1_t128_thpoff,1,Viscosity,0.4235,4.0677
+clover_bm16_short_c_r1_t128_thpoff,1,PdV,1.6838,16.1747
+clover_bm16_short_c_r1_t128_thpoff,1,Revert,0.0000,0.0000
+clover_bm16_short_c_r1_t128_thpoff,1,Acceleration,0.6590,6.3302
+clover_bm16_short_c_r1_t128_thpoff,1,Fluxes,0.4069,3.9083
+clover_bm16_short_c_r1_t128_thpoff,1,Cell Advection,2.0717,19.9002
+clover_bm16_short_c_r1_t128_thpoff,1,Momentum Advection,3.0883,29.6659
+clover_bm16_short_c_r1_t128_thpoff,1,Reset,0.0002,0.0016
+clover_bm16_short_c_r1_t128_thpoff,1,Summary,0.0344,0.3307
+clover_bm16_short_c_r1_t128_thpoff,1,Visit,0.0000,0.0000
+clover_bm16_short_c_r1_t128_thpoff,1,Tile Halo Exchange,0.0009,0.0085
+clover_bm16_short_c_r1_t128_thpoff,1,Self Halo Exchange,0.8009,7.6931
+clover_bm16_short_c_r1_t128_thpoff,1,MPI Halo Exchange,0.0021,0.0201
+clover_bm16_short_c_r1_t128_thpoff,1,Total,10.3717,99.6288
+clover_bm16_short_c_r1_t128_thpoff,1,The Rest,0.0386,0.3712

@@ -29,7 +29,7 @@ compiler pdfLaTeX, then bibliography with BibTeX (Overleaf does this automatical
 | File | Content | Produced by |
 |---|---|---|
 | `data/m3_baseline.csv` | 5 layouts x THP on/off, C and Fortran, median/min/max, DRAM TB, hardware GB/s | job 34797 (`perf/jobs/m3_baseline.sbatch`, 2026-10-13), aggregated from `results.csv` |
-| `data/correctness.csv` | `clover_bm.in` baseline deviation per kernel set and layout | jobs 34729 and 34796 (`perf/jobs/m3_correctness.sbatch`, 7 of 7 ok) |
+| `data/correctness.csv` | `clover_bm.in` deviation per kernel set, build variant and layout, with the gate verdict | jobs 34729, 34796 and 34999 (base, 7 of 7 ok), 34937 (flags/cell/mom/opt: 0.038 %, MISMATCH; the flags alone cause it) |
 | `data/plan.csv` | predicted bytes of every planned C change (+ streaming-store bound); `tab_plan.tex` is generated but no longer included in the report | `python3 -I CloverLeaf_ref/perf/analysis/plan_bytes.py --csv report/data/plan.csv` |
 | `data/ceilings.csv` rows `dram_node_counted_best`, `dram_node_hw`, `wa_ratio`, `dimm_mts_min` | hardware STREAM ceiling 266.5 GB/s, write-allocate check | job 34795 (`perf/jobs/m3_stream_ddrc.sbatch`) -> `ceilings_rows.csv` |
 | `data/kernels_papi.csv` columns `*_64x2`, `*_1x128off` | per-kernel time, IPC, back-end stall at the M3 layouts | job 34798 (`perf/jobs/m3_papi.sbatch`) |

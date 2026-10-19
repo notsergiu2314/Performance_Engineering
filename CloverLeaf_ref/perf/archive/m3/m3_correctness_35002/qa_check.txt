@@ -1,0 +1,11 @@
+=== optnf
+case                                         rep         qa_pct       baseline       diff clover  gate
+clover_bm_c_r64_t2                             1  5.7262090e-03  5.7262090e-03    0.0e+00 FAILED  ok
+clover_bm_c_r1_t128                            1  5.7262090e-03  5.7262090e-03    0.0e+00 FAILED  ok
+clover_bm_c_r4_t32                             1  5.7262090e-03  5.7262090e-03    0.0e+00 FAILED  ok
+clover_bm_c_r32_t4                             1  5.7262090e-03  5.7262090e-03    0.0e+00 FAILED  ok
+clover_bm_c_r128_t1                            1  5.7262090e-03  5.7262090e-03    0.0e+00 FAILED  ok
+clover_bm_c_r64_t2_thpoff                      1  5.7262090e-03  5.7262090e-03    0.0e+00 FAILED  ok
+clover_bm_fortran_r64_t2                       1  1.7870880e-02  1.7870880e-02    0.0e+00 FAILED  ok
+
+7 of 7 runs reproduce the baseline deviation (tol 1e-06 %)

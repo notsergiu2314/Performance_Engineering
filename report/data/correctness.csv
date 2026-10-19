@@ -3,6 +3,8 @@
 # re-confirmed it at every M3 layout: perf/baseline/qa_check.py 7 of 7 ok (tol 1e-6 %), see perf/archive/m3/m3_correctness_34796.
 # 10 rows appended from perf/results/m3_correctness_34937/correctness_rows.csv (variant/gate columns: qa_check.py --csv)
 # 0 rows appended from perf/results/m3_correctness_34937/correctness_rows.csv (variant/gate columns: qa_check.py --csv)
+# 7 rows appended from perf/results/m3_correctness_34999/correctness_rows.csv (variant/gate columns: qa_check.py --csv)
+# 7 rows appended from perf/results/m3_correctness_35002/correctness_rows.csv (variant/gate columns: qa_check.py --csv)
 deck,kernels,layout,reps,qa_pct,clover_verdict,source,variant,gate
 clover_bm.in,c,128x1,5,0.5726209E-02,FAILED,job 34729,base,ok
 clover_bm.in,c,4x32,5,0.5726209E-02,FAILED,job 34729,base,ok
@@ -25,3 +27,17 @@ clover_bm.in,fortran,64x2,1,0.1787088E-01,FAILED,job 34937 (m3_correctness),opt,
 clover_bm.in,c,64x2,1,0.3835202E-01,FAILED,job 34937 (m3_correctness),flags,MISMATCH
 clover_bm.in,c,64x2,1,0.3835202E-01,FAILED,job 34937 (m3_correctness),cell,MISMATCH
 clover_bm.in,c,64x2,1,0.3835202E-01,FAILED,job 34937 (m3_correctness),mom,MISMATCH
+clover_bm.in,c,64x2,1,0.5726209E-02,FAILED,job 34999 (m3_correctness),base,ok
+clover_bm.in,c,1x128,1,0.5726209E-02,FAILED,job 34999 (m3_correctness),base,ok
+clover_bm.in,c,4x32,1,0.5726209E-02,FAILED,job 34999 (m3_correctness),base,ok
+clover_bm.in,c,32x4,1,0.5726209E-02,FAILED,job 34999 (m3_correctness),base,ok
+clover_bm.in,c,128x1,1,0.5726209E-02,FAILED,job 34999 (m3_correctness),base,ok
+clover_bm.in,c,64x2 THP off,1,0.5726209E-02,FAILED,job 34999 (m3_correctness),base,ok
+clover_bm.in,fortran,64x2,1,0.1787088E-01,FAILED,job 34999 (m3_correctness),base,ok
+clover_bm.in,c,64x2,1,0.5726209E-02,FAILED,job 35002 (m3_correctness),optnf,ok
+clover_bm.in,c,1x128,1,0.5726209E-02,FAILED,job 35002 (m3_correctness),optnf,ok
+clover_bm.in,c,4x32,1,0.5726209E-02,FAILED,job 35002 (m3_correctness),optnf,ok
+clover_bm.in,c,32x4,1,0.5726209E-02,FAILED,job 35002 (m3_correctness),optnf,ok
+clover_bm.in,c,128x1,1,0.5726209E-02,FAILED,job 35002 (m3_correctness),optnf,ok
+clover_bm.in,c,64x2 THP off,1,0.5726209E-02,FAILED,job 35002 (m3_correctness),optnf,ok
+clover_bm.in,fortran,64x2,1,0.1787088E-01,FAILED,job 35002 (m3_correctness),optnf,ok

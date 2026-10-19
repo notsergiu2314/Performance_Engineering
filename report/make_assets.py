@@ -63,7 +63,9 @@ FMA_CORE, FMA_NODE = C["fma_core"], C["fma_node"]
 DIV_CORE, DIV_NODE = C["div_core"], C["div_node"]
 
 # --------------------------------------------------------------- kernels
-OPT_VARIANT = "opt"   # the build the Results section shows (perf/variants.conf)
+import os
+OPT_VARIANT = os.environ.get("OPT_VARIANT", "opt")   # the build the Results section shows (perf/variants.conf);
+                                                     # OPT_VARIANT=optnf python3 make_assets.py once that build is measured
 KP = {r["kernel"]: r for r in rows("kernels_papi.csv")}
 MODEL = {k.name: k for k in kernel_model.KERNELS}
 WA = 1

@@ -1,0 +1,35 @@
+tag,rep,section,time,pct
+clover_bm16_short_c_r64_t2,1,Timestep,0.6754,7.9322
+clover_bm16_short_c_r64_t2,1,Ideal Gas,0.4953,5.8165
+clover_bm16_short_c_r64_t2,1,Viscosity,0.3346,3.9299
+clover_bm16_short_c_r64_t2,1,PdV,1.4446,16.9663
+clover_bm16_short_c_r64_t2,1,Revert,0.0000,0.0000
+clover_bm16_short_c_r64_t2,1,Acceleration,0.5837,6.8555
+clover_bm16_short_c_r64_t2,1,Fluxes,0.3866,4.5400
+clover_bm16_short_c_r64_t2,1,Cell Advection,1.6425,19.2901
+clover_bm16_short_c_r64_t2,1,Momentum Advection,2.6839,31.5203
+clover_bm16_short_c_r64_t2,1,Reset,0.0001,0.0010
+clover_bm16_short_c_r64_t2,1,Summary,0.0288,0.3383
+clover_bm16_short_c_r64_t2,1,Visit,0.0000,0.0000
+clover_bm16_short_c_r64_t2,1,Tile Halo Exchange,0.0004,0.0047
+clover_bm16_short_c_r64_t2,1,Self Halo Exchange,0.0001,0.0011
+clover_bm16_short_c_r64_t2,1,MPI Halo Exchange,0.2381,2.7963
+clover_bm16_short_c_r64_t2,1,Total,8.5141,99.9922
+clover_bm16_short_c_r64_t2,1,The Rest,0.0007,0.0078
+clover_bm16_short_c_r1_t128_thpoff,1,Timestep,0.6071,5.8484
+clover_bm16_short_c_r1_t128_thpoff,1,Ideal Gas,0.5687,5.4790
+clover_bm16_short_c_r1_t128_thpoff,1,Viscosity,0.4254,4.0985
+clover_bm16_short_c_r1_t128_thpoff,1,PdV,1.6695,16.0834
+clover_bm16_short_c_r1_t128_thpoff,1,Revert,0.0000,0.0000
+clover_bm16_short_c_r1_t128_thpoff,1,Acceleration,0.6542,6.3020
+clover_bm16_short_c_r1_t128_thpoff,1,Fluxes,0.4023,3.8756
+clover_bm16_short_c_r1_t128_thpoff,1,Cell Advection,2.0921,20.1548
+clover_bm16_short_c_r1_t128_thpoff,1,Momentum Advection,3.0940,29.8070
+clover_bm16_short_c_r1_t128_thpoff,1,Reset,0.0001,0.0005
+clover_bm16_short_c_r1_t128_thpoff,1,Summary,0.0342,0.3297
+clover_bm16_short_c_r1_t128_thpoff,1,Visit,0.0000,0.0000
+clover_bm16_short_c_r1_t128_thpoff,1,Tile Halo Exchange,0.0004,0.0036
+clover_bm16_short_c_r1_t128_thpoff,1,Self Halo Exchange,0.7964,7.6725
+clover_bm16_short_c_r1_t128_thpoff,1,MPI Halo Exchange,0.0008,0.0073
+clover_bm16_short_c_r1_t128_thpoff,1,Total,10.3451,99.6623
+clover_bm16_short_c_r1_t128_thpoff,1,The Rest,0.0351,0.3377

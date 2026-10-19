@@ -103,8 +103,9 @@ and print \texttt{PASSED} on bm3840.
   \centering\small
   \input{tables/tab_correctness.tex}
   \caption{Kinetic-energy deviation of \texttt{clover\_bm.in}: the baseline value an optimised build has to
-    reproduce (jobs 34729 and 34796) and the value every build of the ladder produced (job 34937, one run per
-    layout). The gate column is the verdict of \texttt{qa\_check.py} against the baseline value; see the text.}
+    reproduce (jobs 34729 and 34796, re-confirmed by the rebuilt baseline binary of the ladder in job 34999) and
+    the value every build with the compiler flags produced (job 34937, one run per layout). The gate column is
+    the verdict of \texttt{qa\_check.py} against the baseline value; see Section~\ref{sec:res}.}
   \label{tab:correctness}
 \end{table}
 
@@ -440,14 +441,15 @@ mpicc -O3 -march=native -funroll-loops -fopenmp -c kernels/*_kernel_c.c
 #                           select-based upwind loops if-convert and vectorise
 mpicc -O3 -march=native -funroll-loops -fno-math-errno -fno-trapping-math -fopenmp \
       -c kernels/*_kernel_c.c
-# Neither flag changes rounding or the order of operations, and CloverLeaf enables no
-# floating-point traps: the results are bit-identical and the correctness gate holds.
+# CloverLeaf enables no floating-point traps, so neither flag changes what the code asks
+# for; the vector code GCC then generates does round differently somewhere, and the
+# clover_bm.in gate detects it (Section 4). On the baseline the flags buy no time and no
+# bytes; on the optimised kernels 3.6 % of time (ladder table). Withdrawn, see Section 4.
 \end{code}
 
 \subsection{Implementation status}
 \label{sec:status}
-All byte changes and (T2) are implemented; (T1) and (T3) are implemented in \kernel{advec\_mom} and still
-open in \kernel{advec\_cell}; (6) is left to the hardware and (T4) is not started. \kernel{advec\_mom},
+All byte changes are implemented; (T2) was implemented and withdrawn again (Section~\ref{sec:res}); (T1) and (T3) are implemented in \kernel{advec\_mom} and still open in \kernel{advec\_cell}; (6) is left to the hardware and (T4) is not started. \kernel{advec\_mom},
 \kernel{calc\_dt} and the compiler flags are commits \texttt{59cdd3b} and \texttt{88fce34} of branch
 \texttt{M3\_dev}; \kernel{advec\_cell}, Reset and Revert are commit \texttt{ff83119} of the same branch
 on the remote (the two lines are merged before the measurement). Every build of this ladder (\texttt{base} = the baseline source and flags, \texttt{flags} = 59cdd3b,
@@ -459,8 +461,12 @@ The \kernel{advec\_cell} line (temporaries, dead store, field swap) removes 12.1
 reduction) 14.9\% and 15.7\%; merged they remove 27.8\% of the bytes (2.828 to 2.043\,TB) against
 the 29.3\% the byte model predicted (Section~\ref{sec:bytes}), and the wall clock follows the bytes
 ($-27.0\%$, 11.31 to 8.25\,s) because every build sustains 248--252\GBs{}. All builds print
-\texttt{PASSED} on bm3840; the \texttt{clover\_bm.in} gate (job 34937) is discussed in
-Section~\ref{sec:res}. Below, the new code of every change; the comments say what was done.
+\texttt{PASSED} on bm3840; the \texttt{clover\_bm.in} gate (jobs 34937, 34999 and 35002) is discussed in
+Section~\ref{sec:res}. A sixth build, \texttt{optnf} (commit 8d7d81f: \texttt{opt} with the baseline
+compiler flags, the kernel changes untouched), was measured in the same way in job 35003 (cn16,
+2026-10-19) against a base rerun of its own (11.32\,s): 8.56\,s and 2.052\,TB, $-27.4\%$ bytes and
+$-24.3\%$ time; it is the build Section~\ref{sec:res} reports, for the reason given there. Below, the new
+code of every change; the comments say what was done.
 
 \textbf{(1) \kernel{advec\_mom} split --- implemented.}
 \begin{code}[language={[90]Fortran}]
@@ -641,7 +647,8 @@ for (k=y_min;k<=y_max+1;k++) {
   \input{tables/tab_ladder.tex}
   \caption{Per-change attribution at 64$\times$2 (bm3840, five repetitions under the DDR-controller counters,
     one node, one job): the commit ladder of \texttt{perf/variants.conf}, each build against the baseline build
-    of the same job. Filled from \texttt{data/ladder.csv} (\texttt{perf/jobs/m3\_opt.sbatch}).}
+    of the same job (job 34938; the \texttt{optnf} row from job 35003 against its own base rerun, 11.32\,s).
+    Filled from \texttt{data/ladder.csv} (\texttt{perf/jobs/m3\_opt.sbatch}).}
   \label{tab:ladder}
 \end{table}
 
@@ -654,25 +661,37 @@ under the DDR-controller counters, at the same five layouts, the correctness gat
 and \texttt{PASSED} on bm3840. Table~\ref{tab:results} compares every layout with its own baseline;
 Figure~\ref{fig:results} shows the wall clock against the memory floor.
 
-\textbf{Correctness.} Job 34937 ran the \texttt{clover\_bm.in} gate for every build of the ladder
-(Table~\ref{tab:correctness}). The four C builds, the flags-only build included, report one and the same
-deviation, 0.038\%, at every layout and with THP off, and the Fortran path of the optimised build
-reproduces its baseline value to all digits: the kernel changes are neutral with respect to each other
-and to the compiler flags. None of them, however, reproduces the archived C value of 0.0057\% (jobs 34729
-and 34796), and neither does any build of the unmodified source we can make: the repository's baseline
-commit, the same source with the \texttt{-fPIE} of job 34729, and the pristine upstream
-\texttt{b5e598d} tree all give 0.038\% on the development machine, as does every optimised build there.
-The archived value therefore belongs to a build that no longer exists and cannot be attributed to a source
-difference; the rebuilt baseline binary has not yet been through the gate on the cluster, and that single
-run (\texttt{VARIANTS=base}) is what replaces the reference by a value with a known build. Until then the
-gate applied to the optimised kernels is reproduction of the flags-only build, which changes no kernel,
-at every layout; it holds. All builds print \texttt{PASSED} on bm3840.
+\textbf{Correctness.} Job 34937 ran the \texttt{clover\_bm.in} gate for every build of the ladder and
+job 34999 for the ladder's own baseline binary (Table~\ref{tab:correctness}). The baseline build
+reproduces the archived C value, 0.0057\%, at every layout and with THP off, and the Fortran value: the
+reference stands, now from a build of known provenance. The four C builds with the compiler flags, the
+flags-only build included, report one and the same other deviation, 0.038\%, at every layout, and the
+Fortran path of the optimised build reproduces its reference to all digits. The kernel changes are
+therefore neutral with respect to each other and to the flags-only build, and the change of the result is
+caused by \texttt{-fno-math-errno -fno-trapping-math} alone (the flags-only commit differs from the
+baseline in these two flags and in comments). The flags make GCC vectorise the \texttt{sqrt} kernels and
+if-convert the upwind loops, and the vector code rounds differently somewhere; the mechanism, e.g.\ a
+different multiply-add contraction under GCC's default \texttt{-ffp-contract=fast}, was not isolated.
+Both values are physically irrelevant and both fail CloverLeaf's own 0.001\% threshold, but the gate of
+Section~\ref{sec:method} is reproduction to $10^{-6}$\%, and the optimised build as measured does not pass
+it. The remedy is to drop them: \texttt{optnf}, the five byte changes with the baseline flags, reproduces
+0.0057\% at every layout and with THP off, and the Fortran value (job 35002, 7 of 7), and keeps the
+ladder's bytes (2.052 against 2.043\,TB). It is the build reported below. What the flags were worth is
+now measured too: nothing on the baseline ($+0.7\%$ bytes, $-0.2\%$ time, Table~\ref{tab:ladder}) and
+3.6\% of the wall clock on the optimised kernels (8.25 against 8.56\,s at the same bytes), almost all of
+it in the two \texttt{sqrt} kernels, whose vectorised square root only shows once the bytes around them
+shrink (\kernel{calc\_dt} 0.45 against 0.62\,s, \kernel{ideal\_gas} 0.45 against 0.54\,s; jobs 34939 and
+35004). That is the price of reproducing the reference to $10^{-6}$\%; we pay it, because the gate is
+this project's definition of correct, and keep the flags as a separately measured option that a user
+with a looser criterion can switch on. All builds print \texttt{PASSED} on bm3840. (Builds on the x86
+development machine gave 0.038\% for every source, the baseline included; that cross-architecture
+comparison was invalid and is withdrawn.)
 
 \begin{table}[t]
   \centering\small
   \input{tables/tab_results.tex}
-  \caption{C kernels, bm3840: baseline (job 34797) against the optimised build at every layout, THP as
-    installed. Speed-up = baseline median / optimised median.}
+  \caption{C kernels, bm3840: baseline (job 34797) against the optimised build \texttt{optnf} (job 35003)
+    at every layout, THP as installed. Speed-up = baseline median / optimised median.}
   \label{tab:results}
 \end{table}
 
@@ -688,7 +707,7 @@ at every layout; it holds. All builds print \texttt{PASSED} on bm3840.
   \centering\small
   \input{tables/tab_kernels_opt.tex}
   \caption{Per-kernel PAPI counters at 64$\times$2, THP on: baseline (job 34798) against the optimised build
-    (job 34939). Time is the region time of the ipc event set (max over threads); Reset and Revert have no
+    \texttt{optnf} (job 35004). Time is the region time of the ipc event set (max over threads); Reset and Revert have no
     C region any more (field swap). The two halves of the split \kernel{advec\_mom} count under one region.}
   \label{tab:kernels_opt}
 \end{table}
@@ -697,25 +716,27 @@ at every layout; it holds. All builds print \texttt{PASSED} on bm3840.
   \centering
   \includegraphics[width=\linewidth]{figures/fig_roofline_opt.pdf}
   \caption{Node roofline at 64$\times$2, baseline (a) against the optimised build (b): kernels from their
-    PAPI region times (jobs 34798 and 34939) and the byte model of each build, numbered as in
+    PAPI region times (jobs 34798 and 35004) and the byte model of each build, numbered as in
     Table~\ref{tab:kernels}; the hollow diamond is the whole application from the measured DRAM bytes and
     wall clock.}
   \label{fig:roofline_opt}
 \end{figure}
 
 The gain is the byte saving and nothing else: every layout loses the same quarter of its traffic and
-speeds up by the same factor (Table~\ref{tab:results}), the ladder adds up change by change
+speeds up by the same factor, $1.32$--$1.33\times$ at the four balanced layouts and $1.51\times$ at the
+NUMA-bound 1$\times$128 (Table~\ref{tab:results}), the ladder adds up change by change
 (Table~\ref{tab:ladder}), and the counters confirm the byte model of Section~\ref{sec:bytes} to within
 two points. The optimised C build is now faster than the Fortran reference at every layout
 (Figure~\ref{fig:results}): the C/Fortran byte gap of Section~\ref{sec:perf} is closed and reversed. What
 did not change is the character of the code. Figure~\ref{fig:roofline_opt} shows every kernel still on the
 bandwidth roof with IPC and back-end stall share as before (Table~\ref{tab:kernels_opt}); the whole
-application moved up the roof, not off it, and sits at 93\% of the hardware ceiling with 7\% of the wall
-clock left above the memory floor of its own byte count. The two advection kernels and \kernel{calc\_dt}
-took the whole gain, \kernel{ideal\_gas} the vectorised square root, Reset and Revert vanished; PdV,
+application moved up the roof, not off it, and sits at 90\% of the hardware ceiling (240\GBs{}) with
+11\% of the wall clock left above the memory floor of its own byte count (7.70\,s). The two advection
+kernels took the whole gain ($1.57\times$ and $1.46\times$) and Reset and Revert vanished;
+\kernel{calc\_dt} and \kernel{ideal\_gas} gain 6--7\% without their vectorised square root; PdV,
 \kernel{accelerate}, \kernel{flux\_calc} and \kernel{viscosity} are untouched and are the next bytes
-to remove. The time-only items (T1 and T3 in \kernel{advec\_cell}, T4) cannot buy more than that
-remaining 7\% at this layout; the streaming-store lever of Section~\ref{sec:bytes} can.
+to remove. The time-only items (T1 and T3 in \kernel{advec\_cell}, T4, and the withdrawn flags) cannot
+buy more than that remaining 11\% at this layout; the streaming-store lever of Section~\ref{sec:bytes} can.
 
 % =============================================================================
 \section{Conclusions (draft)}
@@ -727,14 +748,15 @@ remaining 7\% at this layout; the streaming-store lever of Section~\ref{sec:byte
   \item The analytic byte model matches the counters to 1\% and predicts the five planned changes at
         $-29\%$ of the traffic (floor 10.5 to 7.4\,s); the read-for-ownership that the C stores pay, and
         that streaming stores and the Fortran build avoid, is a sixth lever worth up to another $-23\%$.
-  \item Measured: the five byte changes remove 27.8\% of the DRAM traffic (model: 29.3\%) and the wall
-        clock follows, $1.37\times$ at 64$\times$2 and $1.31$--$1.39\times$ at every other layout; the
+  \item Measured: the five byte changes remove 27.4\% of the DRAM traffic (model: 29.3\%) and the wall
+        clock follows, $1.32\times$ at 64$\times$2 and $1.32$--$1.51\times$ at every other layout; the
         optimised C build is faster than the Fortran reference everywhere and still sits on the bandwidth
-        roof, 7\% above the memory floor of its own bytes.
-  \item The correctness gate: every build of the ladder, flags-only included, reproduces one and the same
-        \texttt{clover\_bm.in} deviation at every layout and the Fortran path its reference; the archived C
-        reference value is reproduced by no build that can be made from the sources, and is being
-        re-established from the rebuilt baseline binary.
+        roof, 11\% above the memory floor of its own bytes.
+  \item The correctness gate: the rebuilt baseline binary reproduces the archived \texttt{clover\_bm.in}
+        reference at every layout (job 34999), and so does the optimised build with the baseline flags
+        (job 35002). The two compiler flags \texttt{-fno-math-errno -fno-trapping-math} alone move the
+        result; they are worth nothing on the baseline and 3.6\% on the optimised kernels, and were
+        dropped: a measured trade-off between time and reproducibility, decided for the gate.
 \end{itemize}
 
 \bibliographystyle{plain}

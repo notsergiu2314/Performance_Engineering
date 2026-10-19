@@ -1,0 +1,18 @@
+# generated 2026-10-19T13:27:39 by perf/analysis/variants.py from perf/results/m3_opt_35003
+# baseline archive: m3_baseline_34797; qa_ok: gate verdict of perf/results/m3_correctness_35002/correctness_rows.csv
+# variant base: binary md5 57396505a5e9, node cn16, job 35003: M3 baseline source and CFLAGS (measured in job 34797)
+# variant opt: binary md5 1594b80e3650, node cn16, job 35003: all changes (merge of cell and mom)
+# variant optnf: binary md5 50ed04ebf03c, node cn16, job 35003: opt with the baseline CFLAGS (no -fno-math-errno -fno-trapping-math)
+layout,ranks,threads,thp,variant,n,median_s,min_s,max_s,dram_TB,hw_GBs,busiest_over_mean,qa_ok,source
+1x128,1,128,off,base,5,13.392,13.233,13.445,2.829,211.2,1.004,n/a,"job 35003 (m3_opt, base)"
+1x128,1,128,on,base,5,27.610,17.266,28.875,2.991,108.3,1.428,n/a,"job 35003 (m3_opt, base)"
+4x32,4,32,on,base,5,13.155,13.012,13.232,2.870,218.2,1.005,n/a,"job 35003 (m3_opt, base)"
+32x4,32,4,on,base,5,11.401,11.397,11.472,2.794,245.1,1.002,n/a,"job 35003 (m3_opt, base)"
+64x2,64,2,on,base,5,11.244,11.243,11.265,2.828,251.5,1.003,n/a,"job 35003 (m3_opt, base)"
+128x1,128,1,on,base,5,11.756,11.646,11.789,2.952,251.1,1.003,n/a,"job 35003 (m3_opt, base)"
+1x128,1,128,off,optnf,5,10.161,10.128,10.772,2.029,199.7,1.007,ok,"job 35003 (m3_opt, optnf)"
+1x128,1,128,on,optnf,5,17.841,12.868,23.164,2.115,118.5,1.818,ok,"job 35003 (m3_opt, optnf)"
+4x32,4,32,on,optnf,5,9.788,9.635,9.944,2.052,209.7,1.002,ok,"job 35003 (m3_opt, optnf)"
+32x4,32,4,on,optnf,5,8.699,8.685,8.769,2.010,231.1,1.002,ok,"job 35003 (m3_opt, optnf)"
+64x2,64,2,on,optnf,5,8.548,8.532,8.629,2.052,240.1,1.003,ok,"job 35003 (m3_opt, optnf)"
+128x1,128,1,on,optnf,5,8.806,8.792,8.817,2.148,243.9,1.005,ok,"job 35003 (m3_opt, optnf)"

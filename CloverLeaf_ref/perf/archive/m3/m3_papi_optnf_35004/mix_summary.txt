@@ -1,0 +1,20 @@
+Results in /home/joosterveld/CloverLeaf_ref/perf/results/m3_papi_optnf_35004/mix  (2 runs, 2 cases)
+
+case                                deck                  kernels  ranks  thr  thp  n  best_wall_s  median_s  spread  grind_ns/cell  qa_dev_%  qa      reported
+clover_bm16_short_c_r64_t2          clover_bm16_short.in  c        64     2    on   1  8.528        8.528     0.0%    6.64           3.95e-11  PASSED  C       
+clover_bm16_short_c_r1_t128_thpoff  clover_bm16_short.in  c        1      128  off  1  10.300       10.300    0.0%    8.02           4.04e-11  PASSED  C       
+
+Profiler split of best repetition (seconds, % of wall); sections under 1% omitted
+section             clover_bm16_short_c_r64_t2  clover_bm16_short_c_r1_t128_thpoff
+Timestep            0.70 (8%)                   0.60 (6%)                         
+Ideal Gas           0.51 (6%)                   0.58 (6%)                         
+Viscosity           0.33 (4%)                   0.42 (4%)                         
+PdV                 1.46 (17%)                  1.67 (16%)                        
+Acceleration        0.58 (7%)                   0.65 (6%)                         
+Fluxes              0.39 (5%)                   0.40 (4%)                         
+Cell Advection      1.63 (19%)                  2.05 (20%)                        
+Momentum Advection  2.62 (31%)                  3.05 (30%)                        
+Self Halo Exchange  0.03 (0%)                   0.81 (8%)                         
+MPI Halo Exchange   0.23 (3%)                   0.00 (0%)                         
+Total               8.53 (100%)                 10.26 (100%)                      
+

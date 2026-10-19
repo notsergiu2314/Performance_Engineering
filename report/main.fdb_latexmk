@@ -1,13 +1,13 @@
 # Fdb version 4
-["bibtex main"] 1792160722.98597 "main.aux" "main.bbl" "main" 1792160724.04184 0
+["bibtex main"] 1792409419.06327 "main.aux" "main.bbl" "main" 1792409419.99375 0
   "./refs.bib" 1791970843.78278 2381 8d15005d16f1c16378a2fe26582052b0 ""
   "/usr/share/texlive/texmf-dist/bibtex/bst/base/plain.bst" 1292289607 20613 bd3fbfa9f64872b81ac57a0dd2ed855f ""
-  "main.aux" 1792160723.75175 9633 66669c53fbcd974e84c8c7855e431f53 "pdflatex"
+  "main.aux" 1792409419.76755 10094 f9ca7e91ebe3b7afa9982b66a7255696 "pdflatex"
   (generated)
   "main.bbl"
   "main.blg"
   (rewritten before read)
-["pdflatex"] 1792160723.0873 "main.tex" "main.pdf" "main" 1792160724.04205 0
+["pdflatex"] 1792409419.14071 "main.tex" "main.pdf" "main" 1792409419.99394 0
   "/etc/texmf/web2c/texmf.cnf" 1762071020.46742 475 c0e671620eb5563b2130f56340a5fde8 ""
   "/usr/share/texlive/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/jknappen/ec/ecbx1095.tfm" 1136768653 3584 21b378cca2e40816b0e6d74a4dc98f04 ""
@@ -124,20 +124,20 @@
   "/usr/share/texmf/web2c/texmf.cnf" 1707919699 40399 f2c302f7d2af602abb742093540a5834 ""
   "/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map" 1762071232.76012 5472669 54eaf61a88b6b7896ebd0dac973cb29c ""
   "/var/lib/texmf/web2c/pdftex/pdflatex.fmt" 1762071252 8213788 33145883ed6e0f31767600a94763c6de ""
-  "figures/fig_m3_layouts.pdf" 1792138664.27845 14965 f8a09f960326d5c827e7dc0ceaf4e8d3 ""
-  "figures/fig_roofline.pdf" 1792138663.76744 20170 0874cbc136bdb1b316d693b682f21573 ""
-  "figures/fig_roofline_opt.pdf" 1792138665.29246 20347 fa7b981d8edba306175c61617e749029 ""
-  "main.aux" 1792160723.75175 9633 66669c53fbcd974e84c8c7855e431f53 "pdflatex"
-  "main.bbl" 1792160723.08075 517 ae8f7767f56374eaef6d2fc682321315 "bibtex main"
-  "main.out" 1792160723.75275 2354 2c2c12356669d8abb0a7f798180e710e "pdflatex"
-  "main.tex" 1792146838.581 46692 da95eed0693c33ce96415d3a3656b8d2 ""
-  "tables/tab_correctness.tex" 1792138664.14059 553 8b64f68be344fd1b2a8e86670a9b9ae3 ""
-  "tables/tab_kernels.tex" 1792138664.13997 1096 ff69c238fee72900dd7b51968f79c7f1 ""
-  "tables/tab_kernels_opt.tex" 1792138664.14193 991 2885d6cbacefbd7eb445e3d1d9814ef3 ""
-  "tables/tab_ladder.tex" 1792138664.14174 815 0e93417222b96869a970a84e4edfd14f ""
-  "tables/tab_m3_baseline.tex" 1792138664.14116 896 789a21eaea8f5d50d9d51b80b60fe8ed ""
-  "tables/tab_model.tex" 1792138664.14025 830 2f1110129f08fdaec61adecfdb0b33f1 ""
-  "tables/tab_results.tex" 1792138664.14151 632 0ac43a66fe72537659515317bf1c8281 ""
+  "figures/fig_m3_layouts.pdf" 1792409295.29639 14964 49c3d4044459c6d800106bcfbd13f575 ""
+  "figures/fig_roofline.pdf" 1792409294.72639 20170 5e86a4814591d55f73aa29c8ed207753 ""
+  "figures/fig_roofline_opt.pdf" 1792409296.3944 20349 ae9f062e32144cdc390bdc55abe9a69b ""
+  "main.aux" 1792409419.76755 10094 f9ca7e91ebe3b7afa9982b66a7255696 "pdflatex"
+  "main.bbl" 1792409419.13623 517 ae8f7767f56374eaef6d2fc682321315 "bibtex main"
+  "main.out" 1792409419.76823 2354 2c2c12356669d8abb0a7f798180e710e "pdflatex"
+  "main.tex" 1792409418.04859 49090 d6e9e902f0786f5e6e17e11c66d5c0a5 ""
+  "tables/tab_correctness.tex" 1792409295.14108 675 2cd87cae019be1dcc39dae36247b4daf ""
+  "tables/tab_kernels.tex" 1792409295.14056 1096 ff69c238fee72900dd7b51968f79c7f1 ""
+  "tables/tab_kernels_opt.tex" 1792409295.14215 997 80b0bf12a033531caa1766c37588bb96 ""
+  "tables/tab_ladder.tex" 1792409295.14198 943 ef71810886b4f849343660fc32838866 ""
+  "tables/tab_m3_baseline.tex" 1792409295.14149 896 789a21eaea8f5d50d9d51b80b60fe8ed ""
+  "tables/tab_model.tex" 1792409295.14077 830 2f1110129f08fdaec61adecfdb0b33f1 ""
+  "tables/tab_results.tex" 1792409295.14179 631 81d69d376857924b27e3fbb1c39ce0ba ""
   (generated)
   "main.aux"
   "main.log"

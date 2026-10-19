@@ -1,0 +1,22 @@
+Results in /home/joosterveld/CloverLeaf_ref/perf/results/m3_papi_optnf_35004/stall  (2 runs, 2 cases)
+
+| case | deck | kernels | ranks | thr | thp | n | best_wall_s | median_s | spread | grind_ns/cell | qa_dev_% | qa | reported |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| clover_bm16_short_c_r64_t2 | clover_bm16_short.in | c | 64 | 2 | on | 1 | 8.427 | 8.427 | 0.0% | 6.56 | 3.95e-11 | PASSED | C |
+| clover_bm16_short_c_r1_t128_thpoff | clover_bm16_short.in | c | 1 | 128 | off | 1 | 10.410 | 10.410 | 0.0% | 8.11 | 4.05e-11 | PASSED | C |
+
+Profiler split of best repetition (seconds, % of wall); sections under 1% omitted
+| section | clover_bm16_short_c_r64_t2 | clover_bm16_short_c_r1_t128_thpoff |
+|---|---|---|
+| Timestep | 0.65 (8%) | 0.62 (6%) |
+| Ideal Gas | 0.51 (6%) | 0.58 (6%) |
+| Viscosity | 0.33 (4%) | 0.42 (4%) |
+| PdV | 1.40 (17%) | 1.68 (16%) |
+| Acceleration | 0.59 (7%) | 0.66 (6%) |
+| Fluxes | 0.39 (5%) | 0.41 (4%) |
+| Cell Advection | 1.64 (19%) | 2.07 (20%) |
+| Momentum Advection | 2.65 (31%) | 3.09 (30%) |
+| Self Halo Exchange | 0.03 (0%) | 0.80 (8%) |
+| MPI Halo Exchange | 0.21 (3%) | 0.00 (0%) |
+| Total | 8.43 (100%) | 10.37 (100%) |
+

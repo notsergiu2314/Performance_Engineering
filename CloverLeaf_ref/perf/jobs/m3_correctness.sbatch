@@ -15,13 +15,15 @@
 # A mismatch is recorded (gate column), it does not abort the job: the verdict is data.
 # Output: $OUT/<variant>/ (harness output + qa_check.txt), $OUT/qa_check.txt (all variants),
 # $OUT/correctness_rows.csv (report/data/correctness.csv format + variant,gate).
-# Knobs: VARIANTS ("opt flags cell mom"), BASELINE (the csv above), TOL (1e-6 %).
+# Knobs: VARIANTS ("opt flags cell mom"), FULL ("base opt optnf": the variants that run the whole
+# matrix.correctness, the others only its C 64x2 row), BASELINE (the csv above), TOL (1e-6 %).
 # Submit from CloverLeaf_ref: sbatch perf/jobs/m3_correctness.sbatch   (~25 min)
 set -eo pipefail
 source "$SLURM_SUBMIT_DIR/perf/jobs/common.sh"
 set -u
 OUT="$PERF_ROOT/results/m3_correctness_$SLURM_JOB_ID"
 VARIANTS="${VARIANTS:-opt flags cell mom}"
+FULL="${FULL:-base opt optnf}"
 BASELINE="${BASELINE:-$PERF_ROOT/archive/m3/correctness_baseline.csv}"
 TOL="${TOL:-1e-6}"
 export REPS=1 DDRC=off
@@ -37,7 +39,7 @@ echo "job $SLURM_JOB_ID on $SLURM_JOB_NODELIST: variants [$VARIANTS], tol $TOL %
 rows="$OUT/correctness_rows.csv"
 bad=0
 for v in $VARIANTS; do
-  case $v in base|opt) m=$full ;; *) m="$OUT/matrix.correctness.64x2" ;; esac
+  case " $FULL " in *" $v "*) m=$full ;; *) m="$OUT/matrix.correctness.64x2" ;; esac
   echo; echo "#### variant $v, matrix $(basename "$m")"
   CLOVER_BIN="$PERF_ROOT/bin/clover_$v" VARIANT="$v" OUT_DIR="$OUT/$v" bash "$PERF_ROOT/baseline/baseline.sh" "$m"
   echo "== qa_check $v against $BASELINE"

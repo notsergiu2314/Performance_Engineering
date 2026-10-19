@@ -1,0 +1,78 @@
+== hostname
+cn15.guoehi.cluster
+== uname
+Linux cn15.guoehi.cluster 4.18.0-553.158.1.el8_10.aarch64 #1 SMP Wed Aug 26 12:43:28 UTC 2026 aarch64 aarch64 aarch64 GNU/Linux
+== lscpu
+Architecture:                         aarch64
+CPU op-mode(s):                       64-bit
+Byte Order:                           Little Endian
+CPU(s):                               128
+On-line CPU(s) list:                  0-127
+Vendor ID:                            HiSilicon
+Model name:                           TaiShan-v110
+Model:                                0
+Thread(s) per core:                   1
+Core(s) per socket:                   64
+Socket(s):                            2
+Stepping:                             0x1
+Frequency boost:                      disabled
+CPU(s) scaling MHz:                   100%
+CPU max MHz:                          2600.0000
+CPU min MHz:                          200.0000
+BogoMIPS:                             200.00
+Flags:                                fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm jscvt fcma dcpop asimddp asimdfhm
+L1d cache:                            8 MiB (128 instances)
+L1i cache:                            8 MiB (128 instances)
+L2 cache:                             64 MiB (128 instances)
+L3 cache:                             128 MiB (4 instances)
+NUMA node(s):                         4
+NUMA node0 CPU(s):                    0-31
+NUMA node1 CPU(s):                    32-63
+NUMA node2 CPU(s):                    64-95
+NUMA node3 CPU(s):                    96-127
+Vulnerability Gather data sampling:   Not affected
+Vulnerability Itlb multihit:          Not affected
+Vulnerability L1tf:                   Not affected
+Vulnerability Mds:                    Not affected
+Vulnerability Meltdown:               Not affected
+Vulnerability Mmio stale data:        Not affected
+Vulnerability Reg file data sampling: Not affected
+Vulnerability Retbleed:               Not affected
+Vulnerability Spec rstack overflow:   Not affected
+Vulnerability Spec store bypass:      Not affected
+Vulnerability Spectre v1:             Mitigation; __user pointer sanitization
+Vulnerability Spectre v2:             Not affected
+Vulnerability Srbds:                  Not affected
+Vulnerability Tsx async abort:        Not affected
+Vulnerability Vmscape:                Not affected
+== numactl
+available: 4 nodes (0-3)
+node 0 cpus: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
+node 0 size: 32376 MB
+node 0 free: 15292 MB
+node 1 cpus: 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59 60 61 62 63
+node 1 size: 32715 MB
+node 1 free: 13193 MB
+node 2 cpus: 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89 90 91 92 93 94 95
+node 2 size: 32668 MB
+node 2 free: 20900 MB
+node 3 cpus: 96 97 98 99 100 101 102 103 104 105 106 107 108 109 110 111 112 113 114 115 116 117 118 119 120 121 122 123 124 125 126 127
+node 3 size: 32698 MB
+node 3 free: 22816 MB
+node distances:
+node   0   1   2   3 
+  0:  10  12  20  22 
+  1:  12  10  22  24 
+  2:  20  22  10  12 
+  3:  22  24  12  10 
+== meminfo
+MemTotal:       133590400 kB
+MemFree:        73935744 kB
+MemAvailable:   89407424 kB
+== perf_event_paranoid
+-1
+== cpufreq
+2600000
+performance
+== modules
+/opt/ohpc/admin/lmod/lmod/init/bash: line 93: LD_PRELOAD: unbound variable
