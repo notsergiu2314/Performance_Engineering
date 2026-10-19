@@ -1,0 +1,6 @@
+tag,deck,kernels,ranks,threads,thp,rep,wall,grind,first_step,qa_pct,qa,kernels_reported,dram_GB,busiest_over_mean,host,date,variant
+clover_bm16_short_c_r64_t2,clover_bm16_short.in,c,64,2,on,1,9.5381081104278564,7.4300721729323459E-009,2.1760463714599609E-003,0.3953460E-10,PASSED,C,2404.666,1.002,cn17.guoehi.cluster,2026-10-15T22:14:58+00:00,mom
+clover_bm16_short_c_r64_t2,clover_bm16_short.in,c,64,2,on,2,9.6166081428527832,7.4745639957107351E-009,1.1014938354492188E-004,0.3953460E-10,PASSED,C,2405.487,1.002,cn17.guoehi.cluster,2026-10-15T22:15:12+00:00,mom
+clover_bm16_short_c_r64_t2,clover_bm16_short.in,c,64,2,on,3,9.5368599891662598,7.4291639002906374E-009,1.7039775848388672E-003,0.3953460E-10,PASSED,C,2404.477,1.002,cn17.guoehi.cluster,2026-10-15T22:15:25+00:00,mom
+clover_bm16_short_c_r64_t2,clover_bm16_short.in,c,64,2,on,4,9.5594670772552490,7.4454327159048630E-009,3.5500526428222656E-004,0.3953460E-10,PASSED,C,2404.953,1.002,cn17.guoehi.cluster,2026-10-15T22:15:38+00:00,mom
+clover_bm16_short_c_r64_t2,clover_bm16_short.in,c,64,2,on,5,9.5392618179321289,7.4307691231875341E-009,-6.4258575439453125E-003,0.3953460E-10,PASSED,C,2405.292,1.002,cn17.guoehi.cluster,2026-10-15T22:15:52+00:00,mom

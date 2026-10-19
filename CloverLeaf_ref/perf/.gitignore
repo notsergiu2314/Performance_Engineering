@@ -1,0 +1,10 @@
+bin/
+microbench/STREAM/
+results/**/perf.data*
+results/**/stream
+results/**/peak_flops
+__pycache__/
+
+# CloverLeaf_ref/.gitignore has "*job*", which would hide jobs/
+!jobs/
+src/

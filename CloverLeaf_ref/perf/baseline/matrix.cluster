@@ -1,0 +1,21 @@
+# Full baseline for one exclusive HAICGU compute node (TaiShan 2280):
+# 2 x Kunpeng 920 (ARMv8), 64 cores per socket, 128 physical cores, no SMT,
+# expected 4 NUMA domains of 32 cores
+
+# memory-bound regime: 3840^2, 87 steps (test_problem 4) -- the main baseline at this scale
+fortran 1   128 clover_bm16_short.in
+c       1   128 clover_bm16_short.in
+fortran 2   64  clover_bm16_short.in
+c       2   64  clover_bm16_short.in
+fortran 4   32  clover_bm16_short.in
+c       4   32  clover_bm16_short.in
+fortran 8   16  clover_bm16_short.in
+c       8   16  clover_bm16_short.in
+fortran 16  8   clover_bm16_short.in
+c       16  8   clover_bm16_short.in
+fortran 32  4   clover_bm16_short.in
+c       32  4   clover_bm16_short.in
+fortran 64  2   clover_bm16_short.in
+c       64  2   clover_bm16_short.in
+fortran 128 1   clover_bm16_short.in
+c       128 1   clover_bm16_short.in

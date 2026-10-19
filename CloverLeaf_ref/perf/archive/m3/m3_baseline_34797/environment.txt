@@ -1,0 +1,26 @@
+date:        2026-10-13T11:12:03+00:00
+host:        cn17.guoehi.cluster   cpus: 128
+slurm:       job 34797 on cn17
+binary:      /home/joosterveld/CloverLeaf_ref/perf/bin/clover_base  (a753b7bda3ef)
+git:         n/a (n/a)
+mpirun:      mpirun (Open MPI) 5.0.3  args: --map-by slot:PE=<threads> --bind-to core --report-bindings
+single rank: --bind-to none --report-bindings
+omp:         OMP_PROC_BIND=close OMP_PLACES=cores OMP_DYNAMIC=false
+wrappers:    OUTER_PREFIX='' LAUNCH_PREFIX='' NOTHP='/home/joosterveld/CloverLeaf_ref/perf/results/m3_baseline_34797/nothp'
+ddrc:        hisi_sccl1_ddrc0/flux_rd/,hisi_sccl1_ddrc0/flux_wr/,hisi_sccl1_ddrc1/flux_rd/,hisi_sccl1_ddrc1/flux_wr/,hisi_sccl1_ddrc2/flux_rd/,hisi_sccl1_ddrc2/flux_wr/,hisi_sccl1_ddrc3/flux_rd/,hisi_sccl1_ddrc3/flux_wr/,hisi_sccl3_ddrc0/flux_rd/,hisi_sccl3_ddrc0/flux_wr/,hisi_sccl3_ddrc1/flux_rd/,hisi_sccl3_ddrc1/flux_wr/,hisi_sccl3_ddrc2/flux_rd/,hisi_sccl3_ddrc2/flux_wr/,hisi_sccl3_ddrc3/flux_rd/,hisi_sccl3_ddrc3/flux_wr/,hisi_sccl5_ddrc0/flux_rd/,hisi_sccl5_ddrc0/flux_wr/,hisi_sccl5_ddrc1/flux_rd/,hisi_sccl5_ddrc1/flux_wr/,hisi_sccl5_ddrc2/flux_rd/,hisi_sccl5_ddrc2/flux_wr/,hisi_sccl5_ddrc3/flux_rd/,hisi_sccl5_ddrc3/flux_wr/,hisi_sccl7_ddrc0/flux_rd/,hisi_sccl7_ddrc0/flux_wr/,hisi_sccl7_ddrc1/flux_rd/,hisi_sccl7_ddrc1/flux_wr/,hisi_sccl7_ddrc2/flux_rd/,hisi_sccl7_ddrc2/flux_wr/,hisi_sccl7_ddrc3/flux_rd/,hisi_sccl7_ddrc3/flux_wr/
+thp:         [always] madvise never  pagesize 65536
+reps:        5
+matrix:      /home/joosterveld/CloverLeaf_ref/perf/baseline/matrix.m3
+compiler:    GNU Fortran (GCC) 14.1.0
+  Architecture:                         aarch64
+  CPU(s):                               128
+  Model name:                           TaiShan-v110
+  Thread(s) per core:                   1
+  Socket(s):                            2
+  CPU(s) scaling MHz:                   100%
+  L3 cache:                             128 MiB (4 instances)
+  NUMA node(s):                         4
+  NUMA node0 CPU(s):                    0-31
+  NUMA node1 CPU(s):                    32-63
+  NUMA node2 CPU(s):                    64-95
+  NUMA node3 CPU(s):                    96-127

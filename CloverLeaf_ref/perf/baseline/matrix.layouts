@@ -1,0 +1,10 @@
+# Optimised-vs-baseline layout sweep, one variant per run of baseline.sh (jobs/m3_opt.sbatch
+# loops over the variants with CLOVER_BIN/VARIANT/OUT_DIR). KERNELS RANKS THREADS DECK THP.
+# C kernels only: 64x2 is the baseline layout, the other four are the comparison points of
+# matrix.m3; THP off only at 1x128, the only layout where it mattered in the baseline.
+c       64  2   clover_bm16_short.in on
+c       1   128 clover_bm16_short.in on
+c       1   128 clover_bm16_short.in off
+c       4   32  clover_bm16_short.in on
+c       32  4   clover_bm16_short.in on
+c       128 1   clover_bm16_short.in on

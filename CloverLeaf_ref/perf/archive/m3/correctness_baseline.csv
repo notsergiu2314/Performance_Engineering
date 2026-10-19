@@ -1,0 +1,11 @@
+# Baseline kinetic-energy deviation of clover_bm.in (960^2, 2955 steps, test_problem 3) on HAICGU,
+# GCC 14.1.0 / OpenMPI 5.0.3, unmodified kernels. Values from job 34729 (cn15, 2026-10-11), identical
+# at 128x1 and 4x32 over 5 repetitions each (perf/archive/baseline/baseline-34729/results.csv).
+# CloverLeaf's own 0.001 % threshold flags both as FAILED; the M3 gate is reproduction of these digits
+# (perf/baseline/qa_check.py). Re-confirmed by job 34796 (unmodified source, 7 of 7, 2026-10-13) and by the
+# rebuilt base binary of the ladder (variants.conf 3c20f85), job 34999 (cn15, 2026-10-19, 7 of 7 at all five
+# layouts and THP off). The builds with -fno-math-errno -fno-trapping-math (flags, cell, mom, opt; job 34937)
+# give 0.3835202E-01 instead: the flags alone move the value, the kernel changes do not.
+deck,kernels,qa_pct,source
+clover_bm.in,c,0.5726209E-02,jobs 34729 (128x1 and 4x32); 34796 and 34999 (all layouts)
+clover_bm.in,fortran,0.1787088E-01,jobs 34729 (128x1 and 4x32); 34796 and 34999 (64x2)

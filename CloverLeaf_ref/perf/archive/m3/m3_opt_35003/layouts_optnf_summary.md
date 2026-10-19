@@ -1,0 +1,28 @@
+Results in /home/joosterveld/CloverLeaf_ref/perf/results/m3_opt_35003/layouts/optnf  (30 runs, 6 cases)
+
+| case | deck | kernels | ranks | thr | thp | n | best_wall_s | median_s | spread | grind_ns/cell | qa_dev_% | qa | reported | dram_TB | hw_GB/s | busiest/mean | %hw_roof |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| clover_bm16_short_c_r64_t2 | clover_bm16_short.in | c | 64 | 2 | on | 5 | 8.532 | 8.548 | 1.1% | 6.65 | 3.95e-11 | PASSED | C | 2.052 | 240 | 1.00 | 90% |
+| clover_bm16_short_c_r1_t128 | clover_bm16_short.in | c | 1 | 128 | on | 5 | 12.868 | 17.841 | 80.0% | 9.95 | 4.05e-11 | PASSED | C | 2.115 | 119 | 1.82 | 44% |
+| clover_bm16_short_c_r1_t128_thpoff | clover_bm16_short.in | c | 1 | 128 | off | 5 | 10.128 | 10.161 | 6.4% | 7.89 | 4.05e-11 | PASSED | C | 2.029 | 200 | 1.01 | 75% |
+| clover_bm16_short_c_r4_t32 | clover_bm16_short.in | c | 4 | 32 | on | 5 | 9.635 | 9.788 | 3.2% | 7.49 | 6.80e-11 | PASSED | C | 2.052 | 210 | 1.00 | 79% |
+| clover_bm16_short_c_r32_t4 | clover_bm16_short.in | c | 32 | 4 | on | 5 | 8.685 | 8.699 | 1.0% | 6.76 | 5.86e-11 | PASSED | C | 2.010 | 231 | 1.00 | 87% |
+| clover_bm16_short_c_r128_t1 | clover_bm16_short.in | c | 128 | 1 | on | 5 | 8.792 | 8.806 | 0.3% | 6.85 | 3.95e-11 | PASSED | C | 2.148 | 244 | 1.00 | 92% |
+
+dram_TB: DDR-controller bytes (32 B/count, everything the controllers moved incl. read-for-ownership), median over reps; hw_GB/s = dram / median wall; busiest/mean = load of the busiest NUMA controller group (1.00 = balanced); %hw_roof vs 266 GB/s hardware STREAM
+
+Profiler split of best repetition (seconds, % of wall); sections under 1% omitted
+| section | clover_bm16_short_c_r64_t2 | clover_bm16_short_c_r1_t128 | clover_bm16_short_c_r1_t128_thpoff | clover_bm16_short_c_r4_t32 | clover_bm16_short_c_r32_t4 | clover_bm16_short_c_r128_t1 |
+|---|---|---|---|---|---|---|
+| Timestep | 0.66 (8%) | 0.92 (7%) | 0.59 (6%) | 0.58 (6%) | 0.69 (8%) | 0.67 (8%) |
+| Ideal Gas | 0.51 (6%) | 0.74 (6%) | 0.55 (5%) | 0.53 (5%) | 0.49 (6%) | 0.49 (6%) |
+| Viscosity | 0.40 (5%) | 0.49 (4%) | 0.45 (4%) | 0.36 (4%) | 0.47 (5%) | 0.41 (5%) |
+| PdV | 1.45 (17%) | 1.82 (14%) | 1.65 (16%) | 1.68 (17%) | 1.46 (17%) | 1.46 (17%) |
+| Acceleration | 0.62 (7%) | 0.75 (6%) | 0.64 (6%) | 0.62 (6%) | 0.68 (8%) | 0.61 (7%) |
+| Fluxes | 0.38 (4%) | 0.52 (4%) | 0.39 (4%) | 0.37 (4%) | 0.37 (4%) | 0.37 (4%) |
+| Cell Advection | 1.62 (19%) | 2.37 (18%) | 2.02 (20%) | 1.89 (20%) | 1.63 (19%) | 1.71 (19%) |
+| Momentum Advection | 2.63 (31%) | 4.15 (32%) | 3.01 (30%) | 2.79 (29%) | 2.65 (31%) | 2.80 (32%) |
+| Self Halo Exchange | 0.02 (0%) | 1.03 (8%) | 0.77 (8%) | 0.02 (0%) | 0.02 (0%) | 0.03 (0%) |
+| MPI Halo Exchange | 0.20 (2%) | 0.00 (0%) | 0.00 (0%) | 0.76 (8%) | 0.19 (2%) | 0.21 (2%) |
+| Total | 8.53 (100%) | 12.84 (100%) | 10.10 (100%) | 9.63 (100%) | 8.68 (100%) | 8.79 (100%) |
+

@@ -1,0 +1,11 @@
+# bm3840, THP/NUMA placement experiments (results/m3_numa_*, m3_thp_*). DRAM bytes and controller shares: repetition 1.
+# dram_GB = (flux_rd+flux_wr counts) x 32 B over the whole perf window; share_s1..s7 = % of traffic per NUMA domain (SCCL 1,3,5,7).
+variant,label,source,wall_1,wall_2,wall_3,dram_GB,share_s1,share_s3,share_s5,share_s7
+A,1x128 default,m3_thp,23.12,21.67,24.38,2942.6,27.1,32.9,13.2,26.8
+A1,1x128 default (m1_perf run),m1_perf,,,,2966.4,21.6,28.4,13.8,36.2
+A0,1x128 default (earlier run),m3_numa,23.60,26.28,25.84,2937.7,32.6,28.1,15.4,23.8
+B,1x128 interleave=all,m3_numa,28.32,29.52,29.25,3014.4,28.1,28.3,23.2,20.4
+C,1x120 default,m3_numa,22.83,27.65,28.99,2972.1,29.8,20.8,31.6,17.9
+E,1x128 THP off,m3_thp,13.51,13.49,13.42,2828.9,25.1,25.0,24.9,25.0
+D,4x32 default,m3_thp,13.19,13.15,13.08,2872.5,24.9,25.0,25.1,25.0
+F,4x32 THP off,m3_thp,13.11,12.98,13.07,2864.2,25.0,25.0,25.0,25.0

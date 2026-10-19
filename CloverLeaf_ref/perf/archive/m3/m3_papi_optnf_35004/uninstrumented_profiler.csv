@@ -1,0 +1,35 @@
+tag,rep,section,time,pct
+clover_bm16_short_c_r64_t2,1,Timestep,0.6519,7.6552
+clover_bm16_short_c_r64_t2,1,Ideal Gas,0.4891,5.7430
+clover_bm16_short_c_r64_t2,1,Viscosity,0.4007,4.7050
+clover_bm16_short_c_r64_t2,1,PdV,1.4382,16.8882
+clover_bm16_short_c_r64_t2,1,Revert,0.0000,0.0000
+clover_bm16_short_c_r64_t2,1,Acceleration,0.6213,7.2955
+clover_bm16_short_c_r64_t2,1,Fluxes,0.3816,4.4808
+clover_bm16_short_c_r64_t2,1,Cell Advection,1.6301,19.1415
+clover_bm16_short_c_r64_t2,1,Momentum Advection,2.6837,31.5136
+clover_bm16_short_c_r64_t2,1,Reset,0.0001,0.0010
+clover_bm16_short_c_r64_t2,1,Summary,0.0227,0.2668
+clover_bm16_short_c_r64_t2,1,Visit,0.0000,0.0000
+clover_bm16_short_c_r64_t2,1,Tile Halo Exchange,0.0003,0.0040
+clover_bm16_short_c_r64_t2,1,Self Halo Exchange,0.0001,0.0008
+clover_bm16_short_c_r64_t2,1,MPI Halo Exchange,0.1956,2.2965
+clover_bm16_short_c_r64_t2,1,Total,8.5153,99.9920
+clover_bm16_short_c_r64_t2,1,The Rest,0.0007,0.0080
+clover_bm16_short_c_r1_t128_thpoff,1,Timestep,0.5982,5.8664
+clover_bm16_short_c_r1_t128_thpoff,1,Ideal Gas,0.5700,5.5903
+clover_bm16_short_c_r1_t128_thpoff,1,Viscosity,0.4539,4.4515
+clover_bm16_short_c_r1_t128_thpoff,1,PdV,1.6599,16.2795
+clover_bm16_short_c_r1_t128_thpoff,1,Revert,0.0000,0.0000
+clover_bm16_short_c_r1_t128_thpoff,1,Acceleration,0.6353,6.2303
+clover_bm16_short_c_r1_t128_thpoff,1,Fluxes,0.3922,3.8464
+clover_bm16_short_c_r1_t128_thpoff,1,Cell Advection,2.0649,20.2509
+clover_bm16_short_c_r1_t128_thpoff,1,Momentum Advection,3.0044,29.4652
+clover_bm16_short_c_r1_t128_thpoff,1,Reset,0.0001,0.0005
+clover_bm16_short_c_r1_t128_thpoff,1,Summary,0.0456,0.4471
+clover_bm16_short_c_r1_t128_thpoff,1,Visit,0.0000,0.0000
+clover_bm16_short_c_r1_t128_thpoff,1,Tile Halo Exchange,0.0003,0.0028
+clover_bm16_short_c_r1_t128_thpoff,1,Self Halo Exchange,0.7438,7.2943
+clover_bm16_short_c_r1_t128_thpoff,1,MPI Halo Exchange,0.0008,0.0079
+clover_bm16_short_c_r1_t128_thpoff,1,Total,10.1692,99.7332
+clover_bm16_short_c_r1_t128_thpoff,1,The Rest,0.0272,0.2668

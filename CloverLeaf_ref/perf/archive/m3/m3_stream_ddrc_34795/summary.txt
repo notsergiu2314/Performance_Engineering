@@ -1,0 +1,57 @@
+Cloning into '/home/joosterveld/CloverLeaf_ref/perf/microbench/STREAM'...
+[nothp rep 1] Triad:         265602.4     0.009058     0.009036     0.009074
+[nothp rep 2] Triad:         266460.1     0.009048     0.009007     0.009076
+[nothp rep 3] Triad:         266199.4     0.009047     0.009016     0.009184
+[nothp rep 4] Triad:         266079.8     0.009049     0.009020     0.009087
+[nothp rep 5] Triad:         265897.0     0.009051     0.009026     0.009096
+[nothp rep 6] Triad:         266192.3     0.009042     0.009016     0.009077
+[nothp rep 7] Triad:         266312.1     0.009046     0.009012     0.009098
+[nothp rep 8] Triad:         266220.5     0.009048     0.009015     0.009079
+[nothp rep 9] Triad:         266072.7     0.009128     0.009020     0.010009
+[nothp rep 10] Triad:         266375.5     0.009046     0.009010     0.009085
+[default rep 1] Triad:         266107.9     0.020182     0.009019     0.022749
+[default rep 2] Triad:         266608.3     0.009038     0.009002     0.009111
+[default rep 3] Triad:         266276.8     0.009039     0.009013     0.009079
+[default rep 4] Triad:         266693.1     0.009043     0.008999     0.009075
+[default rep 5] Triad:         266488.3     0.009039     0.009006     0.009101
+[default rep 6] Triad:         176394.9     0.013818     0.013606     0.014490
+[default rep 7] Triad:         266784.9     0.009037     0.008996     0.009070
+[default rep 8] Triad:         266375.5     0.009033     0.009010     0.009055
+[default rep 9] Triad:         266340.2     0.009038     0.009011     0.009111
+[default rep 10] Triad:         266016.5     0.009054     0.009022     0.009264
+[membw nothp rep 1] triad_gbs=262.441
+[membw nothp rep 2] triad_gbs=263.127
+[membw nothp rep 3] triad_gbs=262.647
+run                      triad_cnt  ddrc_GB   secs  avg_hw  /noWA    /WA busiest
+stream_nothp_rep1                 265.6    171.5    1.6   108.3   1.04   0.74    1.02
+stream_nothp_rep2                 266.5    171.3    1.6   108.7   1.04   0.74    1.02
+stream_nothp_rep3                 266.2    171.2    1.6   108.4   1.04   0.74    1.02
+stream_nothp_rep4                 266.1    171.4    1.6   108.2   1.04   0.74    1.02
+stream_nothp_rep5                 265.9    171.4    1.6   108.4   1.04   0.74    1.02
+stream_nothp_rep6                 266.2    171.4    1.6   108.3   1.04   0.74    1.02
+stream_nothp_rep7                 266.3    171.4    1.6   108.8   1.04   0.74    1.02
+stream_nothp_rep8                 266.2    171.4    1.6   108.5   1.04   0.74    1.02
+stream_nothp_rep9                 266.1    171.3    1.6   108.5   1.04   0.74    1.02
+stream_nothp_rep10                266.4    171.3    1.6   108.5   1.04   0.74    1.02
+stream_default_rep1                 266.1    211.1    2.7    78.4   1.28   0.91    1.74
+stream_default_rep2                 266.6    215.5    1.8   118.7   1.31   0.93    1.03
+stream_default_rep3                 266.3    219.6    1.8   121.0   1.33   0.95    1.07
+stream_default_rep4                 266.7    220.3    1.8   120.4   1.34   0.95    1.08
+stream_default_rep5                 266.5    220.9    1.9   117.9   1.34   0.96    1.08
+stream_default_rep6                 176.4    228.6    2.8    80.6   1.39   0.99    1.26
+stream_default_rep7                 266.8    218.6    1.8   119.2   1.33   0.95    1.05
+stream_default_rep8                 266.4    219.9    1.9   118.2   1.33   0.95    1.06
+stream_default_rep9                 266.3    218.6    1.8   121.3   1.33   0.95    1.06
+stream_default_rep10                266.0    220.3    1.8   120.2   1.34   0.95    1.08
+membw_nothp_rep1                 262.4    182.2    0.7   247.4   1.02   0.74    1.00
+membw_nothp_rep2                 263.1    182.3    0.7   248.1   1.02   0.74    1.00
+membw_nothp_rep3                 262.6    182.3    0.7   247.9   1.02   0.74    1.00
+triad_cnt = STREAM-counted triad GB/s (24 B/element); avg_hw = DDRC bytes / perf elapsed (whole process,
+incl. init and validation); /noWA, /WA = DDRC bytes over the two byte models of the whole process
+
+write-allocate: DDRC bytes / model = 0.74 (with WA) vs 1.04 (without) -> NO write-allocate: plain STREAM counting holds
+best STREAM-counted triad (nothp): 266.5 GB/s rep 2; hardware triad ceiling = x1.000 = 266.5 GB/s
+THP effect on STREAM triad: nothp median 266.2 GB/s (min 265.6), default median 266.4 GB/s (min 176.4)
+bus-width check: 266.5 GB/s over 16 channels x 8 B needs DIMMs of at least 2082 MT/s (DDR4-2666 = 341.2 GB/s, DDR4-2933 = 375.4, DDR4-3200 = 409.6); see dimm.txt for the DMI answer
+ceilings rows written to /home/joosterveld/CloverLeaf_ref/perf/results/m3_stream_ddrc_34795/ceilings_rows.csv
+results in /home/joosterveld/CloverLeaf_ref/perf/results/m3_stream_ddrc_34795 (summary.txt, ceilings_rows.csv, dimm.txt)

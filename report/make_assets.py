@@ -1,0 +1,600 @@
+#!/usr/bin/env python3
+"""Generate every figure and table of the report from report/data/*.csv.
+
+  python make_assets.py        (needs matplotlib + numpy; run from report/)
+
+figures/*.pdf (and .png for quick looks) and tables/*.tex are \\input/\\includegraphics'd
+by main.tex; nothing in them is typed by hand. The per-kernel flop and byte counts
+come from the analytic model in ../CloverLeaf_ref/perf/analysis/kernel_model.py.
+"""
+
+import csv
+import math
+import statistics
+import sys
+from pathlib import Path
+
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import numpy as np
+
+HERE = Path(__file__).parent
+DATA, FIG, TAB = HERE / "data", HERE / "figures", HERE / "tables"
+sys.path.insert(0, str(HERE.parent / "CloverLeaf_ref" / "perf" / "analysis"))
+import kernel_model  # noqa: E402
+
+CELLS = 3840 * 3840
+STEPS = 87
+
+# validated categorical slots 1-4 (light surface); ink tokens
+BLUE, ORANGE, AQUA, YELLOW = "#2a78d6", "#eb6834", "#1baf7a", "#eda100"
+INK, INK2, GRID = "#0b0b0b", "#52514e", "#e4e3df"
+
+plt.rcParams.update({
+    "font.size": 8, "axes.edgecolor": INK2, "axes.labelcolor": INK,
+    "xtick.color": INK2, "ytick.color": INK2, "axes.titlesize": 9,
+    "axes.titlelocation": "left", "legend.frameon": False,
+    "pdf.fonttype": 42, "axes.spines.top": False, "axes.spines.right": False,
+})
+
+
+def rows(name):
+    with open(DATA / name, newline="") as f:
+        return list(csv.DictReader(line for line in f if not line.startswith("#")))
+
+
+def save(fig, name):
+    fig.savefig(FIG / f"{name}.pdf", bbox_inches="tight")
+    fig.savefig(FIG / f"{name}.png", dpi=200, bbox_inches="tight")
+    plt.close(fig)
+    print("figure", name)
+
+
+def tex(name, text):
+    (TAB / name).write_text(text)
+    print("table ", name)
+
+
+# --------------------------------------------------------------- ceilings
+C = {r["name"]: float(r["value"]) for r in rows("ceilings.csv")}
+BW_CORE, BW_NODE = C["dram_1thread"], C["dram_node_best"]
+FMA_CORE, FMA_NODE = C["fma_core"], C["fma_node"]
+DIV_CORE, DIV_NODE = C["div_core"], C["div_node"]
+
+# --------------------------------------------------------------- kernels
+import os
+OPT_VARIANT = os.environ.get("OPT_VARIANT", "opt")   # the build the Results section shows (perf/variants.conf);
+                                                     # OPT_VARIANT=optnf python3 make_assets.py once that build is measured
+KP = {r["kernel"]: r for r in rows("kernels_papi.csv")}
+MODEL = {k.name: k for k in kernel_model.KERNELS}
+WA = 1
+
+
+def kernel_perf(name, time_col):
+    k = MODEL[name]
+    n = CELLS * STEPS * k.calls_per_step
+    flops, nbytes = n * k.flops_per_cell(), n * k.bytes_per_cell(WA)
+    t = float(KP[name][time_col])
+    return flops / nbytes if nbytes else 0.0, flops / t * 1e-9, nbytes / t * 1e-9
+
+
+APP_FLOPS = sum(CELLS * STEPS * k.calls_per_step * k.flops_per_cell() for k in kernel_model.KERNELS)
+APP_BYTES_MODEL = sum(CELLS * STEPS * k.calls_per_step * k.bytes_per_cell(WA) for k in kernel_model.KERNELS)
+PL = {r["variant"]: r for r in rows("placement.csv")}
+
+
+def wall(v):
+    return statistics.median(float(PL[v][f"wall_{i}"]) for i in (1, 2, 3))
+
+
+# ================================================================= figures
+def fig_scaling():
+    sc = [r for r in rows("scaling.csv") if r["deck"] == "bm3840"]
+    omp = [r for r in sc if r["ranks"] == "1"]
+    mpi = [r for r in sc if r["ranks"] != "1"]
+    t1 = float(omp[0]["median_s"])
+
+    fig, ax = plt.subplots(figsize=(3.3, 2.7))
+    cores = np.array([1, 128])
+    ax.plot(cores, t1 / cores, color=INK2, lw=1, ls="--", zorder=1)
+    ax.text(1.25, t1 / 1.25 * 0.52, "ideal", color=INK2, fontsize=7, rotation=-31, rotation_mode="anchor")
+
+    x = [int(r["threads"]) * int(r["ranks"]) for r in omp]
+    y = [float(r["median_s"]) for r in omp]
+    lo = [float(r["median_s"]) - float(r["min_s"]) for r in omp]
+    hi = [float(r["max_s"]) - float(r["median_s"]) for r in omp]
+    ax.errorbar(x, y, yerr=[lo, hi], fmt="o-", color=BLUE, ms=4, lw=1.4, capsize=2,
+                mec="white", mew=1, label="OpenMP, 1 rank (THP on)", zorder=3)
+    # three markers share x = 128 cores: separate them horizontally (log axis, multiplicative)
+    ax.plot([128 * 0.88] * len(mpi), [float(r["median_s"]) for r in mpi], "s", color=ORANGE, ms=5,
+            mec="white", mew=1, label="MPI x OpenMP (2x64, 4x32)", zorder=4)
+    ax.plot([128 * 1.14], [wall("E")], "D", color=AQUA, ms=5, mec="white", mew=1,
+            label="OpenMP, THP off", zorder=5)
+    for r in mpi:
+        ax.annotate(r["config"], (128 * 0.88, float(r["median_s"])),
+                    xytext=(-5, -2), textcoords="offset points", fontsize=7, color=INK, ha="right")
+    ax.set_xlim(0.85, 190)
+
+    ax.set_xscale("log", base=2)
+    ax.set_yscale("log")
+    ax.set_xticks([1, 2, 4, 8, 16, 32, 64, 128])
+    ax.set_xticklabels(["1", "2", "4", "8", "16", "32", "64", "128"])
+    ax.set_xlabel("cores")
+    ax.set_ylabel("wall clock, 87 steps (s)")
+    ax.grid(True, which="major", color=GRID, lw=0.6)
+    ax.legend(loc="lower left", fontsize=7)
+    save(fig, "fig_scaling")
+
+
+def fig_stream():
+    st = rows("stream.csv")
+    node = [r for r in st if r["config"] == "node"]
+    spread = [r for r in st if r["config"] == "spread"]
+    numa = [r for r in st if r["config"].startswith("numa")]
+
+    fig, ax = plt.subplots(figsize=(3.3, 2.7))
+    for series, col, mk, lab in ((node, BLUE, "o", "threads filled close (node order)"),
+                                 (spread, ORANGE, "s", "threads spread over domains")):
+        x = [int(r["threads"]) for r in series]
+        y = [float(r["triad"]) for r in series]
+        lo = [float(r["triad"]) - float(r["triad_min"]) for r in series]
+        hi = [float(r["triad_max"]) - float(r["triad"]) for r in series]
+        ax.errorbar(x, y, yerr=[lo, hi], fmt=mk + "-", color=col, ms=4, lw=1.2, capsize=2,
+                    mec="white", mew=1, label=lab)
+    ax.plot([32] * len(numa), [float(r["triad"]) for r in numa], "D", color=AQUA, ms=4,
+            mec="white", mew=1, label="each domain alone (32 thr.)")
+    ax.axhline(341.2, color=INK2, lw=1, ls=":")
+    ax.text(1.1, 341.2 * 1.04, "theoretical 341 GB/s (16 x DDR4-2666)", fontsize=7, color=INK2)
+    ax.axhline(BW_NODE, color=INK2, lw=1, ls="--")
+    ax.text(1.1, BW_NODE * 1.04, f"best measured {BW_NODE:.0f} GB/s", fontsize=7, color=INK2)
+    ax.set_xscale("log", base=2)
+    ax.set_xticks([1, 2, 4, 8, 16, 32, 64, 128])
+    ax.set_xticklabels(["1", "2", "4", "8", "16", "32", "64", "128"])
+    ax.set_ylim(0, 380)
+    ax.set_xlabel("threads")
+    ax.set_ylabel("STREAM triad (GB/s)")
+    ax.grid(True, which="major", color=GRID, lw=0.6)
+    ax.legend(loc="upper left", bbox_to_anchor=(0.0, 0.64), fontsize=7)
+    save(fig, "fig_stream")
+
+
+def fig_placement():
+    order = ["A", "B", "C", "E", "D"]
+    labels = {"A": "1x128\ndefault", "B": "1x128\ninterleave", "C": "1x120\ndefault",
+              "E": "1x128\nTHP off", "D": "4x32\nMPI"}
+    cols = [BLUE, ORANGE, AQUA, YELLOW]
+    names = ["SCCL 1", "SCCL 3", "SCCL 5", "SCCL 7"]   # memory-controller groups, one per NUMA domain (assumed)
+    keys = ["share_s1", "share_s3", "share_s5", "share_s7"]
+
+    fig, ax = plt.subplots(figsize=(3.3, 2.7))
+    xs = np.arange(len(order))
+    bottom = np.zeros(len(order))
+    for k, (key, col, nm) in enumerate(zip(keys, cols, names)):
+        vals = np.array([float(PL[v][key]) for v in order])
+        ax.bar(xs, vals, 0.62, bottom=bottom, color=col, edgecolor="white", linewidth=1.5, label=nm)
+        for x, b, v in zip(xs, bottom, vals):
+            ax.text(x, b + v / 2, f"{v:.0f}", ha="center", va="center", fontsize=6.5, color=INK)
+        bottom += vals
+    for x, v in zip(xs, order):
+        ax.text(x, 103, f"{wall(v):.1f} s", ha="center", va="bottom", fontsize=7, color=INK)
+    ax.set_xticks(xs)
+    ax.set_xticklabels([labels[v] for v in order], fontsize=7)
+    ax.set_ylim(0, 118)
+    ax.set_yticks([0, 25, 50, 75, 100])
+    ax.set_ylabel("share of DRAM traffic (%)")
+    ax.legend(ncol=4, loc="upper center", bbox_to_anchor=(0.5, -0.22), fontsize=7,
+              handlelength=1, columnspacing=1)
+    save(fig, "fig_placement")
+
+
+ORDER = [n for n, _ in sorted(KP.items(), key=lambda kv: -float(kv[1]["time_1x1"]))]
+NUM = {n: i + 1 for i, n in enumerate(ORDER)}          # marker number = row in the kernel table
+OFFS_A = {1: (-8, 3), 2: (0, -9), 3: (5, 3), 4: (-2, -9), 5: (7, 2), 6: (-3, -11),
+          7: (6, 3), 8: (5, 3), 9: (-9, 2), 12: (5, 3)}
+OFFS_B = {1: (0, -9), 2: (-9, 3), 3: (5, -6), 4: (3, -9), 5: (7, 2), 6: (9, -2),
+          7: (6, 3), 8: (-3, 7), 9: (-9, 0), 12: (7, 3)}
+
+
+def roof(ax, bw, peak, extra, x0, x1, title, ymin, ymax):
+    ai = np.logspace(math.log10(x0), math.log10(x1), 300)
+    ax.plot(ai, np.minimum(peak, ai * bw), color=INK, lw=1.8, zorder=2)
+    ax.text(x1, peak * 1.1, f"FMA peak {peak:.4g} GFLOP/s", ha="right", va="bottom", fontsize=7, color=INK2)
+    for level, lab, ls in extra:
+        ax.plot([level / bw, x1], [level, level], color=INK2, lw=1, ls=ls, zorder=1)
+        ax.text(x1, level * 1.1, f"{lab} {level:.3g} GFLOP/s", ha="right", va="bottom", fontsize=7, color=INK2)
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+    ax.set_xlim(x0, x1)
+    ax.set_ylim(ymin, ymax)
+    ax.set_title(title)
+    ax.set_xlabel("arithmetic intensity (flop/byte)")
+    ax.grid(True, which="major", color=GRID, lw=0.6)
+
+
+def slope_label(ax, fig, bw, x):
+    fig.canvas.draw()
+    p0, p1 = ax.transData.transform([(x, x * bw), (x * 4, x * 4 * bw)])
+    ang = math.degrees(math.atan2(p1[1] - p0[1], p1[0] - p0[0]))
+    ax.text(x, x * bw * 1.35, f"{bw:.1f} GB/s", rotation=ang, rotation_mode="anchor",
+            fontsize=7, color=INK2, ha="left", va="bottom")
+
+
+def kernel_points(ax, col, offs):
+    skip = {"reset_field", "revert", "update_halo"}      # no floating-point work: not on a flop roofline
+    for name in KP:
+        if name in skip or name not in MODEL:
+            continue
+        ai, gf, _ = kernel_perf(name, col)
+        ax.scatter([ai], [gf], s=30, color=BLUE, edgecolor="white", lw=1, zorder=4)
+        dx, dy = offs[NUM[name]]
+        ax.annotate(str(NUM[name]), (ai, gf), xytext=(dx, dy), textcoords="offset points",
+                    fontsize=7, color=INK, ha="center", va="center", zorder=6)
+
+
+def fig_roofline():
+    fig, (a, b) = plt.subplots(1, 2, figsize=(6.6, 3.2))
+
+    roof(a, BW_CORE, FMA_CORE, [(DIV_CORE, "vector divide", ":")], 0.08, 10, "(a) one core", 0.1, 30)
+    kernel_points(a, "time_1x1", OFFS_A)
+    a.set_ylabel("performance (GFLOP/s)")
+
+    roof(b, BW_NODE, FMA_NODE, [(DIV_NODE, "vector divide", ":")], 0.08, 10, "(b) full node, 128 cores", 1.5, 4000)
+    kernel_points(b, "time_1x128", OFFS_B)
+    b.scatter([], [], s=30, color=BLUE, edgecolor="white", lw=1, label="kernels (numbered as in the table)")
+    # whole application at the 64x2 baseline, measured DRAM bytes: hollow marker so the kernels stay visible
+    base = next(r for r in m3_rows() if r["kernels"] == "c" and r["thp"] == "on" and r["layout"] == "64x2")
+    nbytes, t = float(base["dram_TB"]) * 1e12, float(base["median_s"])
+    b.scatter([APP_FLOPS / nbytes], [APP_FLOPS / t * 1e-9], s=70, marker="D", facecolors="none",
+              edgecolors=ORANGE, linewidths=1.6, zorder=5, label="whole application, 64x2 baseline")
+    b.legend(loc="lower right", fontsize=6.5, handletextpad=0.3)
+
+    fig.tight_layout()
+    slope_label(a, fig, BW_CORE, 0.1)
+    slope_label(b, fig, BW_NODE, 0.1)
+    save(fig, "fig_roofline")
+
+
+def opt_model():
+    """Per-kernel byte model of the optimised build: kernel_model.KERNELS with the byte changes of
+    perf/analysis/plan_bytes.py applied (the same edits that produced data/plan.csv)."""
+    import plan_bytes  # noqa: E402  (perf/analysis is on sys.path)
+    ks = kernel_model.KERNELS
+    for _, fn, kind in plan_bytes.CHANGES:
+        if kind == "bytes":
+            ks = fn(ks)
+    return {k.name: k for k in ks}
+
+
+def fig_roofline_opt(variant=OPT_VARIANT):
+    """Node roofline at 64x2, baseline (left) against the optimised build (right): kernels from the
+    PAPI region times (kernels_papi.csv time_64x2 / time_64x2_<variant>) and the byte model of each
+    build; the whole application from the measured DRAM bytes and wall clock."""
+    tcol = f"time_64x2_{variant}"
+    if not any(r.get(tcol) for r in KP.values()):
+        return
+    models = {"base": MODEL, variant: opt_model()}
+    skip = {"reset_field", "revert", "update_halo"}
+    fig, axes = plt.subplots(1, 2, figsize=(6.6, 3.2), sharey=True)
+    panels = [(axes[0], "time_64x2", "base", BLUE, "(a) baseline, 64x2"),
+              (axes[1], tcol, variant, AQUA, f"(b) optimised, 64x2")]
+    app = {"base": next(r for r in m3_rows() if r["kernels"] == "c" and r["thp"] == "on" and r["layout"] == "64x2"),
+           variant: next((r for r in optimised_rows(variant) if r["layout"] == "64x2"), None)}
+    for ax, col, build, color, title in panels:
+        roof(ax, BW_NODE, FMA_NODE, [(DIV_NODE, "vector divide", ":")], 0.08, 10, title, 1.5, 4000)
+        model = models[build]
+        for name in KP:
+            if name in skip or name not in model or not KP[name].get(col) or not model[name].calls_per_step:
+                continue
+            k = model[name]
+            n = CELLS * STEPS * k.calls_per_step
+            flops, nbytes = n * k.flops_per_cell(), n * k.bytes_per_cell(WA)
+            t = float(KP[name][col])
+            ai, gf = flops / nbytes, flops / t * 1e-9
+            ax.scatter([ai], [gf], s=30, color=color, edgecolor="white", lw=1, zorder=4)
+            dx, dy = OFFS_B.get(NUM[name], (6, 3))
+            ax.annotate(str(NUM[name]), (ai, gf), xytext=(dx, dy), textcoords="offset points",
+                        fontsize=7, color=INK, ha="center", va="center", zorder=6)
+        r = app[build]
+        if r and r["dram_TB"]:
+            nbytes, t = float(r["dram_TB"]) * 1e12, float(r["median_s"])
+            ax.scatter([APP_FLOPS / nbytes], [APP_FLOPS / t * 1e-9], s=70, marker="D", facecolors="none",
+                       edgecolors=ORANGE, linewidths=1.6, zorder=5, label="whole application (measured bytes)")
+        ax.scatter([], [], s=30, color=color, edgecolor="white", lw=1, label=f"kernels, {build} build")
+        ax.legend(loc="lower right", fontsize=6.5, handletextpad=0.3)
+    axes[0].set_ylabel("performance (GFLOP/s)")
+    fig.tight_layout()
+    for ax in axes:
+        slope_label(ax, fig, BW_NODE, 0.1)
+    save(fig, "fig_roofline_opt")
+
+
+# ================================================================== tables
+def tab_kernels():
+    tot1 = sum(float(r["time_1x1"]) for r in KP.values())
+    tot128 = sum(float(r["time_1x128"]) for r in KP.values())
+    lines = [r"\begin{tabular}{rlrrrrrr}", r"\toprule",
+             r"\# & kernel & \multicolumn{2}{c}{time share (\%)} & IPC & vector & FP scalar & back-end \\",
+             r" & & 1 core & 128 cores & 1 core & ins.\ (\%) & ins.\ (\%) & stall (\%) \\", r"\midrule"]
+    for name, r in sorted(KP.items(), key=lambda kv: -float(kv[1]["time_1x1"])):
+        lines.append(
+            f"{NUM[name]} & \\texttt{{{name.replace('_', chr(92) + '_')}}} & {100 * float(r['time_1x1']) / tot1:.1f} & "
+            f"{100 * float(r['time_1x128']) / tot128:.1f} & {float(r['ipc_1x1']):.2f} & "
+            f"{float(r['vec_pct_1x1']):.0f} & {float(r['fp_pct_1x1']):.0f} & "
+            f"{float(r['be_stall_1x1']):.0f} / {float(r['be_stall_1x128']):.0f} \\\\")
+    lines += [r"\bottomrule", r"\end{tabular}"]
+    tex("tab_kernels.tex", "\n".join(lines) + "\n")
+
+
+def tab_model():
+    lines = [r"\begin{tabular}{lrrrrr}", r"\toprule",
+             r"kernel & calls/step & flop/cell & B/cell & B/cell & AI \\",
+             r" & & & (no WA) & (with WA) & (flop/B, WA) \\", r"\midrule"]
+    tot_f = tot_b0 = tot_b1 = 0.0
+    for k in kernel_model.KERNELS:
+        f, b0, b1 = k.flops_per_cell(), k.bytes_per_cell(0), k.bytes_per_cell(1)
+        tot_f += f * k.calls_per_step
+        tot_b0 += b0 * k.calls_per_step
+        tot_b1 += b1 * k.calls_per_step
+        lines.append(f"\\texttt{{{k.name.replace('_', chr(92) + '_')}}} & {k.calls_per_step:g} & "
+                     f"{f:.0f} & {b0:.0f} & {b1:.0f} & {f / b1:.2f} \\\\")
+    lines += [r"\midrule",
+              f"per cell and step & & {tot_f:.0f} & {tot_b0:.0f} & {tot_b1:.0f} & {tot_f / tot_b1:.2f} \\\\",
+              r"\bottomrule", r"\end{tabular}"]
+    tex("tab_model.tex", "\n".join(lines) + "\n")
+
+
+def tab_placement():
+    lines = [r"\begin{tabular}{llrrrr}", r"\toprule",
+             r"variant & wall (s) & DRAM (TB) & busiest/mean & bandwidth & vs.\ STREAM \\",
+             r" & median (min--max) & & controller & (GB/s) & best (\%) \\", r"\midrule"]
+    for v in ["A", "B", "C", "E", "D", "F"]:
+        r = PL[v]
+        ws = [float(r[f"wall_{i}"]) for i in (1, 2, 3)]
+        shares = [float(r[k]) for k in ("share_s1", "share_s3", "share_s5", "share_s7")]
+        bw = float(r["dram_GB"]) / statistics.median(ws)
+        lines.append(f"{r['label']} & {statistics.median(ws):.1f} ({min(ws):.1f}--{max(ws):.1f}) & "
+                     f"{float(r['dram_GB']) / 1000:.2f} & {max(shares) / 25:.2f} & {bw:.0f} & "
+                     f"{100 * bw / BW_NODE:.0f} \\\\")
+    lines += [r"\bottomrule", r"\end{tabular}"]
+    tex("tab_placement.tex", "\n".join(lines) + "\n")
+
+
+def esc(s):
+    return s.replace("_", r"\_").replace("%", r"\%")
+
+
+def tab_correctness():
+    """One row per kernel set and build variant (correctness.csv columns variant,gate are optional:
+    rows without them are the baseline). The deviation is identical at every layout and repetition;
+    if a variant's rows disagree, every value is listed and the gate column says MISMATCH."""
+    groups = {}
+    for r in rows("correctness.csv"):
+        key = (r["kernels"], r.get("variant") or "base")
+        g = groups.setdefault(key, dict(qa=[], layouts=[], runs=0, jobs=set(), gate=set()))
+        if r["qa_pct"] not in g["qa"]:
+            g["qa"].append(r["qa_pct"])
+        layout = r["layout"].split(" THP")[0]
+        if layout not in g["layouts"]:
+            g["layouts"].append(layout)
+        g["runs"] += int(r["reps"])
+        g["jobs"].add(r["source"])
+        g["gate"].add(r.get("gate") or "ok")
+    multi = len({v for _, v in groups}) > 1
+    lines = [r"\begin{tabular}{l" + ("l" if multi else "") + r"rrl" + ("l" if multi else "") + r"}", r"\toprule",
+             r"kernels & " + (r"build & " if multi else "") + r"runs & deviation (\%) & layouts (all identical)"
+             + (r" & gate" if multi else "") + r" \\", r"\midrule"]
+    for (k, v), g in groups.items():
+        gate = "ok" if g["gate"] == {"ok"} else esc("/".join(sorted(g["gate"])))
+        lines.append(f"{k} & " + (f"{esc(v)} & " if multi else "") + f"{g['runs']} & {esc(' / '.join(g['qa']))} & "
+                     f"{esc(', '.join(g['layouts']))}" + (f" & {gate}" if multi else "") + r" \\")
+    lines += [r"\bottomrule", r"\end{tabular}"]
+    tex("tab_correctness.tex", "\n".join(lines) + "\n")
+
+
+def tab_plan():
+    lines = [r"\begin{tabular}{p{7.2cm}rrrr}", r"\toprule",
+             r"change & B/cell & DRAM & cumulative & floor \\",
+             r" & (WA) & bytes & bytes & (s) \\", r"\midrule"]
+    for r in rows("plan.csv"):
+        if r["kind"].startswith("bytes"):
+            lines.append(f"{esc(r['change'])} & {r['bytes_per_cell_wa']} & ${float(r['delta_pct']):+.1f}\\%$ & "
+                         f"${float(r['cumulative_delta_pct']):+.1f}\\%$ & {r['floor_s'] or '--'} \\\\")
+        else:
+            lines.append(f"{esc(r['change'])} & \\multicolumn{{4}}{{p{{5.6cm}}}}{{time only: {esc(r['rationale'])}}} \\\\")
+    lines += [r"\bottomrule", r"\end{tabular}"]
+    tex("tab_plan.tex", "\n".join(lines) + "\n")
+
+
+def m3_rows():
+    return [r for r in rows("m3_baseline.csv") if r["median_s"]]
+
+
+def tab_m3_baseline():
+    lines = [r"\begin{tabular}{lllrrrr}", r"\toprule",
+             r"kernels & layout & wall (s) & DRAM & bandwidth & busiest/ & vs.\ hw \\",
+             r" & & median (min--max) & (TB) & (GB/s) & mean & roof (\%) \\", r"\midrule"]
+    hw = C.get("dram_node_hw")
+    for r in m3_rows():
+        if r["thp"] == "off" and not (r["kernels"] == "c" and r["layout"] == "1x128"):
+            continue
+        layout = r["layout"] + (", THP off" if r["thp"] == "off" else "")
+        med = float(r["median_s"])
+        dram = f"{float(r['dram_TB']):.2f}" if r["dram_TB"] else "--"
+        bw = f"{float(r['hw_GBs']):.0f}" if r["hw_GBs"] else "--"
+        bus = f"{float(r['busiest_over_mean']):.2f}" if r["busiest_over_mean"] else "--"
+        roof = f"{100 * float(r['hw_GBs']) / hw:.0f}" if (r["hw_GBs"] and hw) else "--"
+        lines.append(f"{r['kernels']} & {layout} & {med:.2f} ({float(r['min_s']):.2f}--{float(r['max_s']):.2f}) & "
+                     f"{dram} & {bw} & {bus} & {roof} \\\\")
+    lines += [r"\bottomrule", r"\end{tabular}"]
+    tex("tab_m3_baseline.tex", "\n".join(lines) + "\n")
+
+
+def fig_m3_layouts():
+    data = m3_rows()
+    layouts = []
+    for r in data:
+        if r["layout"] not in layouts:
+            layouts.append(r["layout"])
+    opt = optimised_rows()
+    series = [("c", "on", BLUE, "C baseline"), ("opt", "on", AQUA, "C optimised"), ("fortran", "on", "#b8b6b0", "Fortran (reference)")]
+    fig, ax = plt.subplots(figsize=(4.6, 2.7))
+    xs = np.arange(len(layouts))
+    present = []
+    for k, thp, col, lab in series:
+        src = opt if k == "opt" else data
+        sel = {r["layout"]: r for r in src if (k == "opt" or r["kernels"] == k) and r.get("thp", "on") == thp}
+        if sel:
+            present.append((sel, col, lab))
+    width = 0.26
+    for i, (sel, col, lab) in enumerate(present):
+        x = [xs[layouts.index(l)] + (i - (len(present) - 1) / 2) * width for l in sel]
+        y = [float(r["median_s"]) for r in sel.values()]
+        lo = [float(r["median_s"]) - float(r["min_s"]) for r in sel.values()]
+        hi = [float(r["max_s"]) - float(r["median_s"]) for r in sel.values()]
+        ax.bar(x, y, width, color=col, label=lab, yerr=[lo, hi], capsize=2, error_kw=dict(lw=0.8, ecolor=INK2))
+        for xi, yi, h in zip(x, y, hi):
+            ax.text(xi, yi + h + 0.5, f"{yi:.1f}", ha="center", va="bottom", fontsize=5.5, color=INK, rotation=90)
+    hw = C.get("dram_node_hw")
+    floor = APP_BYTES_MODEL / ((hw or BW_NODE * 4 / 3) * 1e9)
+    ax.axhline(floor, color=INK2, lw=1, ls="--", label=f"baseline memory floor {floor:.1f} s")
+    ax.set_ylim(0, 1.3 * max(float(r["max_s"]) for r in data + opt))
+    ax.set_xticks(xs)
+    ax.set_xticklabels(layouts)
+    ax.set_xlabel("MPI ranks x OpenMP threads")
+    ax.set_ylabel("wall clock, 87 steps (s)")
+    ax.grid(True, axis="y", color=GRID, lw=0.6)
+    ax.legend(fontsize=6.5, loc="upper right")
+    save(fig, "fig_m3_layouts")
+
+
+def optimised_rows(variant=OPT_VARIANT, thp="on"):
+    """data/optimised.csv (perf/analysis/variants.py): layout,ranks,threads,thp,variant,n,median_s,
+    min_s,max_s,dram_TB,hw_GBs,busiest_over_mean,qa_ok,source. One variant, THP on, unless asked."""
+    p = DATA / "optimised.csv"
+    if not p.exists():
+        return []
+    return [r for r in rows("optimised.csv") if r["median_s"]
+            and r.get("variant", variant) == variant and r.get("thp", "on") == thp]
+
+
+def ladder_rows():
+    """data/ladder.csv (perf/analysis/variants.py): variant,description,n,median_s,min_s,max_s,dram_TB,
+    hw_GBs,time_vs_base_pct,bytes_vs_base_pct,source."""
+    p = DATA / "ladder.csv"
+    return [r for r in rows("ladder.csv") if r["median_s"]] if p.exists() else []
+
+
+def tab_ladder():
+    """Per-change attribution at 64x2: the commit ladder of perf/variants.conf."""
+    lines = [r"\begin{tabular}{lp{5.4cm}rrrr}", r"\toprule",
+             r"build & changes & wall (s) & DRAM & bytes vs & time vs \\",
+             r" & & median (min--max) & (TB) & base (\%) & base (\%) \\", r"\midrule"]
+    lad = ladder_rows()
+    if not lad:
+        lines.append(r"\multicolumn{6}{l}{not measured yet (perf/jobs/m3\_opt.sbatch writes data/ladder.csv)} \\")
+    for r in lad:
+        dram = f"{float(r['dram_TB']):.3f}" if r["dram_TB"] else "--"
+        b = f"${float(r['bytes_vs_base_pct']):+.1f}$" if r["bytes_vs_base_pct"] else "--"
+        t = f"${float(r['time_vs_base_pct']):+.1f}$" if r["time_vs_base_pct"] else "--"
+        lines.append(f"{esc(r['variant'])} & {esc(r['description'])} & {float(r['median_s']):.2f} "
+                     f"({float(r['min_s']):.2f}--{float(r['max_s']):.2f}) & {dram} & {b} & {t} \\\\")
+    lines += [r"\bottomrule", r"\end{tabular}"]
+    tex("tab_ladder.tex", "\n".join(lines) + "\n")
+
+
+def tab_kernels_opt(variant=OPT_VARIANT):
+    """Per-kernel time, IPC and back-end stall at 64x2, baseline against the optimised build
+    (columns *_64x2_<variant> of kernels_papi.csv, perf/archive.sh --report). Written only when present."""
+    tcol = f"time_64x2_{variant}"
+    if not any(tcol in r and r[tcol] for r in KP.values()):
+        return
+    lines = [r"\begin{tabular}{lrrrrrrr}", r"\toprule",
+             r"kernel & \multicolumn{3}{c}{time (s)} & \multicolumn{2}{c}{IPC} & \multicolumn{2}{c}{back-end stall (\%)} \\",
+             r" & base & " + esc(variant) + r" & ratio & base & " + esc(variant) + r" & base & " + esc(variant) + r" \\", r"\midrule"]
+    for k, r in sorted(KP.items(), key=lambda kv: -float(kv[1]["time_64x2"] or 0)):
+        tb, to = float(r["time_64x2"] or "nan"), float(r.get(tcol) or "nan")
+        cell = lambda v, nd=2: f"{float(v):.{nd}f}" if v not in ("", None) else "--"
+        ratio = f"{tb / to:.2f}" if to == to and to else "--"
+        lines.append(f"{esc(k)} & {cell(r['time_64x2'])} & {cell(r.get(tcol))} & {ratio} & "
+                     f"{cell(r['ipc_64x2'])} & {cell(r.get(f'ipc_64x2_{variant}'))} & "
+                     f"{cell(r['be_stall_64x2'], 0)} & {cell(r.get(f'be_stall_64x2_{variant}'), 0)} \\\\")
+    lines += [r"\bottomrule", r"\end{tabular}"]
+    tex("tab_kernels_opt.tex", "\n".join(lines) + "\n")
+
+
+def tab_results():
+    base = {r["layout"]: r for r in m3_rows() if r["kernels"] == "c" and r["thp"] == "on"}
+    opt = {r["layout"]: r for r in optimised_rows()}
+    lines = [r"\begin{tabular}{lrrrrrrr}", r"\toprule",
+             r"layout & \multicolumn{3}{c}{baseline} & \multicolumn{3}{c}{optimised} & speed-up \\",
+             r" & wall (s) & TB & GB/s & wall (s) & TB & GB/s & \\", r"\midrule"]
+    for l, b in base.items():
+        o = opt.get(l)
+        bw = float(b["median_s"])
+        if o:
+            ow = float(o["median_s"]); ob = float(o["dram_TB"]) if o["dram_TB"] else float("nan")
+            right = f"{ow:.2f} ({float(o['min_s']):.2f}--{float(o['max_s']):.2f}) & {ob:.2f} & {ob * 1e3 / ow:.0f} & {bw / ow:.2f}"
+        else:
+            right = "-- & -- & -- & --"
+        lines.append(f"{l} & {bw:.2f} ({float(b['min_s']):.2f}--{float(b['max_s']):.2f}) & {float(b['dram_TB']):.2f} & "
+                     f"{float(b['hw_GBs']):.0f} & {right} \\\\")
+    lines += [r"\bottomrule", r"\end{tabular}"]
+    tex("tab_results.tex", "\n".join(lines) + "\n")
+
+
+def tab_configs():
+    sc = [r for r in rows("scaling.csv") if r["deck"] == "bm3840"]
+    t1 = float(sc[0]["median_s"])
+    lines = [r"\begin{tabular}{lrrrr}", r"\toprule",
+             r"configuration & cores & wall (s) & min--max (s) & speed-up \\", r"\midrule"]
+    for r in sc:
+        n = int(r["ranks"]) * int(r["threads"])
+        lines.append(f"{r['ranks']} rank{'s' if r['ranks'] != '1' else ''} $\\times$ {r['threads']} thr. & "
+                     f"{n} & {float(r['median_s']):.1f} & {float(r['min_s']):.1f}--{float(r['max_s']):.1f} & "
+                     f"{t1 / float(r['median_s']):.1f} \\\\")
+    lines += [r"\midrule",
+              f"1 rank $\\times$ 128 thr., THP off & 128 & {wall('E'):.1f} & "
+              f"{min(float(PL['E'][f'wall_{i}']) for i in (1, 2, 3)):.1f}--"
+              f"{max(float(PL['E'][f'wall_{i}']) for i in (1, 2, 3)):.1f} & {t1 / wall('E'):.1f} \\\\",
+              r"\bottomrule", r"\end{tabular}"]
+    tex("tab_configs.tex", "\n".join(lines) + "\n")
+
+
+def numbers():
+    """Key numbers quoted in the text, printed so main.tex can be checked against them."""
+    e, a, d = wall("E"), wall("A"), wall("D")
+    print(f"app flops {APP_FLOPS:.3e}  model bytes (WA) {APP_BYTES_MODEL:.3e}  AI {APP_FLOPS / APP_BYTES_MODEL:.3f}")
+    for v in ("A", "E", "D"):
+        nb = float(PL[v]["dram_GB"]) * 1e9
+        print(f"{v}: wall {wall(v):.2f}s  DRAM {nb:.3e} B  AI {APP_FLOPS / nb:.3f}  "
+              f"GFLOP/s {APP_FLOPS / wall(v) * 1e-9:.1f}  BW {nb / wall(v) * 1e-9:.0f} GB/s  "
+              f"model/measured {APP_BYTES_MODEL / nb:.2f}")
+    print(f"THP speed-up {a / e:.2f}x; floor at best STREAM: model {APP_BYTES_MODEL / (BW_NODE * 1e9):.1f} s, "
+          f"measured bytes {float(PL['E']['dram_GB']) * 1e9 / (BW_NODE * 1e9):.1f} s")
+    print(f"ridge point (FMA) {FMA_NODE / BW_NODE:.2f} flop/B; 1 core {FMA_CORE / BW_CORE:.2f}")
+    if "dram_node_hw" in C:
+        print(f"hardware ceiling {C['dram_node_hw']:.0f} GB/s (wa_ratio {C.get('wa_ratio', float('nan')):.2f}, "
+              f"DIMM >= {C.get('dimm_mts_min', float('nan')):.0f} MT/s); floor at measured bytes "
+              f"{float(PL['E']['dram_GB']) * 1e9 / (C['dram_node_hw'] * 1e9):.1f} s")
+    else:
+        print("no dram_node_hw row in ceilings.csv yet: run perf/jobs/m3_stream_ddrc.sbatch and paste ceilings_rows.csv")
+
+
+if __name__ == "__main__":
+    FIG.mkdir(exist_ok=True)
+    TAB.mkdir(exist_ok=True)
+    fig_roofline()
+    tab_kernels()
+    tab_model()
+    tab_correctness()
+    tab_plan()
+    tab_m3_baseline()
+    tab_results()
+    tab_ladder()
+    tab_kernels_opt()
+    fig_m3_layouts()
+    fig_roofline_opt()
+    # not in the report any more (M1/M2 material, data still in data/): fig_scaling(), fig_stream(),
+    # fig_placement(), tab_placement(), tab_configs()
+    numbers()

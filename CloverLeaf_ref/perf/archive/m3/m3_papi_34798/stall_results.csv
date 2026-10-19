@@ -1,0 +1,3 @@
+tag,deck,kernels,ranks,threads,thp,rep,wall,grind,first_step,qa_pct,qa,kernels_reported,dram_GB,busiest_over_mean,host,date
+clover_bm16_short_c_r64_t2,clover_bm16_short.in,c,64,2,on,1,11.288372039794922,8.7944830578898656E-009,-6.0279369354248047E-003,0.3952039E-10,PASSED,C,NA,NA,cn18.guoehi.cluster,2026-10-13T11:13:23+00:00
+clover_bm16_short_c_r1_t128_thpoff,clover_bm16_short.in,c,1,128,off,1,13.536417961120605,1.0546009105603747E-008,3.0803680419921875E-004,0.4042988E-10,PASSED,C,NA,NA,cn18.guoehi.cluster,2026-10-13T11:13:39+00:00

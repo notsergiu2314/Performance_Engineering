@@ -1,0 +1,35 @@
+tag,rep,section,time,pct
+clover_bm16_short_c_r64_t2,1,Timestep,0.6981,8.1858
+clover_bm16_short_c_r64_t2,1,Ideal Gas,0.5116,5.9998
+clover_bm16_short_c_r64_t2,1,Viscosity,0.3304,3.8739
+clover_bm16_short_c_r64_t2,1,PdV,1.4572,17.0882
+clover_bm16_short_c_r64_t2,1,Revert,0.0000,0.0000
+clover_bm16_short_c_r64_t2,1,Acceleration,0.5843,6.8516
+clover_bm16_short_c_r64_t2,1,Fluxes,0.3860,4.5266
+clover_bm16_short_c_r64_t2,1,Cell Advection,1.6322,19.1397
+clover_bm16_short_c_r64_t2,1,Momentum Advection,2.6210,30.7357
+clover_bm16_short_c_r64_t2,1,Reset,0.0001,0.0012
+clover_bm16_short_c_r64_t2,1,Summary,0.0483,0.5663
+clover_bm16_short_c_r64_t2,1,Visit,0.0000,0.0000
+clover_bm16_short_c_r64_t2,1,Tile Halo Exchange,0.0004,0.0050
+clover_bm16_short_c_r64_t2,1,Self Halo Exchange,0.0323,0.3793
+clover_bm16_short_c_r64_t2,1,MPI Halo Exchange,0.2251,2.6393
+clover_bm16_short_c_r64_t2,1,Total,8.5270,99.9922
+clover_bm16_short_c_r64_t2,1,The Rest,0.0007,0.0078
+clover_bm16_short_c_r1_t128_thpoff,1,Timestep,0.6028,5.8519
+clover_bm16_short_c_r1_t128_thpoff,1,Ideal Gas,0.5756,5.5887
+clover_bm16_short_c_r1_t128_thpoff,1,Viscosity,0.4161,4.0402
+clover_bm16_short_c_r1_t128_thpoff,1,PdV,1.6656,16.1705
+clover_bm16_short_c_r1_t128_thpoff,1,Revert,0.0000,0.0000
+clover_bm16_short_c_r1_t128_thpoff,1,Acceleration,0.6504,6.3143
+clover_bm16_short_c_r1_t128_thpoff,1,Fluxes,0.4013,3.8962
+clover_bm16_short_c_r1_t128_thpoff,1,Cell Advection,2.0499,19.9014
+clover_bm16_short_c_r1_t128_thpoff,1,Momentum Advection,3.0477,29.5888
+clover_bm16_short_c_r1_t128_thpoff,1,Reset,0.0002,0.0018
+clover_bm16_short_c_r1_t128_thpoff,1,Summary,0.0343,0.3329
+clover_bm16_short_c_r1_t128_thpoff,1,Visit,0.0000,0.0000
+clover_bm16_short_c_r1_t128_thpoff,1,Tile Halo Exchange,0.0009,0.0089
+clover_bm16_short_c_r1_t128_thpoff,1,Self Halo Exchange,0.8139,7.9015
+clover_bm16_short_c_r1_t128_thpoff,1,MPI Halo Exchange,0.0018,0.0179
+clover_bm16_short_c_r1_t128_thpoff,1,Total,10.2605,99.6149
+clover_bm16_short_c_r1_t128_thpoff,1,The Rest,0.0397,0.3851

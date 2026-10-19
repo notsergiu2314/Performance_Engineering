@@ -1,0 +1,13 @@
+# Correctness gate: clover_bm.in (960^2 cells, 2955 steps, test_problem 3, shock crosses every
+# chunk boundary). Its built-in check reports the kinetic-energy deviation from a reference
+# that was generated elsewhere; on HAICGU/GCC 14 the deviation is 0.5726209E-02 % for the C
+# kernels and 0.1787088E-01 % for Fortran (job 34729), identical at every layout, so the
+# gate is "same deviation as the baseline", checked by qa_check.py against
+# perf/archive/m3/correctness_baseline.csv. One repetition per row (deterministic).
+c       64  2   clover_bm.in on
+c       1   128 clover_bm.in on
+c       4   32  clover_bm.in on
+c       32  4   clover_bm.in on
+c       128 1   clover_bm.in on
+c       64  2   clover_bm.in off
+fortran 64  2   clover_bm.in on

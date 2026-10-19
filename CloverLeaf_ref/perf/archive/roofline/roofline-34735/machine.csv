@@ -1,0 +1,38 @@
+quantity,threads,scope,value,unit,source,note
+implied_ghz,1,core,0.770,GHz,measured,"best of 3, spread 0.0%"
+implied_ghz,64,socket,0.770,GHz,measured,"best of 3, spread 0.0%"
+implied_ghz,128,node,0.770,GHz,measured,"best of 3, spread 0.0%"
+peak_fma,1,core,6.160,GFLOP/s,measured,"best of 3, spread 0.0%"
+peak_fma,64,socket,393.990,GFLOP/s,measured,"best of 3, spread 0.6%"
+peak_fma,128,node,787.950,GFLOP/s,measured,"best of 3, spread 0.4%"
+peak_fma_per_thread,1,core,6.160,GFLOP/s,measured,"best of 3, spread 0.0%"
+peak_fma_per_thread,64,socket,6.160,GFLOP/s,measured,"best of 3, spread 0.0%"
+peak_fma_per_thread,128,node,6.160,GFLOP/s,measured,"best of 3, spread 0.0%"
+stream_add,1,core,12.942,GB/s,measured,"best of 3, spread 0.7%"
+stream_add,32,numa,65.536,GB/s,measured,"best of 3, spread 0.2%"
+stream_add,64,socket,131.811,GB/s,measured,"best of 3, spread 0.1%"
+stream_add,128,node,262.134,GB/s,measured,"best of 3, spread 0.2%"
+stream_copy,1,core,16.976,GB/s,measured,"best of 3, spread 0.5%"
+stream_copy,32,numa,66.465,GB/s,measured,"best of 3, spread 0.5%"
+stream_copy,64,socket,132.500,GB/s,measured,"best of 3, spread 0.1%"
+stream_copy,128,node,264.002,GB/s,measured,"best of 3, spread 0.5%"
+stream_read,1,core,8.374,GB/s,measured,"best of 3, spread 0.6%"
+stream_read,32,numa,77.572,GB/s,measured,"best of 3, spread 0.1%"
+stream_read,64,socket,153.585,GB/s,measured,"best of 3, spread 0.3%"
+stream_read,128,node,295.732,GB/s,measured,"best of 3, spread 0.1%"
+stream_scale,1,core,16.907,GB/s,measured,"best of 3, spread 0.8%"
+stream_scale,32,numa,66.151,GB/s,measured,"best of 3, spread 0.2%"
+stream_scale,64,socket,131.652,GB/s,measured,"best of 3, spread 0.2%"
+stream_scale,128,node,261.136,GB/s,measured,"best of 3, spread 0.1%"
+stream_triad,1,core,12.968,GB/s,measured,"best of 3, spread 0.8%"
+stream_triad,32,numa,65.529,GB/s,measured,"best of 3, spread 0.2%"
+stream_triad,64,socket,132.112,GB/s,measured,"best of 3, spread 0.3%"
+stream_triad,128,node,262.859,GB/s,measured,"best of 3, spread 0.1%"
+peak_flops,1,core,10.4,GFLOP/s,theoretical,1 x 2.6 GHz x 4 FLOP/cycle
+peak_flops,32,numa,332.8,GFLOP/s,theoretical,32 x 2.6 GHz x 4 FLOP/cycle
+peak_flops,64,socket,665.6,GFLOP/s,theoretical,64 x 2.6 GHz x 4 FLOP/cycle
+peak_flops,128,node,1331.2,GFLOP/s,theoretical,128 x 2.6 GHz x 4 FLOP/cycle
+dram_bw,32,numa,85.3,GB/s,theoretical,4 ch x 2666 MT/s x 8 B
+dram_bw,64,socket,170.6,GB/s,theoretical,8 ch x 2666 MT/s x 8 B
+dram_bw,128,node,341.2,GB/s,theoretical,16 ch x 2666 MT/s x 8 B
+stream_triad,128,node,140,GB/s,site,value quoted by the site

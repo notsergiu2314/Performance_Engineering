@@ -1,0 +1,21 @@
+Results in /home/joosterveld/CloverLeaf_ref/perf/results/m3_correctness_34937/flags  (1 runs, 1 cases)
+
+| case | deck | kernels | ranks | thr | thp | n | best_wall_s | median_s | spread | grind_ns/cell | qa_dev_% | qa | reported |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| clover_bm_c_r64_t2 | clover_bm.in | c | 64 | 2 | on | 1 | 15.214 | 15.214 | 0.0% | 5.59 | 3.84e-02 | FAILED | C |
+
+Profiler split of best repetition (seconds, % of wall); sections under 1% omitted
+| section | clover_bm_c_r64_t2 |
+|---|---|
+| Timestep | 1.64 (11%) |
+| Ideal Gas | 0.60 (4%) |
+| Viscosity | 1.01 (7%) |
+| PdV | 1.71 (11%) |
+| Acceleration | 0.48 (3%) |
+| Fluxes | 0.24 (2%) |
+| Cell Advection | 2.56 (17%) |
+| Momentum Advection | 3.86 (25%) |
+| Reset | 0.41 (3%) |
+| MPI Halo Exchange | 2.59 (17%) |
+| Total | 15.21 (100%) |
+

@@ -1,6 +1,7 @@
 # Visual Studio Code
 .vscode/*
 .vscode
+.venv
 
 # Built Visual Studio Code Extensions
 *.vsix
@@ -19,6 +20,9 @@ tmp/*
 *.lo
 *.o
 *.obj
+
+# fortran compiler modules
+*.mod
 
 # Precompiled Headers
 *.gch
@@ -46,6 +50,8 @@ tmp/*
 *.exe
 *.out
 *.app
+# cloverleaf exe
+clover_leaf
 
 # Build directories
 build/
@@ -59,3 +65,9 @@ generated_deps/
 # other
 # *.png
 # *.csv
+# CloverLeaf build products and job output (CloverLeaf_ref/perf)
+CloverLeaf_ref/perf/bin/
+CloverLeaf_ref/perf/roofline/bin/
+CloverLeaf_ref/perf/results/
+CloverLeaf_ref/perf/microbench/STREAM/
+__pycache__/

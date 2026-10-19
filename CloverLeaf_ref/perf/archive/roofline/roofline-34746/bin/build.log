@@ -1,0 +1,210 @@
+date:   2026-10-12T12:12:11+00:00
+host:   cn18.guoehi.cluster
+cc:     gcc (gcc (GCC) 14.1.0)
+cflags: -O3 -march=native -funroll-loops -fopenmp -ffp-contract=fast
+built:  membw
+built:  peak_fma
+peak_fma: 72 vector FMA, 0 scalar FMA instructions
+
+---- peak_fma hot loop (main._omp_fn.*) ----
+0000000000400b10 <main._omp_fn.0>:
+  400b10:	stp	x29, x30, [sp, #-256]!
+  400b14:	mov	x29, sp
+  400b18:	stp	x19, x20, [sp, #16]
+  400b1c:	stp	d13, d14, [sp, #32]
+  400b20:	ldr	x20, [x0]
+  400b24:	mov	x19, x0
+  400b28:	str	d15, [sp, #48]
+  400b2c:	bl	400810 <GOMP_barrier@plt>
+  400b30:	bl	400820 <omp_get_wtime@plt>
+  400b34:	adrp	x0, 400000 <_init-0x7c0>
+  400b38:	adrp	x1, 400000 <_init-0x7c0>
+  400b3c:	fmov	d14, d0
+  400b40:	ldr	q25, [x0, #3936]
+  400b44:	ldr	q24, [x1, #3952]
+  400b48:	cmp	x20, #0x0
+  400b4c:	b.le	400d00 <main._omp_fn.0+0x1f0>
+  400b50:	adrp	x12, 400000 <_init-0x7c0>
+  400b54:	adrp	x13, 400000 <_init-0x7c0>
+  400b58:	adrp	x14, 400000 <_init-0x7c0>
+  400b5c:	adrp	x15, 400000 <_init-0x7c0>
+  400b60:	adrp	x16, 400000 <_init-0x7c0>
+  400b64:	adrp	x17, 400000 <_init-0x7c0>
+  400b68:	ldr	q23, [x12, #3968]
+  400b6c:	adrp	x18, 400000 <_init-0x7c0>
+  400b70:	adrp	x30, 400000 <_init-0x7c0>
+  400b74:	adrp	x1, 401000 <_IO_stdin_used+0x130>
+  400b78:	ldr	q22, [x13, #3984]
+  400b7c:	adrp	x2, 401000 <_IO_stdin_used+0x130>
+  400b80:	adrp	x3, 401000 <_IO_stdin_used+0x130>
+  400b84:	ldr	q21, [x14, #4000]
+  400b88:	ldr	q20, [x15, #4016]
+  400b8c:	ldr	q19, [x16, #4032]
+  400b90:	ldr	q29, [x17, #4048]
+  400b94:	mov	x0, #0x0                   	// #0
+  400b98:	ldr	q28, [x18, #4064]
+  400b9c:	ldr	q27, [x30, #4080]
+  400ba0:	ldr	q26, [x1]
+  400ba4:	ldr	q30, [x2, #16]
+  400ba8:	ldr	q31, [x3, #32]
+  400bac:	ands	x4, x20, #0x3
+  400bb0:	b.eq	400c68 <main._omp_fn.0+0x158>  // b.none
+  400bb4:	cmp	x4, #0x1
+  400bb8:	b.eq	400c2c <main._omp_fn.0+0x11c>  // b.none
+  400bbc:	cmp	x4, #0x2
+  400bc0:	b.eq	400bf8 <main._omp_fn.0+0xe8>  // b.none
+  400bc4:	fmla	v30.2d, v30.2d, v31.2d
+  400bc8:	fmla	v26.2d, v26.2d, v31.2d
+  400bcc:	mov	x0, #0x1                   	// #1
+  400bd0:	fmla	v27.2d, v27.2d, v31.2d
+  400bd4:	fmla	v28.2d, v28.2d, v31.2d
+  400bd8:	fmla	v29.2d, v29.2d, v31.2d
+  400bdc:	fmla	v19.2d, v19.2d, v31.2d
+  400be0:	fmla	v20.2d, v20.2d, v31.2d
+  400be4:	fmla	v21.2d, v21.2d, v31.2d
+  400be8:	fmla	v22.2d, v22.2d, v31.2d
+  400bec:	fmla	v23.2d, v23.2d, v31.2d
+  400bf0:	fmla	v24.2d, v24.2d, v31.2d
+  400bf4:	fmla	v25.2d, v25.2d, v31.2d
+  400bf8:	fmla	v30.2d, v30.2d, v31.2d
+  400bfc:	fmla	v26.2d, v26.2d, v31.2d
+  400c00:	add	x0, x0, #0x1
+  400c04:	fmla	v27.2d, v27.2d, v31.2d
+  400c08:	fmla	v28.2d, v28.2d, v31.2d
+  400c0c:	fmla	v29.2d, v29.2d, v31.2d
+  400c10:	fmla	v19.2d, v19.2d, v31.2d
+  400c14:	fmla	v20.2d, v20.2d, v31.2d
+  400c18:	fmla	v21.2d, v21.2d, v31.2d
+  400c1c:	fmla	v22.2d, v22.2d, v31.2d
+  400c20:	fmla	v23.2d, v23.2d, v31.2d
+  400c24:	fmla	v24.2d, v24.2d, v31.2d
+  400c28:	fmla	v25.2d, v25.2d, v31.2d
+  400c2c:	add	x0, x0, #0x1
+  400c30:	fmla	v30.2d, v30.2d, v31.2d
+  400c34:	fmla	v26.2d, v26.2d, v31.2d
+  400c38:	fmla	v27.2d, v27.2d, v31.2d
+  400c3c:	fmla	v28.2d, v28.2d, v31.2d
+  400c40:	fmla	v29.2d, v29.2d, v31.2d
+  400c44:	fmla	v19.2d, v19.2d, v31.2d
+  400c48:	fmla	v20.2d, v20.2d, v31.2d
+  400c4c:	fmla	v21.2d, v21.2d, v31.2d
+  400c50:	fmla	v22.2d, v22.2d, v31.2d
+  400c54:	fmla	v23.2d, v23.2d, v31.2d
+  400c58:	fmla	v24.2d, v24.2d, v31.2d
+  400c5c:	fmla	v25.2d, v25.2d, v31.2d
+  400c60:	cmp	x20, x0
+  400c64:	b.eq	400d50 <main._omp_fn.0+0x240>  // b.none
+  400c68:	fmla	v30.2d, v30.2d, v31.2d
+  400c6c:	fmla	v26.2d, v26.2d, v31.2d
+  400c70:	add	x0, x0, #0x4
+  400c74:	fmla	v27.2d, v27.2d, v31.2d
+  400c78:	fmla	v28.2d, v28.2d, v31.2d
+  400c7c:	fmla	v29.2d, v29.2d, v31.2d
+  400c80:	fmla	v19.2d, v19.2d, v31.2d
+  400c84:	fmla	v20.2d, v20.2d, v31.2d
+  400c88:	fmla	v21.2d, v21.2d, v31.2d
+  400c8c:	fmla	v22.2d, v22.2d, v31.2d
+  400c90:	fmla	v23.2d, v23.2d, v31.2d
+  400c94:	fmla	v24.2d, v24.2d, v31.2d
+  400c98:	fmla	v25.2d, v25.2d, v31.2d
+  400c9c:	fmla	v30.2d, v30.2d, v31.2d
+  400ca0:	fmla	v26.2d, v26.2d, v31.2d
+  400ca4:	fmla	v27.2d, v27.2d, v31.2d
+  400ca8:	fmla	v28.2d, v28.2d, v31.2d
+  400cac:	fmla	v29.2d, v29.2d, v31.2d
+  400cb0:	fmla	v19.2d, v19.2d, v31.2d
+  400cb4:	fmla	v20.2d, v20.2d, v31.2d
+  400cb8:	fmla	v21.2d, v21.2d, v31.2d
+  400cbc:	fmla	v22.2d, v22.2d, v31.2d
+  400cc0:	fmla	v23.2d, v23.2d, v31.2d
+  400cc4:	fmla	v24.2d, v24.2d, v31.2d
+  400cc8:	fmla	v25.2d, v25.2d, v31.2d
+  400ccc:	fmla	v30.2d, v30.2d, v31.2d
+  400cd0:	fmla	v26.2d, v26.2d, v31.2d
+  400cd4:	fmla	v27.2d, v27.2d, v31.2d
+  400cd8:	fmla	v28.2d, v28.2d, v31.2d
+  400cdc:	fmla	v29.2d, v29.2d, v31.2d
+  400ce0:	fmla	v19.2d, v19.2d, v31.2d
+  400ce4:	fmla	v20.2d, v20.2d, v31.2d
+  400ce8:	fmla	v21.2d, v21.2d, v31.2d
+  400cec:	fmla	v22.2d, v22.2d, v31.2d
+  400cf0:	fmla	v23.2d, v23.2d, v31.2d
+  400cf4:	fmla	v24.2d, v24.2d, v31.2d
+  400cf8:	fmla	v25.2d, v25.2d, v31.2d
+  400cfc:	b	400c30 <main._omp_fn.0+0x120>
+  400d00:	adrp	x2, 400000 <_init-0x7c0>
+  400d04:	adrp	x3, 400000 <_init-0x7c0>
+  400d08:	adrp	x4, 400000 <_init-0x7c0>
+  400d0c:	adrp	x5, 400000 <_init-0x7c0>
+  400d10:	adrp	x6, 400000 <_init-0x7c0>
+  400d14:	adrp	x7, 400000 <_init-0x7c0>
+  400d18:	ldr	q23, [x2, #3968]
+  400d1c:	adrp	x8, 400000 <_init-0x7c0>
+  400d20:	adrp	x9, 400000 <_init-0x7c0>
+  400d24:	adrp	x10, 401000 <_IO_stdin_used+0x130>
+  400d28:	ldr	q22, [x3, #3984]
+  400d2c:	adrp	x11, 401000 <_IO_stdin_used+0x130>
+  400d30:	ldr	q21, [x4, #4000]
+  400d34:	ldr	q20, [x5, #4016]
+  400d38:	ldr	q19, [x6, #4032]
+  400d3c:	ldr	q29, [x7, #4048]
+  400d40:	ldr	q28, [x8, #4064]
+  400d44:	ldr	q27, [x9, #4080]
+  400d48:	ldr	q26, [x10]
+  400d4c:	ldr	q30, [x11, #16]
+  400d50:	stp	q27, q29, [sp, #64]
+  400d54:	stp	q26, q28, [sp, #96]
+  400d58:	stp	q20, q22, [sp, #128]
+  400d5c:	stp	q23, q24, [sp, #160]
+  400d60:	stp	q25, q30, [sp, #192]
+  400d64:	stp	q19, q21, [sp, #224]
+  400d68:	bl	400820 <omp_get_wtime@plt>
+  400d6c:	fsub	d0, d0, d14
+  400d70:	ldp	q16, q13, [sp, #192]
+  400d74:	ldp	q3, q4, [sp, #96]
+  400d78:	fadd	v14.2d, v13.2d, v3.2d
+  400d7c:	ldp	q1, q2, [sp, #64]
+  400d80:	ldp	q25, q24, [sp, #224]
+  400d84:	ldp	q5, q6, [sp, #128]
+  400d88:	ldp	q7, q15, [sp, #160]
+  400d8c:	mov	x20, #0xffefffffffffffff    	// #-4503599627370497
+  400d90:	movi	d23, #0x0
+  400d94:	mov	x5, #0xfff0000000000000    	// #-4503599627370496
+  400d98:	fmov	d17, x20
+  400d9c:	fmov	d18, x5
+  400da0:	fadd	v22.2d, v14.2d, v1.2d
+  400da4:	fcmpe	d0, d17
+  400da8:	fadd	d13, d0, d23
+  400dac:	fcsel	d14, d0, d18, ge	// ge = tcont
+  400db0:	fadd	v21.2d, v22.2d, v4.2d
+  400db4:	fadd	v20.2d, v21.2d, v2.2d
+  400db8:	fadd	v19.2d, v20.2d, v25.2d
+  400dbc:	fadd	v29.2d, v19.2d, v5.2d
+  400dc0:	fadd	v28.2d, v29.2d, v24.2d
+  400dc4:	fadd	v27.2d, v28.2d, v6.2d
+  400dc8:	fadd	v26.2d, v27.2d, v7.2d
+  400dcc:	fadd	v30.2d, v26.2d, v15.2d
+  400dd0:	fadd	v31.2d, v30.2d, v16.2d
+  400dd4:	fadd	d0, d23, d31
+  400dd8:	mov	d17, v31.d[1]
+  400ddc:	fadd	d18, d17, d0
+  400de0:	fadd	d15, d18, d23
+  400de4:	bl	400840 <GOMP_single_start@plt>
+  400de8:	tbz	w0, #0, 400df4 <main._omp_fn.0+0x2e4>
+  400dec:	bl	400850 <omp_get_num_threads@plt>
+  400df0:	str	w0, [x19, #32]
+  400df4:	bl	400810 <GOMP_barrier@plt>
+  400df8:	bl	4008a0 <GOMP_atomic_start@plt>
+  400dfc:	ldp	d1, d2, [x19, #8]
+  400e00:	ldr	d5, [x19, #24]
+  400e04:	fmaxnm	d6, d5, d14
+  400e08:	fadd	d3, d2, d13
+  400e0c:	fadd	d4, d1, d15
+  400e10:	stp	d4, d3, [x19, #8]
+  400e14:	ldr	d15, [sp, #48]
+  400e18:	str	d6, [x19, #24]
+  400e1c:	ldp	d13, d14, [sp, #32]
+  400e20:	ldp	x19, x20, [sp, #16]
+  400e24:	ldp	x29, x30, [sp], #256
+  400e28:	b	400860 <GOMP_atomic_end@plt>
+  400e2c:	nop

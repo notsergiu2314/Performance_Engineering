@@ -1,0 +1,35 @@
+tag,rep,section,time,pct
+clover_bm16_short_c_r64_t2,1,Timestep,0.4599,5.5709
+clover_bm16_short_c_r64_t2,1,Ideal Gas,0.4160,5.0393
+clover_bm16_short_c_r64_t2,1,Viscosity,0.3622,4.3869
+clover_bm16_short_c_r64_t2,1,PdV,1.3588,16.4584
+clover_bm16_short_c_r64_t2,1,Revert,0.0000,0.0000
+clover_bm16_short_c_r64_t2,1,Acceleration,0.5635,6.8258
+clover_bm16_short_c_r64_t2,1,Fluxes,0.3865,4.6818
+clover_bm16_short_c_r64_t2,1,Cell Advection,1.6792,20.3397
+clover_bm16_short_c_r64_t2,1,Momentum Advection,2.7915,33.8114
+clover_bm16_short_c_r64_t2,1,Reset,0.0001,0.0014
+clover_bm16_short_c_r64_t2,1,Summary,0.0251,0.3043
+clover_bm16_short_c_r64_t2,1,Visit,0.0000,0.0000
+clover_bm16_short_c_r64_t2,1,Tile Halo Exchange,0.0004,0.0049
+clover_bm16_short_c_r64_t2,1,Self Halo Exchange,0.0001,0.0015
+clover_bm16_short_c_r64_t2,1,MPI Halo Exchange,0.2117,2.5638
+clover_bm16_short_c_r64_t2,1,Total,8.2552,99.9901
+clover_bm16_short_c_r64_t2,1,The Rest,0.0008,0.0099
+clover_bm16_short_c_r1_t128_thpoff,1,Timestep,0.5598,5.3137
+clover_bm16_short_c_r1_t128_thpoff,1,Ideal Gas,0.5040,4.7842
+clover_bm16_short_c_r1_t128_thpoff,1,Viscosity,0.4423,4.1989
+clover_bm16_short_c_r1_t128_thpoff,1,PdV,1.6719,15.8706
+clover_bm16_short_c_r1_t128_thpoff,1,Revert,0.0000,0.0000
+clover_bm16_short_c_r1_t128_thpoff,1,Acceleration,0.6542,6.2102
+clover_bm16_short_c_r1_t128_thpoff,1,Fluxes,0.3950,3.7499
+clover_bm16_short_c_r1_t128_thpoff,1,Cell Advection,2.0686,19.6370
+clover_bm16_short_c_r1_t128_thpoff,1,Momentum Advection,3.3907,32.1870
+clover_bm16_short_c_r1_t128_thpoff,1,Reset,0.0000,0.0004
+clover_bm16_short_c_r1_t128_thpoff,1,Summary,0.0339,0.3216
+clover_bm16_short_c_r1_t128_thpoff,1,Visit,0.0000,0.0000
+clover_bm16_short_c_r1_t128_thpoff,1,Tile Halo Exchange,0.0003,0.0031
+clover_bm16_short_c_r1_t128_thpoff,1,Self Halo Exchange,0.7686,7.2962
+clover_bm16_short_c_r1_t128_thpoff,1,MPI Halo Exchange,0.0010,0.0099
+clover_bm16_short_c_r1_t128_thpoff,1,Total,10.4904,99.5825
+clover_bm16_short_c_r1_t128_thpoff,1,The Rest,0.0440,0.4175

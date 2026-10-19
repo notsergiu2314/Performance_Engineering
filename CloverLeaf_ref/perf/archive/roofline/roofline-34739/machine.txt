@@ -1,0 +1,21 @@
+quantity             threads  scope   value    unit     source       note                        
+implied_ghz          1        core    0.768    GHz      measured     best of 3, spread 0.0%      
+implied_ghz          32       numa    0.768    GHz      measured     best of 3, spread 0.0%      
+implied_ghz          64       socket  0.768    GHz      measured     best of 3, spread 0.0%      
+implied_ghz          128      node    0.768    GHz      measured     best of 3, spread 0.0%      
+peak_fma             1        core    6.150    GFLOP/s  measured     best of 3, spread 0.2%      
+peak_fma             32       numa    196.530  GFLOP/s  measured     best of 3, spread 0.0%      
+peak_fma             64       socket  393.020  GFLOP/s  measured     best of 3, spread 0.0%      
+peak_fma             128      node    786.000  GFLOP/s  measured     best of 3, spread 3.0%      
+peak_fma_per_thread  1        core    6.150    GFLOP/s  measured     best of 3, spread 0.2%      
+peak_fma_per_thread  32       numa    6.150    GFLOP/s  measured     best of 3, spread 0.0%      
+peak_fma_per_thread  64       socket  6.150    GFLOP/s  measured     best of 3, spread 0.2%      
+peak_fma_per_thread  128      node    6.150    GFLOP/s  measured     best of 3, spread 0.2%      
+peak_flops           1        core    20.8     GFLOP/s  theoretical  1 x 2.6 GHz x 8 FLOP/cycle  
+peak_flops           32       numa    665.6    GFLOP/s  theoretical  32 x 2.6 GHz x 8 FLOP/cycle 
+peak_flops           64       socket  1331.2   GFLOP/s  theoretical  64 x 2.6 GHz x 8 FLOP/cycle 
+peak_flops           128      node    2662.4   GFLOP/s  theoretical  128 x 2.6 GHz x 8 FLOP/cycle
+dram_bw              32       numa    85.3     GB/s     theoretical  4 ch x 2666 MT/s x 8 B      
+dram_bw              64       socket  170.6    GB/s     theoretical  8 ch x 2666 MT/s x 8 B      
+dram_bw              128      node    341.2    GB/s     theoretical  16 ch x 2666 MT/s x 8 B     
+stream_triad         128      node    140      GB/s     site         value quoted by the site    

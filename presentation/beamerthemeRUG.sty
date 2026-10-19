@@ -1,0 +1,113 @@
+% beamerthemeRUG.sty -- Beamer theme in the house style of the University of Groningen
+% (Rijksuniversiteit Groningen): white slides, RUG red accents, wordmark in the footer.
+% Colour taken from the official wordmark; swap \definecolor{rugaccent} for a faculty colour.
+\ProvidesPackage{beamerthemeRUG}[2026/10/19 RUG beamer theme]
+\RequirePackage{tikz}
+\RequirePackage{opensans}
+\RequirePackage[T1]{fontenc}
+
+\mode<presentation>
+
+% ---------------------------------------------------------------- colours
+\definecolor{rugred}{HTML}{EE2425}
+\definecolor{rugaccent}{HTML}{EE2425}   % faculty accent (FSE may use its own)
+\definecolor{rugdark}{HTML}{3C3C3C}
+\definecolor{ruggrey}{HTML}{8A8A8A}
+\definecolor{ruglight}{HTML}{F3F3F3}
+
+\setbeamercolor{normal text}{fg=rugdark,bg=white}
+\setbeamercolor{structure}{fg=rugred}
+\setbeamercolor{title}{fg=rugred}
+\setbeamercolor{subtitle}{fg=rugdark}
+\setbeamercolor{author}{fg=rugdark}
+\setbeamercolor{institute}{fg=ruggrey}
+\setbeamercolor{date}{fg=ruggrey}
+\setbeamercolor{frametitle}{fg=rugred,bg=white}
+\setbeamercolor{framesubtitle}{fg=ruggrey}
+\setbeamercolor{section in toc}{fg=rugdark}
+\setbeamercolor{item}{fg=rugred}
+\setbeamercolor{footline}{fg=ruggrey}
+\setbeamercolor{block title}{fg=rugred,bg=ruglight}
+\setbeamercolor{block body}{fg=rugdark,bg=ruglight}
+\setbeamercolor{block title alerted}{fg=white,bg=rugred}
+\setbeamercolor{block body alerted}{fg=rugdark,bg=ruglight}
+\setbeamercolor{alerted text}{fg=rugred}
+\setbeamercolor{caption name}{fg=ruggrey}
+
+% ---------------------------------------------------------------- fonts
+\usefonttheme{professionalfonts}
+\setbeamerfont{title}{size=\LARGE,series=\bfseries}
+\setbeamerfont{subtitle}{size=\large,series=\mdseries}
+\setbeamerfont{author}{size=\normalsize}
+\setbeamerfont{institute}{size=\small}
+\setbeamerfont{date}{size=\small}
+\setbeamerfont{frametitle}{size=\Large,series=\bfseries}
+\setbeamerfont{framesubtitle}{size=\normalsize,series=\mdseries}
+\setbeamerfont{footline}{size=\tiny}
+\setbeamerfont{block title}{series=\bfseries}
+\setbeamerfont{caption}{size=\scriptsize}
+
+% ---------------------------------------------------------------- layout
+\setbeamertemplate{navigation symbols}{}
+\setbeamersize{text margin left=1.0cm,text margin right=1.0cm}
+\setbeamertemplate{itemize item}{\color{rugred}\bfseries/}
+\setbeamertemplate{itemize subitem}{\color{ruggrey}\bfseries/}
+\setbeamertemplate{enumerate item}{\color{rugred}\bfseries\insertenumlabel.}
+\setbeamertemplate{caption}{\usebeamercolor[fg]{caption name}\insertcaption}
+\setlength{\leftmargini}{1.2em}
+
+% frame title: red text with a thin red rule underneath
+\setbeamertemplate{frametitle}{%
+  \vspace*{0.2cm}%
+  \begin{beamercolorbox}[wd=\paperwidth,leftskip=1.0cm,rightskip=1.0cm]{frametitle}
+    \usebeamerfont{frametitle}\insertframetitle%
+    \ifx\insertframesubtitle\@empty\else
+      \\[-0.1em]{\usebeamerfont{framesubtitle}\usebeamercolor[fg]{framesubtitle}\insertframesubtitle}%
+    \fi
+    \par\vspace{0.1cm}{\color{rugred}\rule{\dimexpr\paperwidth-2cm\relax}{0.8pt}}%
+  \end{beamercolorbox}%
+}
+
+% footer: slide number, short title, wordmark
+\newcommand{\ruglogo}{logo/rug_logo.png}
+\setbeamertemplate{footline}{%
+  \begin{beamercolorbox}[wd=\paperwidth,ht=0.7cm,dp=0.15cm,leftskip=1.0cm,rightskip=1.0cm]{footline}
+    \usebeamerfont{footline}%
+    \raisebox{0.2cm}{\insertframenumber\,/\,\inserttotalframenumber\qquad\insertshorttitle}%
+    \hfill\includegraphics[height=0.55cm]{\ruglogo}%
+  \end{beamercolorbox}%
+}
+
+% title page
+\setbeamertemplate{title page}{%
+  \begin{tikzpicture}[remember picture,overlay]
+    \node[anchor=north west,inner sep=0pt] at ([xshift=1.0cm,yshift=-0.8cm]current page.north west)
+      {\includegraphics[width=5.2cm]{\ruglogo}};
+    \fill[rugred] ([yshift=0.0cm]current page.south west) rectangle ([yshift=0.35cm]current page.south east);
+  \end{tikzpicture}\par
+  \vspace*{2.0cm}%
+  \noindent\begin{minipage}{\textwidth}
+    {\usebeamerfont{title}\usebeamercolor[fg]{title}\inserttitle\par}
+    \vspace{0.35cm}
+    {\usebeamerfont{subtitle}\usebeamercolor[fg]{subtitle}\insertsubtitle\par}
+    \vspace{0.9cm}
+    {\usebeamerfont{author}\usebeamercolor[fg]{author}\insertauthor\par}
+    \vspace{0.25cm}
+    {\usebeamerfont{institute}\usebeamercolor[fg]{institute}\insertinstitute\par}
+    \vspace{0.25cm}
+    {\usebeamerfont{date}\usebeamercolor[fg]{date}\insertdate\par}
+  \end{minipage}
+}
+
+% section page: white, large red section name
+\setbeamertemplate{section page}{%
+  \begin{tikzpicture}[remember picture,overlay]
+    \fill[rugred] (current page.south west) rectangle ([xshift=0.35cm]current page.north west);
+  \end{tikzpicture}%
+  \vfill
+  {\usebeamerfont{title}\usebeamercolor[fg]{title}\insertsection\par}
+  \vfill
+}
+\AtBeginSection[]{\begin{frame}[plain,noframenumbering]\sectionpage\end{frame}}
+
+\mode<all>

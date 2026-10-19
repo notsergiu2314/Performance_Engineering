@@ -1,0 +1,21 @@
+quantity,threads,scope,value,unit,source,note
+implied_ghz,1,core,1.300,GHz,measured,"best of 3, spread 0.0%"
+implied_ghz,32,numa,1.299,GHz,measured,"best of 3, spread 0.0%"
+implied_ghz,64,socket,1.299,GHz,measured,"best of 3, spread 0.0%"
+implied_ghz,128,node,1.299,GHz,measured,"best of 3, spread 0.0%"
+peak_fma,1,core,10.400,GFLOP/s,measured,"best of 3, spread 0.0%"
+peak_fma,32,numa,332.540,GFLOP/s,measured,"best of 3, spread 0.0%"
+peak_fma,64,socket,664.700,GFLOP/s,measured,"best of 3, spread 0.0%"
+peak_fma,128,node,1329.250,GFLOP/s,measured,"best of 3, spread 0.0%"
+peak_fma_per_thread,1,core,10.400,GFLOP/s,measured,"best of 3, spread 0.0%"
+peak_fma_per_thread,32,numa,10.400,GFLOP/s,measured,"best of 3, spread 0.1%"
+peak_fma_per_thread,64,socket,10.390,GFLOP/s,measured,"best of 3, spread 0.0%"
+peak_fma_per_thread,128,node,10.390,GFLOP/s,measured,"best of 3, spread 0.0%"
+peak_flops,1,core,10.4,GFLOP/s,theoretical,1 x 2.6 GHz x 4 FLOP/cycle
+peak_flops,32,numa,332.8,GFLOP/s,theoretical,32 x 2.6 GHz x 4 FLOP/cycle
+peak_flops,64,socket,665.6,GFLOP/s,theoretical,64 x 2.6 GHz x 4 FLOP/cycle
+peak_flops,128,node,1331.2,GFLOP/s,theoretical,128 x 2.6 GHz x 4 FLOP/cycle
+dram_bw,32,numa,85.3,GB/s,theoretical,4 ch x 2666 MT/s x 8 B
+dram_bw,64,socket,170.6,GB/s,theoretical,8 ch x 2666 MT/s x 8 B
+dram_bw,128,node,341.2,GB/s,theoretical,16 ch x 2666 MT/s x 8 B
+stream_triad,128,node,140,GB/s,site,value quoted by the site

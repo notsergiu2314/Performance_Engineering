@@ -1,0 +1,9 @@
+# generated 2026-10-19T13:27:39 by perf/analysis/variants.py from perf/results/m3_opt_35003
+# baseline archive: m3_baseline_34797; qa_ok: gate verdict of perf/results/m3_correctness_35002/correctness_rows.csv
+# variant base: binary md5 57396505a5e9, node cn16, job 35003: M3 baseline source and CFLAGS (measured in job 34797)
+# variant opt: binary md5 1594b80e3650, node cn16, job 35003: all changes (merge of cell and mom)
+# variant optnf: binary md5 50ed04ebf03c, node cn16, job 35003: opt with the baseline CFLAGS (no -fno-math-errno -fno-trapping-math)
+variant,description,n,median_s,min_s,max_s,dram_TB,hw_GBs,time_vs_base_pct,bytes_vs_base_pct,source
+base,M3 baseline source and CFLAGS (measured in job 34797),5,11.317,11.259,11.349,2.828,249.9,0.0,0.0,"job 35003 (m3_opt ladder, base)"
+opt,all changes (merge of cell and mom),5,8.252,8.242,8.354,2.043,247.6,-27.1,-27.8,"job 35003 (m3_opt ladder, opt)"
+optnf,opt with the baseline CFLAGS (no -fno-math-errno -fno-trapping-math),5,8.563,8.533,8.634,2.052,239.6,-24.3,-27.4,"job 35003 (m3_opt ladder, optnf)"

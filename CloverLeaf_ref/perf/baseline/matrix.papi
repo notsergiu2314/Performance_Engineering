@@ -1,0 +1,5 @@
+# Per-kernel PAPI counters at the M3 baseline layout (64x2) and at the pure-OpenMP reference
+# (1x128, THP off). Run with CLOVER_BIN=perf/bin/clover_papi and PROF_EVENTS set (jobs/m3_papi.sbatch
+# loops over the event sets); one repetition per row.
+c       64  2   clover_bm16_short.in on
+c       1   128 clover_bm16_short.in off

@@ -1,0 +1,8 @@
+deck,kernels,layout,reps,qa_pct,clover_verdict,source,variant,gate
+clover_bm.in,c,64x2,1,0.5726209E-02,FAILED,job 35002 (m3_correctness),optnf,ok
+clover_bm.in,c,1x128,1,0.5726209E-02,FAILED,job 35002 (m3_correctness),optnf,ok
+clover_bm.in,c,4x32,1,0.5726209E-02,FAILED,job 35002 (m3_correctness),optnf,ok
+clover_bm.in,c,32x4,1,0.5726209E-02,FAILED,job 35002 (m3_correctness),optnf,ok
+clover_bm.in,c,128x1,1,0.5726209E-02,FAILED,job 35002 (m3_correctness),optnf,ok
+clover_bm.in,c,64x2 THP off,1,0.5726209E-02,FAILED,job 35002 (m3_correctness),optnf,ok
+clover_bm.in,fortran,64x2,1,0.1787088E-01,FAILED,job 35002 (m3_correctness),optnf,ok

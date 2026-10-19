@@ -1,0 +1,2 @@
+tag,deck,kernels,ranks,threads,thp,rep,wall,grind,first_step,qa_pct,qa,kernels_reported,dram_GB,busiest_over_mean,host,date,variant
+clover_bm_c_r64_t2,clover_bm.in,c,64,2,on,1,15.213831186294556,5.5862449602504386E-009,-3.1280517578125000E-004,0.3835202E-01,FAILED,C,NA,NA,cn16.guoehi.cluster,2026-10-15T22:13:53+00:00,flags

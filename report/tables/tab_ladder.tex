@@ -1,0 +1,13 @@
+\begin{tabular}{lp{5.4cm}rrrr}
+\toprule
+build & changes & wall (s) & DRAM & bytes vs & time vs \\
+ & & median (min--max) & (TB) & base (\%) & base (\%) \\
+\midrule
+base & M3 baseline source and CFLAGS (measured in job 34797) & 11.31 (11.24--11.33) & 2.828 & $+0.0$ & $+0.0$ \\
+flags & T2 only: -fno-math-errno -fno-trapping-math (no kernel change) & 11.28 (11.27--11.34) & 2.846 & $+0.7$ & $-0.2$ \\
+cell & flags + advec\_cell register temporaries, dead post\_vol store, reset/revert by field swap & 9.92 (9.84--9.94) & 2.486 & $-12.1$ & $-12.3$ \\
+mom & flags + advec\_mom helper hoist, dead pre\_vol store, calc\_dt fused reduction (not cell) & 9.54 (9.54--9.62) & 2.405 & $-14.9$ & $-15.7$ \\
+opt & all changes (merge of cell and mom) & 8.25 (8.23--8.33) & 2.043 & $-27.8$ & $-27.0$ \\
+optnf & opt with the baseline CFLAGS (no -fno-math-errno -fno-trapping-math) & 8.56 (8.53--8.63) & 2.052 & $-27.4$ & $-24.3$ \\
+\bottomrule
+\end{tabular}

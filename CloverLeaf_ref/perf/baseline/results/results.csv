@@ -1,0 +1,6 @@
+tag,deck,kernels,ranks,threads,thp,rep,wall,grind,first_step,qa_pct,qa,kernels_reported,dram_GB,busiest_over_mean,host,date
+clover_bm_short_c_c_r4_t2,clover_bm_short_c.in,c,4,2,on,1,6.3245189189910889,7.8875249015884501E-008,1.5211105346679688E-004,0.4547474E-11,PASSED,C,NA,NA,jort-Aspire-AG15-42P,2026-10-14T15:09:16+02:00
+clover_bm_short_c_c_r4_t2,clover_bm_short_c.in,c,4,2,on,2,6.4088349342346191,7.9859659383771341E-008,2.1660327911376953E-003,0.4547474E-11,PASSED,C,NA,NA,jort-Aspire-AG15-42P,2026-10-14T15:09:23+02:00
+clover_bm_short_c_c_r4_t2,clover_bm_short_c.in,c,4,2,on,3,6.3806669712066650,7.9576306896962862E-008,9.9897384643554688E-005,0.4547474E-11,PASSED,C,NA,NA,jort-Aspire-AG15-42P,2026-10-14T15:09:30+02:00
+clover_bm_short_c_c_r4_t2,clover_bm_short_c.in,c,4,2,on,4,6.3615729808807373,7.9326095175026923E-008,6.9212913513183594E-004,0.4547474E-11,PASSED,C,NA,NA,jort-Aspire-AG15-42P,2026-10-14T15:09:36+02:00
+clover_bm_short_c_c_r4_t2,clover_bm_short_c.in,c,4,2,on,5,6.7551209926605225,8.4200882995428960E-008,3.3869743347167969E-003,0.4547474E-11,PASSED,C,NA,NA,jort-Aspire-AG15-42P,2026-10-14T15:09:44+02:00

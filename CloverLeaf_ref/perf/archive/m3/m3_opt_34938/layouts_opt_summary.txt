@@ -1,0 +1,26 @@
+Results in /home/joosterveld/CloverLeaf_ref/perf/results/m3_opt_34938/layouts/opt  (30 runs, 6 cases)
+
+case                                deck                  kernels  ranks  thr  thp  n  best_wall_s  median_s  spread  grind_ns/cell  qa_dev_%  qa      reported  dram_TB  hw_GB/s  busiest/mean  %hw_roof
+clover_bm16_short_c_r64_t2          clover_bm16_short.in  c        64     2    on   5  8.233        8.244     1.5%    6.41           3.95e-11  PASSED  C         2.043    248      1.00          93%     
+clover_bm16_short_c_r1_t128         clover_bm16_short.in  c        1      128  on   5  14.508       19.334    68.1%   11.20          4.05e-11  PASSED  C         2.166    112      1.31          42%     
+clover_bm16_short_c_r1_t128_thpoff  clover_bm16_short.in  c        1      128  off  5  10.275       10.434    2.4%    8.01           4.05e-11  PASSED  C         2.082    200      1.01          75%     
+clover_bm16_short_c_r4_t32          clover_bm16_short.in  c        4      32   on   5  9.868        9.949     2.7%    7.69           6.80e-11  PASSED  C         2.103    211      1.00          79%     
+clover_bm16_short_c_r32_t4          clover_bm16_short.in  c        32     4    on   5  8.432        8.447     1.1%    6.57           5.86e-11  PASSED  C         2.020    239      1.00          90%     
+clover_bm16_short_c_r128_t1         clover_bm16_short.in  c        128    1    on   5  8.431        8.441     0.2%    6.57           3.95e-11  PASSED  C         2.131    252      1.01          95%     
+
+dram_TB: DDR-controller bytes (32 B/count, everything the controllers moved incl. read-for-ownership), median over reps; hw_GB/s = dram / median wall; busiest/mean = load of the busiest NUMA controller group (1.00 = balanced); %hw_roof vs 266 GB/s hardware STREAM
+
+Profiler split of best repetition (seconds, % of wall); sections under 1% omitted
+section             clover_bm16_short_c_r64_t2  clover_bm16_short_c_r1_t128  clover_bm16_short_c_r1_t128_thpoff  clover_bm16_short_c_r4_t32  clover_bm16_short_c_r32_t4  clover_bm16_short_c_r128_t1
+Timestep            0.52 (6%)                   0.64 (4%)                    0.55 (5%)                           0.57 (6%)                   0.53 (6%)                   0.52 (6%)                  
+Ideal Gas           0.42 (5%)                   0.91 (6%)                    0.48 (5%)                           0.46 (5%)                   0.39 (5%)                   0.39 (5%)                  
+Viscosity           0.35 (4%)                   0.50 (3%)                    0.43 (4%)                           0.36 (4%)                   0.43 (5%)                   0.38 (5%)                  
+PdV                 1.37 (17%)                  2.14 (15%)                   1.64 (16%)                          1.64 (17%)                  1.39 (16%)                  1.36 (16%)                 
+Acceleration        0.58 (7%)                   0.93 (6%)                    0.64 (6%)                           0.63 (6%)                   0.63 (7%)                   0.61 (7%)                  
+Fluxes              0.38 (5%)                   0.54 (4%)                    0.38 (4%)                           0.38 (4%)                   0.37 (4%)                   0.37 (4%)                  
+Cell Advection      1.62 (20%)                  2.79 (19%)                   2.03 (20%)                          1.91 (19%)                  1.64 (19%)                  1.71 (20%)                 
+Momentum Advection  2.74 (33%)                  5.03 (35%)                   3.32 (32%)                          3.16 (32%)                  2.82 (33%)                  2.82 (33%)                 
+Self Halo Exchange  0.03 (0%)                   0.95 (7%)                    0.74 (7%)                           0.03 (0%)                   0.02 (0%)                   0.00 (0%)                  
+MPI Halo Exchange   0.19 (2%)                   0.00 (0%)                    0.00 (0%)                           0.70 (7%)                   0.19 (2%)                   0.24 (3%)                  
+Total               8.23 (100%)                 14.47 (100%)                 10.25 (100%)                        9.87 (100%)                 8.43 (100%)                 8.43 (100%)                
+

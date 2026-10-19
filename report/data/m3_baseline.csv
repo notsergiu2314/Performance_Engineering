@@ -1,0 +1,19 @@
+# M3 baseline layouts, bm3840 (= clover_bm16_short.in), 87 steps. Job 34797 (m3_baseline.sbatch, cn17, 2026-10-13),
+# 5 reps per case, every rep under the DDR-controller counters: dram_TB = median hardware bytes (32 B/count),
+# hw_GBs = dram_TB / median wall, busiest_over_mean = load of the busiest controller group (1.00 = balanced).
+layout,ranks,threads,kernels,thp,n,median_s,min_s,max_s,dram_TB,hw_GBs,busiest_over_mean,source
+64x2,64,2,c,on,5,11.316,11.243,11.332,2.828,249.9,1.002,job 34797 (m3_baseline)
+1x128,1,128,c,on,5,26.906,17.442,29.201,2.989,111.1,1.657,job 34797 (m3_baseline)
+4x32,4,32,c,on,5,12.996,12.762,13.212,2.873,221.1,1.006,job 34797 (m3_baseline)
+32x4,32,4,c,on,5,11.464,11.407,11.473,2.795,243.8,1.002,job 34797 (m3_baseline)
+128x1,128,1,c,on,5,11.660,11.632,11.765,2.952,253.2,1.004,job 34797 (m3_baseline)
+64x2,64,2,c,off,5,11.251,11.239,11.320,2.828,251.4,1.002,job 34797 (m3_baseline)
+1x128,1,128,c,off,5,13.311,13.276,13.918,2.828,212.5,1.004,job 34797 (m3_baseline)
+4x32,4,32,c,off,5,12.768,12.707,12.910,2.863,224.2,1.001,job 34797 (m3_baseline)
+32x4,32,4,c,off,5,11.400,11.395,11.472,2.794,245.1,1.002,job 34797 (m3_baseline)
+128x1,128,1,c,off,5,11.733,11.645,11.774,2.952,251.6,1.004,job 34797 (m3_baseline)
+64x2,64,2,fortran,on,5,9.333,9.331,9.421,2.355,252.3,1.003,job 34797 (m3_baseline)
+1x128,1,128,fortran,on,5,20.627,18.404,25.917,2.439,118.3,1.452,job 34797 (m3_baseline)
+4x32,4,32,fortran,on,5,10.879,10.778,11.220,2.385,219.2,1.003,job 34797 (m3_baseline)
+32x4,32,4,fortran,on,5,9.462,9.443,9.523,2.303,243.4,1.002,job 34797 (m3_baseline)
+128x1,128,1,fortran,on,5,9.757,9.662,9.768,2.456,251.7,1.005,job 34797 (m3_baseline)

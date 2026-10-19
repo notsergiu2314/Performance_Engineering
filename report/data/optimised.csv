@@ -1,0 +1,32 @@
+# generated 2026-10-16T10:00:50 by perf/analysis/variants.py from perf/results/m3_opt_34938
+# baseline archive: m3_baseline_34797; qa_ok: gate verdict of perf/results/m3_correctness_34937/correctness_rows.csv
+# variant base: binary md5 57396505a5e9, node cn17, job 34938: M3 baseline source and CFLAGS (measured in job 34797)
+# variant flags: binary md5 691e1555e193, node cn17, job 34938: T2 only: -fno-math-errno -fno-trapping-math (no kernel change)
+# variant cell: binary md5 06895463df66, node cn17, job 34938: flags + advec_cell register temporaries, dead post_vol store, reset/revert by field swap
+# variant mom: binary md5 b8de910ea938, node cn17, job 34938: flags + advec_mom helper hoist, dead pre_vol store, calc_dt fused reduction (not cell)
+# variant opt: binary md5 1594b80e3650, node cn17, job 34938: all changes (merge of cell and mom)
+# generated 2026-10-19T13:27:39 by perf/analysis/variants.py from perf/results/m3_opt_35003
+# baseline archive: m3_baseline_34797; qa_ok: gate verdict of perf/results/m3_correctness_35002/correctness_rows.csv
+# variant base: binary md5 57396505a5e9, node cn16, job 35003: M3 baseline source and CFLAGS (measured in job 34797)
+# variant opt: binary md5 1594b80e3650, node cn16, job 35003: all changes (merge of cell and mom)
+# variant optnf: binary md5 50ed04ebf03c, node cn16, job 35003: opt with the baseline CFLAGS (no -fno-math-errno -fno-trapping-math)
+# 6 rows appended from perf/results/m3_opt_35003/optimised.csv (variants not present before; earlier rows kept)
+layout,ranks,threads,thp,variant,n,median_s,min_s,max_s,dram_TB,hw_GBs,busiest_over_mean,qa_ok,source
+1x128,1,128,off,base,5,13.336,13.248,13.391,2.828,212.1,1.004,n/a,"job 34938 (m3_opt, base)"
+1x128,1,128,on,base,5,23.998,22.313,27.214,2.959,123.3,1.509,n/a,"job 34938 (m3_opt, base)"
+4x32,4,32,on,base,5,12.953,12.825,12.978,2.866,221.3,1.003,n/a,"job 34938 (m3_opt, base)"
+32x4,32,4,on,base,5,11.416,11.394,11.471,2.795,244.8,1.002,n/a,"job 34938 (m3_opt, base)"
+64x2,64,2,on,base,5,11.245,11.231,11.252,2.827,251.4,1.002,n/a,"job 34938 (m3_opt, base)"
+128x1,128,1,on,base,5,11.653,11.629,11.747,2.952,253.3,1.004,n/a,"job 34938 (m3_opt, base)"
+1x128,1,128,off,opt,5,10.434,10.275,10.524,2.082,199.5,1.006,MISMATCH,"job 34938 (m3_opt, opt)"
+1x128,1,128,on,opt,5,19.334,14.508,24.390,2.166,112.0,1.315,MISMATCH,"job 34938 (m3_opt, opt)"
+4x32,4,32,on,opt,5,9.949,9.868,10.132,2.103,211.4,1.001,MISMATCH,"job 34938 (m3_opt, opt)"
+32x4,32,4,on,opt,5,8.447,8.432,8.525,2.020,239.1,1.002,MISMATCH,"job 34938 (m3_opt, opt)"
+64x2,64,2,on,opt,5,8.244,8.233,8.359,2.043,247.8,1.002,MISMATCH,"job 34938 (m3_opt, opt)"
+128x1,128,1,on,opt,5,8.441,8.431,8.449,2.131,252.4,1.006,MISMATCH,"job 34938 (m3_opt, opt)"
+1x128,1,128,off,optnf,5,10.161,10.128,10.772,2.029,199.7,1.007,ok,"job 35003 (m3_opt, optnf)"
+1x128,1,128,on,optnf,5,17.841,12.868,23.164,2.115,118.5,1.818,ok,"job 35003 (m3_opt, optnf)"
+4x32,4,32,on,optnf,5,9.788,9.635,9.944,2.052,209.7,1.002,ok,"job 35003 (m3_opt, optnf)"
+32x4,32,4,on,optnf,5,8.699,8.685,8.769,2.010,231.1,1.002,ok,"job 35003 (m3_opt, optnf)"
+64x2,64,2,on,optnf,5,8.548,8.532,8.629,2.052,240.1,1.003,ok,"job 35003 (m3_opt, optnf)"
+128x1,128,1,on,optnf,5,8.806,8.792,8.817,2.148,243.9,1.005,ok,"job 35003 (m3_opt, optnf)"

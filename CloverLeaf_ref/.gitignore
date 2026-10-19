@@ -1,0 +1,11 @@
+*.o*
+*.mod
+*.lst
+*.cub
+*.ptx
+*genmod*
+*.xf
+*.ap2
+clover_leaf
+clover.in.tmp
+/perf/results/

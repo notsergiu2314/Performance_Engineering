@@ -1,0 +1,15 @@
+date:        2026-10-11T20:59:58+02:00
+host:        jort-Aspire-AG15-42P   cpus: 16
+binary:      /home/jort/Performance_Engineering/cloverleaf/cloverleaf_b5e598d/clover_leaf  (c2be7afb447e)
+git:         675a240
+launcher:    mpirun 
+omp:         OMP_PROC_BIND=close OMP_PLACES=cores
+reps:        5
+matrix:      /home/jort/Performance_Engineering/cloverleaf/perf-investigation/baseline/matrix.default
+compiler:    GNU Fortran (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
+  CPU(s):                                  16
+  Model name:                              AMD Ryzen 7 5825U with Radeon Graphics
+  Thread(s) per core:                      2
+  Socket(s):                               1
+  CPU(s) scaling MHz:                      76%
+  L3 cache:                                16 MiB (1 instance)

@@ -1,0 +1,765 @@
+\documentclass[a4paper,11pt]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage[hidelinks]{hyperref}
+\usepackage[sc]{titlesec}
+
+\newcommand{\todo}[1]{\textcolor{red}{[TODO: #1]}}
+\newcommand{\kernel}[1]{\texttt{#1}}
+\newcommand{\GBs}{\,GB/s}
+\newcommand{\GFs}{\,GFLOP/s}
+\lstset{basicstyle=\ttfamily\footnotesize, columns=fullflexible, keepspaces=true, frame=single,
+  framerule=0.3pt, rulecolor=\color{gray}, breaklines=true, language=C, commentstyle=\color{gray},
+  aboveskip=4pt, belowskip=6pt}
+% a listing that is never split over a page
+\lstnewenvironment{code}[1][]{\endgraf\noindent\minipage{\linewidth}\lstset{#1}}{\endminipage\endgraf}
+
+\title{\Large{\sc{Performance Engineering}}\\[2mm]
+  Analysis and Optimisation of the CloverLeaf Mini-App\\
+  on the HAICGU Kunpeng~920 Cluster}
+\author{Jort Oosterveld S5545781 \& Sergiu-Adrian Preda S6778542 \\ Group 11}
+\date{Draft, \today}
+
+\begin{document}
+\setlength\parindent{0pt}
+\setlength{\parskip}{0.6em}
+\maketitle
+
+% =============================================================================
+\section{Introduction}
+% =============================================================================
+CloverLeaf~\cite{mallinson2013} solves the compressible Euler equations on a 2D structured grid with an
+explicit Lagrangian--Eulerian scheme; it is a stencil code and a standard case for memory-bound performance
+engineering~\cite{laukemann2023}. We work on the reference implementation (\texttt{CloverLeaf\_ref},
+commit \texttt{b5e598d}, MPI+OpenMP) and optimise its \emph{C kernels} (\texttt{use\_c\_kernels}) on one
+node of the HAICGU cluster. Section~\ref{sec:base} establishes where the baseline stands against the
+hardware, Section~\ref{sec:impr} derives the kernel changes that can still pay off and shows them in code,
+and Section~\ref{sec:res} compares the optimised kernels with the baseline at every layout.
+
+% =============================================================================
+\section{Baseline Analysis}
+\label{sec:base}
+% =============================================================================
+\subsection{Application and system}
+One time step runs, in order, the equation of state (\kernel{ideal\_gas}), artificial viscosity, the stable
+time step (\kernel{calc\_dt}), a predictor and a corrector PdV step, the node acceleration, the volume
+fluxes, the advection of cell quantities (\kernel{advec\_cell}) and of momentum (\kernel{advec\_mom}) in two
+directional sweeps, and the reset of the time levels. Every kernel is a loop nest over the grid with a
+$\pm1$ stencil; the two advection kernels contain an upwind/limiter loop with data-dependent indices.
+All fields are double-precision arrays of $(n_x+5)\times(n_y+5)$ elements.
+The benchmark problem is \textbf{bm3840}: $3840^2$ cells, 87 time steps, about 25 arrays of 118\,MB
+($\approx$3\,GB working set, far beyond the 2$\times$64\,MB L3), with CloverLeaf's built-in kinetic-energy
+check (\texttt{PASSED} in every run reported here).
+
+\begin{sloppypar}
+The node has 2$\times$ Kunpeng~920 (ARMv8, 2.6\,GHz, 64 cores each, 4 NUMA domains of 32 cores) and
+16 channels of DDR4-2666 (128\,GB, 341\GBs{} theoretical), under a RHEL-8-compatible Linux with 64\,KB
+pages. Software: GCC/GFortran 14.1.0, OpenMPI 5.0.3, PAPI 7.1.0 and Linux \texttt{perf}; the kernels are
+compiled with the project's \texttt{GNU} settings, \texttt{-O3 -march=native -funroll-loops -fopenmp}.
+Nodes are used exclusively. A configuration ``$r\times t$'' is $r$ MPI ranks with $t$ OpenMP threads each. Every rank is
+bound to $t$ consecutive cores (\texttt{--map-by slot:PE=}$t$) and OpenMP pins one thread per core
+(\texttt{OMP\_PLACES=cores}, \texttt{OMP\_PROC\_BIND=close}). The Fortran kernels are run at the same
+configurations for reference only.
+\end{sloppypar}
+
+\subsection{Methodology}
+\label{sec:method}
+\textbf{Tools.} Three independent sources: (1) CloverLeaf's internal profiler (wall clock per algorithmic
+phase); (2) PAPI per kernel, through a small instrumentation layer (\texttt{papi\_prof}) that wraps the
+\texttt{omp parallel} region of each C kernel, keeps one event set per thread and writes the counts per
+thread at exit (compiles to nothing without \texttt{-DUSE\_PAPI}); cycles/instructions, instruction mix and
+stall sets are measured in separate runs; (3) Linux \texttt{perf}: sampling profiles, whole-run counters,
+and the HiSilicon DDR-controller PMU (\texttt{hisi\_sccl*\_ddrc*/flux\_rd,wr}), read system-wide
+around every run, which counts the bytes that cross the memory interface per controller.
+
+\textbf{Protocol.} Five repetitions per configuration, median and min--max reported; the timed region
+is the complete run of 87 steps including start-up; every repetition runs under the DDR-controller
+counters, so wall clock and hardware bytes belong to the same run. All bandwidths are
+\emph{hardware bytes} (DDR-controller counts $\times$ 32\,B) over wall clock, for STREAM and for the
+application alike. The harness (\texttt{perf/baseline}) is driven by matrix files and environment
+variables and runs through \texttt{mpirun} only.
+
+\textbf{Checks of the tools.} The PAPI build costs nothing measurable (11.30\,s against 11.34\,s at
+64$\times$2; 521--523\,s against 528\,s on one core) and its per-kernel times add up to the wall clock
+within 1\%; \texttt{MEM\_ACCESS} equals \texttt{PAPI\_L1\_DCA} in every kernel; the cycle counter gives
+2.59\,GHz; the DDR counters were calibrated on STREAM (Section~\ref{sec:ceil}). The placement of every
+multi-rank run is checked by the counters: the busiest controller group carries $1.00\times$ the mean.
+
+\textbf{Correctness gate.} CloverLeaf's own check on the long deck \texttt{clover\_bm.in} ($960^2$ cells,
+2955 steps, test problem 3) reports a deviation of 0.0057\% (C) and 0.018\% (Fortran) from the reference
+compiled into the code even for the \emph{unmodified} kernels, identical to all digits at every layout and
+repetition (Table~\ref{tab:correctness}): the reference was produced on another machine. Every modified
+kernel therefore has to reproduce this baseline deviation to $10^{-6}$\% (\texttt{perf/baseline/qa\_check.py})
+and print \texttt{PASSED} on bm3840.
+
+\begin{table}[t]
+  \centering\small
+  \input{tables/tab_correctness.tex}
+  \caption{Kinetic-energy deviation of \texttt{clover\_bm.in}: the baseline value an optimised build has to
+    reproduce (jobs 34729 and 34796, re-confirmed by the rebuilt baseline binary of the ladder in job 34999) and
+    the value every build with the compiler flags produced (job 34937, one run per layout). The gate column is
+    the verdict of \texttt{qa\_check.py} against the baseline value; see Section~\ref{sec:res}.}
+  \label{tab:correctness}
+\end{table}
+
+\subsection{Where the time goes}
+\label{sec:time}
+Table~\ref{tab:kernels} gives the time share and the counters of every kernel. The two advection kernels
+take 48\% of the time on one core and 63\% on 128; \kernel{advec\_mom} scales worst of the large kernels
+(14$\times$ against 22--59$\times$). On one core the IPC is 0.35--1.07 and 60--87\% of the cycles are
+back-end stalls; at 64$\times$2 the IPC is 0.10--0.50 per kernel and the stall share 81--96\%: the cores
+wait for memory. Three kernel groups appear in the instruction mix: \kernel{pdv}, \kernel{accelerate} and
+\kernel{flux\_calc} are vectorised (41--62\% NEON); \kernel{calc\_dt}, \kernel{ideal\_gas} and
+\kernel{viscosity} run entirely scalar (they contain \texttt{sqrt}, which GCC keeps scalar without
+\texttt{-fno-math-errno}) but are only 12\% of the node-level run; \kernel{advec\_mom} and
+\kernel{advec\_cell} are 12--16\% vector instructions because their upwind loops have data-dependent
+indices. The \texttt{perf} profile of a 128-thread run adds that 12.5\% of all cycles are spent in the
+OpenMP barrier (\texttt{gomp\_team\_barrier\_wait\_end}): every kernel is a sequence of worksharing loops
+with an implicit barrier each.
+
+\begin{table}[t]
+  \centering\small
+  \input{tables/tab_kernels.tex}
+  \caption{Per-kernel time share (bm3840; ``128 cores'' = 1$\times$128), IPC, share of SIMD and scalar
+    floating-point instructions, and back-end stall cycles on 1 / 128 cores. Numbers refer to
+    Figure~\ref{fig:roofline}. \kernel{reset\_field}, \kernel{revert} and \kernel{update\_halo} do no
+    floating-point work.}
+  \label{tab:kernels}
+\end{table}
+
+\subsection{Ceilings and byte model}
+\label{sec:ceil}
+\textbf{Memory.} STREAM triad ($10^8$ doubles, 20 iterations, 10 runs per configuration) sustains
+15\GBs{} on one core, 67\GBs{} per NUMA domain (32 threads) and \textbf{266.5\GBs{}} for the node, in every
+one of 10 pinned repetitions. Under the DDR-controller counters the controllers move $1.04\times$ the
+bytes STREAM counts itself (24\,B per triad element) and $0.74\times$ the write-allocate model, in all 20
+STREAM runs and in our own triad kernel: a streaming store does \emph{not} read the line first on this CPU,
+one count is 32\,B, and the hardware ceiling is the counted triad, 78\% of the bus. (The DIMM clock is
+not readable without root; 266.5\GBs{} over 16 channels needs at least 2082\,MT/s, so DDR4-2666 is
+consistent.)
+
+\textbf{Compute.} Independent FMA chains on 2-lane NEON registers reach 4.0\,flop/cycle per core and
+\textbf{1330\GFs{}} per node; scalar FMA reaches the same, so vectorisation saves instructions, not flops.
+Vector division runs at 0.19\GFs{} per core. The ridge point of the node is $1330/266.5 = 5$\,flop/B
+(0.7\,flop/B for one core).
+
+\textbf{Byte model.} For every loop nest of the C kernels we counted the arrays read and written and the
+flops per cell; each array is streamed from DRAM once per loop nest, and a store is charged a
+read-for-ownership (write-allocate) in addition to the write. Table~\ref{tab:model} gives 451\,flop and
+2186\,B per cell and step (1688\,B without the read-for-ownership), an intensity of 0.21\,flop/B.
+
+\begin{table}[t]
+  \centering\small
+  \input{tables/tab_model.tex}
+  \caption{Analytic flop and byte counts per cell and call (WA = write-allocate). \kernel{ideal\_gas} runs
+    2.1 times per step.}
+  \label{tab:model}
+\end{table}
+
+\textbf{Validation.} The model predicts 2.80\,TB for bm3840; the counters measure 2.83\,TB at 64$\times$2
+in all five repetitions (1\% above), 2.79--2.99\,TB at the other layouts. The read/write split decides
+which version of the model applies: the counters see 2.05\,TB of reads and 0.77\,TB of writes against
+1.53\,TB of demand reads and 0.64\,TB of writes in the model, i.e.\ the reads are $1.34\times$ the demand
+reads. Unlike STREAM, the C kernels' stores \emph{do} cause a read of the line first, for about 70\% of the
+written volume; the write-allocate model is the right one for the code as it stands. The Fortran build
+writes the same amount (0.60\,TB) but reads only $1.15\times$ the demand reads (1.76\,TB, 2.36\,TB in
+total): its loops avoid most of that traffic, and this 0.47\,TB is the entire C/Fortran gap
+(Section~\ref{sec:perf}).
+
+\subsection{Baseline performance}
+\label{sec:perf}
+Table~\ref{tab:m3base} gives the layouts of the C kernels with the hardware bandwidth they sustain over the
+whole run, start-up included. \textbf{64$\times$2 is the baseline}: 11.3\,s (spread 0.8\%), 2.83\,TB,
+250\GBs{} = \textbf{94\% of the hardware ceiling}; 32$\times$4 and 128$\times$1 reach 91--95\%, 4$\times$32
+83\%. Transparent huge pages (512\,MB on this system) matter only for the single-rank 1$\times$128 layout,
+where first touch places whole arrays on one NUMA domain and the busiest controller group carries
+$1.66\times$ the mean (26.9\,s, against 13.3\,s with THP disabled for the process); with four or more ranks
+every rank touches its own data and THP has no effect, so the baseline needs no change to the system.
+
+\begin{table}[t]
+  \centering\small
+  \input{tables/tab_m3_baseline.tex}
+  \caption{Baseline layouts, bm3840, job 34797: median of 5 (min--max), hardware bytes of the DDR-controller
+    counters, the resulting bandwidth and its share of the 266.5\GBs{} ceiling, and the load of the busiest
+    controller group relative to the mean. THP as installed except for the one marked row.}
+  \label{tab:m3base}
+\end{table}
+
+Figure~\ref{fig:roofline} places every kernel on the rooflines of one core and of the node. Every kernel lies
+at 0.13--0.83\,flop/B, far left of the 5\,flop/B ridge; even \kernel{viscosity} could reach only 17\% of the
+FMA peak with perfect bandwidth. In hardware-byte terms (per-section roofline of the 64$\times$2 run,
+\texttt{perf/roofline/roofline.py --hw}) both advection sections, PdV, \kernel{ideal\_gas} and the fluxes
+run at 94--102\% of the memory roof, acceleration at 83\%, and the scalar \texttt{sqrt} kernels at
+63--66\%. The floor at the measured traffic is 2.83\,TB / 266.5\GBs{} = \textbf{10.6\,s}; the baseline is
+within 7\% of it. There is no headroom at the current byte count: \emph{every further gain has to come from
+moving fewer bytes}, and the Fortran build shows that this is possible (9.33\,s, 2.36\,TB, at the same
+252\GBs{}).
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig_roofline.pdf}
+  \caption{Roofline of the CloverLeaf C kernels (bm3840), one core and full node. Kernel numbers refer to
+    Table~\ref{tab:kernels}; kernel points use model bytes and PAPI times (1$\times$128), the application
+    point the measured DRAM bytes and wall clock of the 64$\times$2 baseline.}
+  \label{fig:roofline}
+\end{figure}
+
+% =============================================================================
+\section{Kernel Improvements}
+\label{sec:impr}
+% =============================================================================
+\subsection{What the analysis allows}
+The baseline sustains 94\% of the memory ceiling, so instruction-side work (vectorising the upwind loops,
+\texttt{-fno-math-errno} for the \texttt{sqrt} kernels, fewer barriers) cannot pay off until the bytes shrink;
+those items are kept as time-only changes (Section~\ref{sec:timeonly}). The byte count has two components
+we can change: the bytes the algorithm asks for (temporaries, dead stores, copies, repeated helper loops)
+and the read-for-ownership that the C stores pay and a streaming store would not. Every byte change below
+is expressed as an edit of the loop table of the byte model (\texttt{perf/analysis/plan\_bytes.py}), so the
+prediction and the later measurement use the same convention, and every change has to pass the
+correctness gate of Section~\ref{sec:method}.
+
+\subsubsection{Selection}
+The original plan was to take the three kernels with the largest theoretical gain in
+the byte model and leave the rest. These are: \kernel{advec\_mom}, whose helper loops are recomputed for every
+velocity component. \kernel{reset\_field} and \kernel{revert}, which solely copy data, and
+\kernel{advec\_cell}, which round-trips four temporaries through memory. While reading these kernels,
+further opportunities presented themselves and were implemented as well: two dead stores
+(\texttt{post\_vol}, \texttt{pre\_vol}), the fused reduction of \kernel{calc\_dt}, two compiler flags that
+unblock vectorisation, \texttt{nowait} between loops that are provably independent, and a branch-free
+formulation of the \kernel{advec\_mom} upwind loop. Changes (1)--(6) below reduce bytes, (T1)--(T4)
+reduce time only; Section~\ref{sec:status} gives the state of each.
+
+\subsection{Flop and byte counts per cell}
+\label{sec:count}
+The counts of Table~\ref{tab:model} were made by reading every loop nest of
+\texttt{kernels/*\_kernel\_c.c} and listing: the 2D arrays it reads, the 2D arrays it
+writes and the floating-point operations per cell. The bandwidth of bytes per cell of a loop nest is
+
+\[ 
+  8\,\mathrm{B}\times(\text{arrays read} + \text{arrays written} + \text{WA}\times\text{arrays written but
+not read})
+\] 
+
+Every array is streamed from DRAM once per loop nest, since it easily large enough not to fit in cache.
+Stencil neighbours $j\pm1$, $k\pm1$ hit in cache (a few rows of 3840 doubles fit in the
+512\,KB L2), and the read-for-ownership (WA) is charged once for every array a loop stores without
+loading. 1D arrays (\texttt{celldx}, \texttt{vertexdx}, \ldots) and halo cells are ignored. Flops: $+$,
+$-$, $\times$, $/$ and \texttt{sqrt} count one; comparisons, \texttt{fabs}, \texttt{MIN}, \texttt{MAX} and
+\texttt{SIGN} count zero; loop-invariant constants are hoisted. Kernels whose loops differ between the two
+sweeps are averaged over the sweeps. Per kernel and call:
+\begin{itemize}\setlength\itemsep{0pt}
+  \item \kernel{ideal\_gas}: reads density and energy, writes pressure and soundspeed: four streams, two
+        of them write-allocated. Nine flops: $1/\rho$, $0.4\rho$, the product with $e$, $\rho p$, the
+        sound-speed expression $v^2(p\,p_e - p_v)$ and one \texttt{sqrt}.
+  \item \kernel{viscosity}: four reads (both velocities, pressure, density), one write; 40 flops on the
+        common branch, 13 more in compressed cells.
+  \item \kernel{calc\_dt}: the first loop reads eight arrays and stores \texttt{dt\_min}, the second loop
+        reads \texttt{dt\_min} back; 31 flops for the four limits.
+  \item \kernel{pdv}: the predictor reads nine arrays, the corrector eleven (it adds the level-1
+        velocities), three writes each; 33 flops.
+  \item \kernel{accelerate}: eight reads, two writes; 37 flops. \kernel{flux\_calc}: two loops of three
+        reads and one write; five flops each.
+  \item \kernel{revert} and \kernel{reset\_field}: one read, one write and one write-allocate per field,
+        for two and four fields; no flops.
+  \item \kernel{advec\_cell} (two calls per step): the volume loop reads two or three arrays and writes
+        \texttt{pre\_vol} and \texttt{post\_vol}; the flux loop reads four and writes two; the update loop
+        reads six and writes six, four of which are temporaries nothing else reads. 45 flops.
+  \item \kernel{advec\_mom} (four calls per step): six loops, from the volume loop (two or three reads,
+        two writes) to the velocity update (four reads, one write); the upwind loop alone has 18 of the
+        39 flops.
+  \item \kernel{field\_summary}: six reads into reductions, every tenth step; about 22 flops.
+\end{itemize}
+Multiplied by the calls per step these give the 451\,flop and 2186\,B per cell and step of
+Section~\ref{sec:ceil}, which the DDR counters confirmed to 1\%.
+
+\subsection{Byte reductions}
+\label{sec:bytes}
+Each change is shown on the baseline code; the comments say what is inefficient and what the change does,
+the new code follows in Section~\ref{sec:status}. In the C snippets \texttt{i} abbreviates the node-sized
+index \texttt{FTNREF2D(j,k,x\_max+5,...)} of cell $(j,k)$, \texttt{iy} the cell-sized one, and
+\texttt{i+1} the neighbour $j+1$; \texttt{[(j,k-1)]} writes a stencil neighbour out in full.
+
+\textbf{(1) \kernel{advec\_mom}: direction-only helper loops once per sweep.}
+The kernel is called four times per step (two sweeps $\times$ \texttt{xvel}, \texttt{yvel}). Its first four
+loops depend only on the sweep direction, not on the velocity component, and are recomputed for
+\texttt{yvel} with identical results:
+\begin{code}[language={[90]Fortran}]
+! advec_mom_driver.f90 (baseline): one kernel call per velocity component
+CALL advec_mom_kernel_c(..., xvel1, mass_flux_x, vol_flux_x, mass_flux_y, vol_flux_y, &
+                        volume, density1, work_array1..6, celldx, celldy,             &
+                        which_vel=1, sweep_number, direction)
+CALL advec_mom_kernel_c(..., yvel1, ... same arguments ...,                          &
+                        which_vel=2, sweep_number, direction)
+! Inside the kernel, loops 1-4 (post_vol, node_flux, node_mass_post, node_mass_pre)
+! use only direction and sweep_number: the yvel call rebuilds the four arrays over
+! the haloed grid with exactly the values the xvel call produced, i.e. it streams
+! mass_flux, vol_flux, volume, density1 and the four work arrays a second time.
+! Only loop 5 (mom_flux from the limited upwind velocity) and loop 6 (the vel1
+! update) read vel1. Change: split the kernel in a preparation part called once
+! per sweep and a velocity part called once per component.
+\end{code}
+
+\textbf{(2) \kernel{advec\_cell}: temporaries in registers.}
+The update loop of each sweep writes four work arrays and reads them back in the same iteration; nothing
+else reads them:
+\begin{code}
+/* advec_cell_kernel_c.c (baseline), update loop of the x sweep */
+pre_mass[i]  = density1[i]*pre_vol[i];                          /* stored here ...        */
+post_mass[i] = pre_mass[i] + mass_flux_x[i] - mass_flux_x[i+1]; /* ... and reloaded here  */
+post_ener[i] = (energy1[i]*pre_mass[i] + ener_flux[i] - ener_flux[i+1])
+               / post_mass[i];
+advec_vol[i] = pre_vol[i] + vol_flux_x[i] - vol_flux_x[i+1];
+density1[i]  = post_mass[i] / advec_vol[i];
+energy1[i]   = post_ener[i];
+/* pre_mass, post_mass, post_ener and advec_vol are never read outside this
+ * iteration: each costs a full-mesh store plus its read-for-ownership, four
+ * arrays of DRAM traffic for values that fit in four registers. Change: make
+ * them scalars; the arithmetic and its order stay the same. */
+\end{code}
+
+\textbf{(3) Dead stores.}
+\texttt{post\_vol} in the first sweep of \kernel{advec\_cell} and \texttt{pre\_vol} in \kernel{advec\_mom}
+are written over the whole haloed grid and never read:
+\begin{code}
+/* advec_cell_kernel_c.c (baseline), sweep 1 (x direction) */
+pre_vol[i]  = volume[i] + (vol_flux_x[i+1]-vol_flux_x[i])
+                        + (vol_flux_y[iy+1]-vol_flux_y[iy]);
+post_vol[i] = pre_vol[i] - (vol_flux_x[i+1]-vol_flux_x[i]);   /* no loop of sweep 1 reads
+                                                                 post_vol: dead store */
+/* advec_mom_kernel_c.c (baseline), every sweep */
+post_vol[i] = volume[i] + vol_flux_y[iy+1] - vol_flux_y[iy];
+pre_vol[i]  = post_vol[i] + vol_flux_x[i+1] - vol_flux_x[i];  /* no kernel reads pre_vol; the
+                                                                 original source keeps it "for
+                                                                 fidelity with the Fortran
+                                                                 method" */
+/* Each dead store is a full-mesh write plus a read-for-ownership over the haloed
+ * grid, once per call. Change: delete both lines (and the pre_vol argument). */
+\end{code}
+
+\textbf{(4) Reset and Revert without copies.}
+\kernel{reset\_field} copies the four end-of-step fields (\texttt{density1}, \texttt{energy1},
+\texttt{xvel1}, \texttt{yvel1}) into their level-0 partners, 118\,MB each; \kernel{revert} copies
+\texttt{density0}/\texttt{energy0} back into the level-1 arrays before the PdV corrector because the
+predictor wrote into them:
+\begin{code}
+/* reset_field_kernel_c.c (baseline): one of four identical copy loops */
+#pragma omp for private(j)
+for (k=y_min;k<=y_max;k++)
+#pragma omp simd
+  for (j=x_min;j<=x_max;j++)
+    density0[i] = density1[i];  /* 118 MB read, 118 MB written, 118 MB read-for-ownership;
+                                   the same for energy, xvel and yvel. No kernel needs a
+                                   field at a particular address: the fields are
+                                   allocatable components of the tile. Change: exchange
+                                   the allocations instead of the data. */
+\end{code}
+\begin{code}[language={[90]Fortran}]
+! PdV.f90 (baseline), end of the predictor pass
+IF ( predict ) THEN
+  CALL revert()   ! density1 = density0, energy1 = energy0 over the whole tile, because
+                  ! the predictor wrote density1/energy1. The C corrector recomputes both
+                  ! from the level-0 fields over the same range and nothing in between
+                  ! reads the level-1 values. Change: skip the call on the C path.
+ENDIF
+\end{code}
+
+\textbf{(5) \kernel{calc\_dt}: fused reduction.}
+The kernel stores the local time step of every cell to \texttt{dt\_min} and reduces the array in a second
+loop:
+\begin{code}
+/* calc_dt_kernel_c.c (baseline) */
+#pragma omp for private(...)
+for (k...) for (j...) {
+    ... the four limits dtct, dtut, dtvt, dtdivt of cell (j,k) ...
+    dt_min[i] = MIN(dtct, MIN(dtut, MIN(dtvt, dtdivt)));  /* full-mesh store plus its
+                                                              read-for-ownership */
+}
+#pragma omp for reduction(min:dt_min_val)
+for (k...) for (j...)
+    if (dt_min[i] < dt_min_val) dt_min_val = dt_min[i];    /* full-mesh reload of a value that
+                                                              is only ever min-reduced */
+/* The second pass exists only to separate the arithmetic from the reduction. The
+ * cell and the criterion of the minimum, needed in the failure message, were not
+ * tracked either: the C port returned cell (1,1) and "sound". Change: reduce inside
+ * the first loop, drop dt_min, locate the cell afterwards and only when the step
+ * is too small. */
+\end{code}
+
+\textbf{(6) Streaming stores.}
+Section~\ref{sec:ceil} showed that a streaming store moves no read-for-ownership bytes on this CPU while
+the C kernels' stores do, and that the Fortran build already avoids most of them. Two routes are open:
+making the store streams of a loop recognisable to the core's write-streaming detector, or explicit
+non-temporal stores. The pure-output loops are the candidates; the velocity update of \kernel{advec\_mom}
+is not, because it loads \texttt{vel1[i]} in the same iteration and the line is in L1 when it is stored:
+\begin{code}
+/* advec_mom_kernel_c.c (baseline), node_flux loop, direction 1 */
+#pragma omp for private(j)
+for (k=y_min;k<=y_max+1;k++)
+#pragma omp simd
+  for (j=x_min-2;j<=x_max+2;j++)
+    node_flux[i] = 0.25*(mass_flux_x[(j,k-1)] + mass_flux_x[(j,k)]
+                        +mass_flux_x[(j+1,k-1)] + mass_flux_x[(j+1,k)]);
+/* node_flux is written once per iteration, contiguously in j, and never loaded in
+ * this loop: the pattern the write-streaming detector needs to skip the
+ * read-for-ownership. The same holds for post_vol, node_mass_post, node_mass_pre
+ * and mom_flux, and for the flux arrays of advec_cell. GCC has no portable
+ * non-temporal store builtin for AArch64 (stnp would be inline assembly) and it
+ * cannot be validated on the development machine. Change: keep every output loop
+ * in this shape after (1)-(3) and let the DDR-controller counters show whether
+ * the hardware drops the read. */
+\end{code}
+The no-write-allocate model is only an upper bound for this item; the counters decide what the hardware
+grants.
+
+\subsection{Time-only changes}
+\label{sec:timeonly}
+After the bytes shrink, four items move the kernels off the memory roof. \textbf{(T1)} \texttt{nowait}
+between independent worksharing loops: 12.5\% of the cycles of a 128-thread run are barrier time, and
+many consecutive loops of a kernel touch disjoint arrays, or the same rows under the same static schedule.
+\textbf{(T2)} \texttt{-fno-math-errno}: \kernel{calc\_dt}, \kernel{ideal\_gas} and \kernel{viscosity} run
+entirely scalar because GCC keeps \texttt{sqrt} as a library call that may set \texttt{errno}.
+\textbf{(T3)} a vectorisable upwind loop: the advection kernels choose the upwind, donor and downwind
+indices by a branch on the sign of the flux and then load through those indices; loading all candidates
+and selecting the value removes the branch, and GCC additionally needs \texttt{-fno-trapping-math} to
+evaluate the limiter's divisions speculatively under the select. \textbf{(T4)} tile-level parallelism
+(one fork/join per tile instead of per loop) is the fallback if \texttt{nowait} is not enough. (T2) and
+(T3) change only the compile command of the C kernels:
+\begin{code}[language=bash]
+# before: the project's GNU flags for the C kernels (Makefile, CFLAGS_GNU and OMP_GNU)
+mpicc -O3 -march=native -funroll-loops -fopenmp -c kernels/*_kernel_c.c
+# after: two flags added to CFLAGS_GNU (and CFLAGS_ARM); the Fortran flags are unchanged
+#   -fno-math-errno     T2: sqrt() need not set errno, so GCC emits the NEON fsqrt
+#                           instead of a scalar libm call (calc_dt, ideal_gas, viscosity)
+#   -fno-trapping-math  T3: divisions may be evaluated speculatively, so the
+#                           select-based upwind loops if-convert and vectorise
+mpicc -O3 -march=native -funroll-loops -fno-math-errno -fno-trapping-math -fopenmp \
+      -c kernels/*_kernel_c.c
+# CloverLeaf enables no floating-point traps, so neither flag changes what the code asks
+# for; the vector code GCC then generates does round differently somewhere, and the
+# clover_bm.in gate detects it (Section 4). On the baseline the flags buy no time and no
+# bytes; on the optimised kernels 3.6 % of time (ladder table). Withdrawn, see Section 4.
+\end{code}
+
+\subsection{Implementation status}
+\label{sec:status}
+All byte changes are implemented; (T2) was implemented and withdrawn again (Section~\ref{sec:res}); (T1) and (T3) are implemented in \kernel{advec\_mom} and still open in \kernel{advec\_cell}; (6) is left to the hardware and (T4) is not started. \kernel{advec\_mom},
+\kernel{calc\_dt} and the compiler flags are commits \texttt{59cdd3b} and \texttt{88fce34} of branch
+\texttt{M3\_dev}; \kernel{advec\_cell}, Reset and Revert are commit \texttt{ff83119} of the same branch
+on the remote (the two lines are merged before the measurement). Every build of this ladder (\texttt{base} = the baseline source and flags, \texttt{flags} = 59cdd3b,
+\texttt{cell} = ff83119, \texttt{mom} = 88fce34, \texttt{opt} = the merge) was measured in one job on one
+node (job 34938, cn17, 2026-10-15) at 64$\times$2, five repetitions under the DDR-controller counters
+(Table~\ref{tab:ladder}). The compiler flags alone change neither bytes nor time ($+0.7\%$, $-0.2\%$).
+The \kernel{advec\_cell} line (temporaries, dead store, field swap) removes 12.1\% of the traffic and
+12.3\% of the time, the \kernel{advec\_mom} line (helper hoist, dead store, fused \kernel{calc\_dt}
+reduction) 14.9\% and 15.7\%; merged they remove 27.8\% of the bytes (2.828 to 2.043\,TB) against
+the 29.3\% the byte model predicted (Section~\ref{sec:bytes}), and the wall clock follows the bytes
+($-27.0\%$, 11.31 to 8.25\,s) because every build sustains 248--252\GBs{}. All builds print
+\texttt{PASSED} on bm3840; the \texttt{clover\_bm.in} gate (jobs 34937, 34999 and 35002) is discussed in
+Section~\ref{sec:res}. A sixth build, \texttt{optnf} (commit 8d7d81f: \texttt{opt} with the baseline
+compiler flags, the kernel changes untouched), was measured in the same way in job 35003 (cn16,
+2026-10-19) against a base rerun of its own (11.32\,s): 8.56\,s and 2.052\,TB, $-27.4\%$ bytes and
+$-24.3\%$ time; it is the build Section~\ref{sec:res} reports, for the reason given there. Below, the new
+code of every change; the comments say what was done.
+
+\textbf{(1) \kernel{advec\_mom} split --- implemented.}
+\begin{code}[language={[90]Fortran}]
+! advection.f90: the direction-only part runs once per sweep and tile, before the
+! two per-component calls
+DO tile=1,tiles_per_chunk
+  CALL advec_mom_prep_driver(tile,direction,sweep_number) ! C only: advec_mom_prep_c builds
+                                                          ! node_flux, node_mass_post,
+                                                          ! node_mass_pre and post_vol
+                                                          ! (work_array1/2/3/6)
+  CALL advec_mom_driver(tile,xvel,direction,sweep_number) ! advec_mom_vel_c(xvel1, ...)
+  CALL advec_mom_driver(tile,yvel,direction,sweep_number) ! advec_mom_vel_c(yvel1, ...)
+ENDDO
+! advec_mom_vel_c receives only vel1, the three node arrays, mom_flux (work_array4),
+! celldx, celldy and direction; mass_flux, vol_flux, volume, density1 and pre_vol
+! (work_array5) are no longer passed. Nothing between the three calls touches the
+! work arrays. The Fortran kernel is untouched: the prep driver does nothing for
+! use_fortran_kernels.
+\end{code}
+
+\textbf{(2) \kernel{advec\_cell} temporaries --- implemented.}
+\begin{code}
+/* advec_cell_kernel_c.c, update loop of the x sweep (y sweep identical with the y fluxes) */
+#pragma omp for private(j)
+for (k=y_min;k<=y_max;k++) {
+#pragma omp simd
+  for (j=x_min;j<=x_max;j++) {
+    /* the four temporaries live in registers: no store, no read-for-ownership */
+    double pre_mass_s  = density1[i]*pre_vol[i];
+    double post_mass_s = pre_mass_s + mass_flux_x[i] - mass_flux_x[i+1];
+    double post_ener_s = (energy1[i]*pre_mass_s + ener_flux[i] - ener_flux[i+1]) / post_mass_s;
+    double advec_vol_s = pre_vol[i] + vol_flux_x[i] - vol_flux_x[i+1];
+    density1[i] = post_mass_s / advec_vol_s;   /* same operations in the same order as  */
+    energy1[i]  = post_ener_s;                 /* before: the results are bit-identical */
+  }
+}
+/* The pre_mass, post_mass, advec_vol and post_ener arguments stay in the Fortran
+ * interface but are no longer touched. */
+\end{code}
+
+\textbf{(3) Dead stores --- implemented.}
+\begin{code}
+/* advec_cell_kernel_c.c, sweep 1: only pre_vol is computed, the post_vol store is gone */
+pre_vol[i] = volume[i] + (vol_flux_x[i+1]-vol_flux_x[i]) + (vol_flux_y[iy+1]-vol_flux_y[iy]);
+
+/* advec_mom_kernel_c.c, advec_mom_prep_c: post_vol only; pre_vol and its argument are
+ * gone. IDXN/IDXC are the node- and cell-sized FTNREF2D index macros of the file. */
+#pragma omp for private(j) nowait   /* T1: the node_flux loop that follows does not read
+                                       post_vol; the barrier after node_flux protects
+                                       node_mass_post, the first reader (k-1 stencil) */
+for (k=y_min-2;k<=y_max+2;k++) {
+#pragma omp simd
+  for (j=x_min-2;j<=x_max+2;j++)
+    post_vol[IDXN(j,k)] = volume[IDXC(j,k)] + vol_flux_y[IDXC(j,k+1)] - vol_flux_y[IDXC(j,k)];
+}
+\end{code}
+
+\textbf{(4) Reset and Revert --- implemented.}
+\begin{code}[language={[90]Fortran}]
+! reset_field.f90, C path: the level-1 fields become the level-0 fields by exchanging
+! the allocations; reset_field_kernel_c is no longer called
+DO tile=1,tiles_per_chunk
+  CALL swap_field(chunk%tiles(tile)%field%density0, chunk%tiles(tile)%field%density1)
+  CALL swap_field(chunk%tiles(tile)%field%energy0,  chunk%tiles(tile)%field%energy1)
+  CALL swap_field(chunk%tiles(tile)%field%xvel0,    chunk%tiles(tile)%field%xvel1)
+  CALL swap_field(chunk%tiles(tile)%field%yvel0,    chunk%tiles(tile)%field%yvel1)
+ENDDO
+
+SUBROUTINE swap_field(a,b)              ! three MOVE_ALLOCs: O(1), no memory traffic
+  REAL(KIND=8), ALLOCATABLE, INTENT(INOUT) :: a(:,:), b(:,:)
+  REAL(KIND=8), ALLOCATABLE :: t(:,:)
+  CALL MOVE_ALLOC(a,t); CALL MOVE_ALLOC(b,a); CALL MOVE_ALLOC(t,b)
+END SUBROUTINE swap_field
+
+! PdV.f90: the C corrector rewrites density1/energy1 over the whole range revert would
+! copy, so the C path skips the copy; the Fortran kernels keep it
+IF ( predict .AND. .NOT. use_C_kernels ) THEN
+  CALL revert()
+ENDIF
+\end{code}
+
+\textbf{(5) \kernel{calc\_dt} fused reduction --- implemented.}
+\begin{code}
+/* calc_dt_kernel_c.c: one pass; dt_min is never written (the argument stays for the
+ * Fortran interface). The four limits moved to an always_inline helper so that the hot
+ * loop and the diagnostic scan share one definition. */
+#pragma omp for private(j,dtct,dtut,dtvt,dtdivt) reduction(min:dt_min_val)
+for (k=y_min;k<=y_max;k++) {
+#pragma omp simd private(dtct,dtut,dtvt,dtdivt) reduction(min:dt_min_val)
+  for (j=x_min;j<=x_max;j++) {
+    cell_dt_limits(j,k, ..., &dtct,&dtut,&dtvt,&dtdivt);  /* sound, x-vel, y-vel, divergence */
+    dt_min_val = MIN(dt_min_val, MIN(dtct,MIN(dtut,MIN(dtvt,dtdivt))));
+  }                   /* every thread and vector lane keeps a private minimum; min is
+                         exact, so the order in which OpenMP combines them is irrelevant */
+}
+if (dt_min_val < min_dt) {        /* failure path only: serial, runs once before the abort. */
+  for (k...) for (j...) {         /* Re-evaluate the limits and report the first cell that  */
+    cell_dt_limits(...);          /* reaches the minimum and which of the four it was,     */
+    if (MIN(dtct,MIN(dtut,MIN(dtvt,dtdivt))) == dt_min_val) {  /* instead of the fixed      */
+      j_ldt=j; k_ldt=k; dtl_control=...; goto found;           /* (1,1)/"sound" of the port */
+    }
+  }
+}
+\end{code}
+
+\textbf{(6) Streaming stores --- not implemented explicitly.} No non-temporal store was added. The
+restructured loops of (1), (3) and (T3) leave every output array of \texttt{advec\_mom\_prep\_c} and
+\texttt{mom\_flux} written once per iteration, contiguously and without a load from the same lines, the
+shape asked for in (6); whether the write-streaming detector then drops the read-for-ownership is read
+from the DDR-controller counters of the optimised run.
+
+\textbf{(T1) \texttt{nowait} --- implemented in \kernel{advec\_mom}, open in \kernel{advec\_cell}.}
+\begin{code}
+/* advec_mom_prep_c, direction 1: node_mass_post -> node_mass_pre without a barrier */
+#pragma omp for private(j) schedule(static) nowait  /* same k range and schedule(static) as
+                                                       the next loop: OpenMP guarantees the
+                                                       same row -> thread mapping, and
+                                                       node_mass_pre reads node_mass_post
+                                                       only in its own row */
+for (k=y_min;k<=y_max+1;k++)
+#pragma omp simd
+  for (j=x_min-1;j<=x_max+2;j++)
+    node_mass_post[IDXN(j,k)] = 0.25*(density1[IDXC(j  ,k-1)]*post_vol[IDXN(j  ,k-1)]
+                                     +density1[IDXC(j  ,k  )]*post_vol[IDXN(j  ,k  )]
+                                     +density1[IDXC(j-1,k-1)]*post_vol[IDXN(j-1,k-1)]
+                                     +density1[IDXC(j-1,k  )]*post_vol[IDXN(j-1,k  )]);
+#pragma omp for private(j) schedule(static)         /* node_flux finished at its own barrier */
+for (k=y_min;k<=y_max+1;k++)
+#pragma omp simd
+  for (j=x_min-1;j<=x_max+2;j++)
+    node_mass_pre[IDXN(j,k)] = node_mass_post[IDXN(j,k)]
+                             - node_flux[IDXN(j-1,k)] + node_flux[IDXN(j,k)];
+/* Also nowait: the post_vol loop (see (3)) and, in direction 1 of advec_mom_vel_c, the
+ * mom_flux loop before the velocity update (same rows, same schedule). Direction 2
+ * keeps its barriers because the stencils cross rows. advec_cell is still all-barrier. */
+\end{code}
+
+\textbf{(T2) Compiler flags --- implemented} in the Makefile for the GNU and ARM flag sets, as shown in
+Section~\ref{sec:timeonly}.
+
+\textbf{(T3) Branch-free upwind loop --- implemented in \kernel{advec\_mom}, open in \kernel{advec\_cell}.}
+\begin{code}
+/* advec_mom_vel_c, mom_flux loop, direction 1 (direction 2 is the same along k with celldy) */
+#pragma omp for private(j) schedule(static) nowait
+for (k=y_min;k<=y_max+1;k++) {
+#pragma omp simd
+  for (j=x_min-1;j<=x_max+1;j++) {
+    const double nf  = node_flux[IDXN(j,k)];
+    const int    neg = (nf < 0.0);   /* flow in -j: upwind j+2, donor j+1, downwind j */
+    const double v_m1 = vel1[IDXN(j-1,k)], v_0  = vel1[IDXN(j  ,k)],  /* all four candidates: */
+                 v_p1 = vel1[IDXN(j+1,k)], v_p2 = vel1[IDXN(j+2,k)];  /* contiguous loads     */
+    const double v_up  = neg ? v_p2 : v_m1;      /* selects replace the branch and the      */
+    const double v_don = neg ? v_p1 : v_0;       /* indirect loads through upwind/donor/    */
+    const double v_dwn = neg ? v_0  : v_p1;      /* downwind                                */
+    const double m_don = neg ? node_mass_pre[IDXN(j+1,k)] : node_mass_pre[IDXN(j,k)];
+    const double width = celldx[FTNREF1D(j,x_min-2)];
+    const double w_dif = neg ? celldx[FTNREF1D(j+1,x_min-2)] : celldx[FTNREF1D(j-1,x_min-2)];
+    const double sigma   = fabs(nf)/m_don;
+    const double vdiffuw = v_don - v_up,  vdiffdw = v_dwn - v_don;
+    const double auw = fabs(vdiffuw), adw = fabs(vdiffdw);
+    const double wind = (vdiffdw <= 0.0) ? -1.0 : 1.0;
+    const double lim  = wind*MIN(width*((2.0-sigma)*adw/width+(1.0+sigma)*auw/w_dif)/6.0,
+                                 MIN(auw,adw));  /* always evaluated (-fno-trapping-math) */
+    const double limiter = (vdiffuw*vdiffdw > 0.0) ? lim : 0.0;  /* ... then selected */
+    mom_flux[IDXN(j,k)] = (v_don + (1.0-sigma)*limiter)*nf;
+  }
+}
+/* Same arithmetic in the same order as the branchy original: bit-identical results.
+ * With -fno-trapping-math GCC vectorises all 13 loops of the file (vectoriser report,
+ * GCC 13, x86); the NEON share on the cluster is measured with PAPI. */
+\end{code}
+
+\textbf{(T4) Tile-level parallelism --- not implemented.}
+
+
+\begin{table}[h]
+  \centering\small
+  \input{tables/tab_ladder.tex}
+  \caption{Per-change attribution at 64$\times$2 (bm3840, five repetitions under the DDR-controller counters,
+    one node, one job): the commit ladder of \texttt{perf/variants.conf}, each build against the baseline build
+    of the same job (job 34938; the \texttt{optnf} row from job 35003 against its own base rerun, 11.32\,s).
+    Filled from \texttt{data/ladder.csv} (\texttt{perf/jobs/m3\_opt.sbatch}).}
+  \label{tab:ladder}
+\end{table}
+
+% =============================================================================
+\section{Results}
+\label{sec:res}
+% =============================================================================
+Every optimised build is measured exactly like the baseline (Section~\ref{sec:method}): five repetitions
+under the DDR-controller counters, at the same five layouts, the correctness gate on \texttt{clover\_bm.in}
+and \texttt{PASSED} on bm3840. Table~\ref{tab:results} compares every layout with its own baseline;
+Figure~\ref{fig:results} shows the wall clock against the memory floor.
+
+\textbf{Correctness.} Job 34937 ran the \texttt{clover\_bm.in} gate for every build of the ladder and
+job 34999 for the ladder's own baseline binary (Table~\ref{tab:correctness}). The baseline build
+reproduces the archived C value, 0.0057\%, at every layout and with THP off, and the Fortran value: the
+reference stands, now from a build of known provenance. The four C builds with the compiler flags, the
+flags-only build included, report one and the same other deviation, 0.038\%, at every layout, and the
+Fortran path of the optimised build reproduces its reference to all digits. The kernel changes are
+therefore neutral with respect to each other and to the flags-only build, and the change of the result is
+caused by \texttt{-fno-math-errno -fno-trapping-math} alone (the flags-only commit differs from the
+baseline in these two flags and in comments). The flags make GCC vectorise the \texttt{sqrt} kernels and
+if-convert the upwind loops, and the vector code rounds differently somewhere; the mechanism, e.g.\ a
+different multiply-add contraction under GCC's default \texttt{-ffp-contract=fast}, was not isolated.
+Both values are physically irrelevant and both fail CloverLeaf's own 0.001\% threshold, but the gate of
+Section~\ref{sec:method} is reproduction to $10^{-6}$\%, and the optimised build as measured does not pass
+it. The remedy is to drop them: \texttt{optnf}, the five byte changes with the baseline flags, reproduces
+0.0057\% at every layout and with THP off, and the Fortran value (job 35002, 7 of 7), and keeps the
+ladder's bytes (2.052 against 2.043\,TB). It is the build reported below. What the flags were worth is
+now measured too: nothing on the baseline ($+0.7\%$ bytes, $-0.2\%$ time, Table~\ref{tab:ladder}) and
+3.6\% of the wall clock on the optimised kernels (8.25 against 8.56\,s at the same bytes), almost all of
+it in the two \texttt{sqrt} kernels, whose vectorised square root only shows once the bytes around them
+shrink (\kernel{calc\_dt} 0.45 against 0.62\,s, \kernel{ideal\_gas} 0.45 against 0.54\,s; jobs 34939 and
+35004). That is the price of reproducing the reference to $10^{-6}$\%; we pay it, because the gate is
+this project's definition of correct, and keep the flags as a separately measured option that a user
+with a looser criterion can switch on. All builds print \texttt{PASSED} on bm3840. (Builds on the x86
+development machine gave 0.038\% for every source, the baseline included; that cross-architecture
+comparison was invalid and is withdrawn.)
+
+\begin{table}[t]
+  \centering\small
+  \input{tables/tab_results.tex}
+  \caption{C kernels, bm3840: baseline (job 34797) against the optimised build \texttt{optnf} (job 35003)
+    at every layout, THP as installed. Speed-up = baseline median / optimised median.}
+  \label{tab:results}
+\end{table}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.75\linewidth]{figures/fig_m3_layouts.pdf}
+  \caption{Wall clock per layout (median, bars min--max): C baseline, C optimised where measured, Fortran
+    for reference. The dashed line is the memory floor of the baseline byte count at 266.5\GBs{}.}
+  \label{fig:results}
+\end{figure}
+
+\begin{table}[t]
+  \centering\small
+  \input{tables/tab_kernels_opt.tex}
+  \caption{Per-kernel PAPI counters at 64$\times$2, THP on: baseline (job 34798) against the optimised build
+    \texttt{optnf} (job 35004). Time is the region time of the ipc event set (max over threads); Reset and Revert have no
+    C region any more (field swap). The two halves of the split \kernel{advec\_mom} count under one region.}
+  \label{tab:kernels_opt}
+\end{table}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig_roofline_opt.pdf}
+  \caption{Node roofline at 64$\times$2, baseline (a) against the optimised build (b): kernels from their
+    PAPI region times (jobs 34798 and 35004) and the byte model of each build, numbered as in
+    Table~\ref{tab:kernels}; the hollow diamond is the whole application from the measured DRAM bytes and
+    wall clock.}
+  \label{fig:roofline_opt}
+\end{figure}
+
+The gain is the byte saving and nothing else: every layout loses the same quarter of its traffic and
+speeds up by the same factor, $1.32$--$1.33\times$ at the four balanced layouts and $1.51\times$ at the
+NUMA-bound 1$\times$128 (Table~\ref{tab:results}), the ladder adds up change by change
+(Table~\ref{tab:ladder}), and the counters confirm the byte model of Section~\ref{sec:bytes} to within
+two points. The optimised C build is now faster than the Fortran reference at every layout
+(Figure~\ref{fig:results}): the C/Fortran byte gap of Section~\ref{sec:perf} is closed and reversed. What
+did not change is the character of the code. Figure~\ref{fig:roofline_opt} shows every kernel still on the
+bandwidth roof with IPC and back-end stall share as before (Table~\ref{tab:kernels_opt}); the whole
+application moved up the roof, not off it, and sits at 90\% of the hardware ceiling (240\GBs{}) with
+11\% of the wall clock left above the memory floor of its own byte count (7.70\,s). The two advection
+kernels took the whole gain ($1.57\times$ and $1.46\times$) and Reset and Revert vanished;
+\kernel{calc\_dt} and \kernel{ideal\_gas} gain 6--7\% without their vectorised square root; PdV,
+\kernel{accelerate}, \kernel{flux\_calc} and \kernel{viscosity} are untouched and are the next bytes
+to remove. The time-only items (T1 and T3 in \kernel{advec\_cell}, T4, and the withdrawn flags) cannot
+buy more than that remaining 11\% at this layout; the streaming-store lever of Section~\ref{sec:bytes} can.
+
+% =============================================================================
+\section{Conclusions (draft)}
+% =============================================================================
+\begin{itemize}
+  \item The C kernels are memory-bound (0.2\,flop/B against a 5\,flop/B ridge) and the 64$\times$2 baseline
+        already sustains 94\% of the 266.5\GBs{} hardware ceiling over the whole run: only fewer bytes can
+        make it faster.
+  \item The analytic byte model matches the counters to 1\% and predicts the five planned changes at
+        $-29\%$ of the traffic (floor 10.5 to 7.4\,s); the read-for-ownership that the C stores pay, and
+        that streaming stores and the Fortran build avoid, is a sixth lever worth up to another $-23\%$.
+  \item Measured: the five byte changes remove 27.4\% of the DRAM traffic (model: 29.3\%) and the wall
+        clock follows, $1.32\times$ at 64$\times$2 and $1.32$--$1.51\times$ at every other layout; the
+        optimised C build is faster than the Fortran reference everywhere and still sits on the bandwidth
+        roof, 11\% above the memory floor of its own bytes.
+  \item The correctness gate: the rebuilt baseline binary reproduces the archived \texttt{clover\_bm.in}
+        reference at every layout (job 34999), and so does the optimised build with the baseline flags
+        (job 35002). The two compiler flags \texttt{-fno-math-errno -fno-trapping-math} alone move the
+        result; they are worth nothing on the baseline and 3.6\% on the optimised kernels, and were
+        dropped: a measured trade-off between time and reproducibility, decided for the gate.
+\end{itemize}
+
+\bibliographystyle{plain}
+\bibliography{refs}
+
+\end{document}
