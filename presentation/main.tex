@@ -1,0 +1,482 @@
+% Presentation: Performance Engineering, group 11 -- CloverLeaf on HAICGU
+% Build: make  (latexmk -pdf main.tex). Target: 10 min talk + 5 min questions.
+\documentclass[aspectratio=169,10pt]{beamer}
+\usetheme{RUG}
+
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{appendixnumberbeamer}   % backup slides do not count in the page total
+
+\lstset{basicstyle=\ttfamily\tiny, columns=fullflexible, keepspaces=true, breaklines=true,
+  language=C, commentstyle=\color{ruggrey}, keywordstyle=\color{rugdark}, stringstyle=\color{rugdark},
+  aboveskip=2pt, belowskip=2pt, xleftmargin=0.2em}
+\newcommand{\kernel}[1]{\texttt{#1}}
+\newcommand{\GBs}{\,GB/s}
+\newcommand{\good}[1]{\textcolor{rugred}{\textbf{#1}}}
+
+\title{Analysis and Optimisation of CloverLeaf\\on a Kunpeng 920 Node}
+\subtitle{Performance Engineering, Group 11}
+\author{Jort Oosterveld \and Sergiu-Adrian Preda}
+\institute{Faculty of Science and Engineering, University of Groningen}
+\date{October 2026}
+
+\begin{document}
+
+\begin{frame}[plain,noframenumbering,t]
+  \titlepage
+\end{frame}
+\note{0:00. One sentence: we took the C kernels of CloverLeaf, found they were already at the memory
+  ceiling, and made them 1.37x faster by moving fewer bytes.}
+
+% ======================================================================
+\section{Baseline}
+% ======================================================================
+
+\begin{frame}{The application and the machine}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \textbf{CloverLeaf (reference, MPI + OpenMP)}
+      \begin{itemize}
+        \item 2D compressible Euler, Lagrangian--Eulerian step
+        \item 13 kernels, each a $\pm1$ stencil loop nest over the grid
+        \item we optimise the \emph{C kernels}; Fortran kernels only as reference
+        \item benchmark \textbf{bm3840}: $3840^2$ cells, 87 steps, $\approx$25 arrays of 118\,MB ($\approx$3\,GB working set, $25\times$ L3)
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      \textbf{HAICGU node}
+      \begin{itemize}
+        \item 2$\times$ Kunpeng 920 (ARMv8, 2.6\,GHz): 128 cores, 4 NUMA domains
+        \item 16 channels DDR4-2666, 128\,GB, L3 2$\times$64\,MB
+        \item GCC 14.1, OpenMPI 5.0, PAPI 7.1, Linux \texttt{perf}
+        \item \texttt{-O3 -march=native -funroll-loops -fopenmp}
+        \item layout ``$r\times t$'': $r$ ranks $\times$ $t$ threads, one thread per core, ranks pinned
+      \end{itemize}
+    \end{column}
+  \end{columns}
+  \vspace{0.4cm}
+  \textbf{Question of the project:} how far is the baseline from what the hardware allows, and what does it take to close the gap?
+\end{frame}
+\note{0:30. Working set is 25x the L3: every loop nest streams its arrays from DRAM.}
+
+\begin{frame}{Methodology: three independent sources, one convention}
+  \begin{columns}[T]
+    \begin{column}{0.55\textwidth}
+      \begin{enumerate}
+        \item CloverLeaf's own profiler: wall clock per phase
+        \item PAPI per kernel (\texttt{papi\_prof}, one event set per thread): IPC, instruction mix, stalls
+        \item Linux \texttt{perf} and the DDR-controller PMU: \textbf{bytes that cross the memory interface}, read around every run
+      \end{enumerate}
+      \vspace{0.3cm}
+      \textbf{Protocol.} 5 repetitions, median and min--max, every one under the DDR counters: time and bytes from the same run. All bandwidths are \emph{hardware bytes} / wall clock, for STREAM and for the application alike.
+    \end{column}
+    \begin{column}{0.45\textwidth}
+      \begin{block}{Checks of the tools}
+        \begin{itemize}
+          \item PAPI build costs $<$1\,\%; kernel times add up to the wall clock within 1\,\%
+          \item DDR counters calibrated on STREAM: 32\,B per count, no read-for-ownership on streaming stores
+          \item placement verified: busiest controller group $= 1.00\times$ the mean
+        \end{itemize}
+      \end{block}
+      \begin{block}{Correctness gate}
+        \texttt{PASSED} on bm3840; deviation of the long deck \texttt{clover\_bm.in} reproduced to $10^{-6}$\,\%
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+\note{1:30. The key convention: hardware bytes, not model bytes, for every bandwidth number.}
+
+\begin{frame}{Where the time goes}
+  \begin{columns}[T]
+    \begin{column}{0.57\textwidth}
+      \footnotesize
+      \begin{tabular}{lrrrr}
+        \toprule
+        kernel & \multicolumn{2}{c}{time share (\%)} & IPC & stall (\%) \\
+               & 1 core & 128 cores & 64$\times$2 & 64$\times$2 \\
+        \midrule
+        \kernel{advec\_mom}  & 28.6 & \good{44.0} & 0.27 & 91 \\
+        \kernel{advec\_cell} & 19.4 & \good{19.4} & 0.28 & 91 \\
+        \kernel{pdv} (2 calls) & 17.6 &  9.6 & 0.21 & 92 \\
+        \kernel{calc\_dt}    & 11.8 &  4.8 & 0.50 & 81 \\
+        \kernel{ideal\_gas}  &  7.4 &  4.7 & 0.31 & 87 \\
+        \kernel{viscosity}   &  5.7 &  2.2 & 0.99 & 62 \\
+        \kernel{accelerate}  &  5.2 &  4.1 & 0.27 & 91 \\
+        \kernel{reset} + \kernel{revert} & 1.6 & 4.5 & 0.10 & 96 \\
+        other (3)            &  2.7 &  6.7 & -- & -- \\
+        \bottomrule
+      \end{tabular}
+      \vspace{0.2cm}
+
+      \scriptsize bm3840, PAPI; 128 cores $=1\times128$; stall = back-end stall cycles
+    \end{column}
+    \begin{column}{0.43\textwidth}
+      \begin{itemize}
+        \item advection $=$ 63\,\% of the node-level time; \kernel{advec\_mom} scales worst ($14\times$ on 128 cores)
+        \item at 64$\times$2: IPC 0.1--0.5, \textbf{81--96\,\% back-end stalls}: the cores wait for memory
+        \item \kernel{calc\_dt}, \kernel{ideal\_gas}, \kernel{viscosity} run \emph{scalar}: \texttt{sqrt} stays a libm call without \texttt{-fno-math-errno}
+        \item advection upwind loops: data-dependent indices, only 12--16\,\% vector instructions
+        \item 12.5\,\% of all cycles in the OpenMP barrier (one per worksharing loop)
+      \end{itemize}
+    \end{column}
+  \end{columns}
+\end{frame}
+\note{2:30. The picture is uniform: everything waits for DRAM. Instruction-side fixes cannot help yet.}
+
+\begin{frame}{Ceilings, byte model and roofline}
+  \begin{columns}[T]
+    \begin{column}{0.4\textwidth}
+      \small
+      \textbf{Measured ceilings}
+      \begin{itemize}
+        \item STREAM triad, 128 threads: \textbf{266.5\GBs} hardware bytes
+        \item FMA peak \textbf{1330\,GFLOP/s}: ridge at \textbf{5\,flop/B}
+      \end{itemize}
+      \vspace{0.2cm}
+      \textbf{Analytic byte model} (arrays read and written per loop nest, write-allocate charged)
+      \begin{itemize}
+        \item 451\,flop, 2186\,B per cell and step: \textbf{0.21\,flop/B}
+        \item predicts 2.80\,TB for bm3840; measured \textbf{2.83\,TB} ($+1$\,\%)
+        \item reads $= 1.34\times$ demand: the C stores pay a read-for-ownership
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.6\textwidth}
+      \includegraphics[width=0.96\textwidth]{figures/fig_roofline.pdf}
+    \end{column}
+  \end{columns}
+\end{frame}
+\note{3:30. Every kernel sits at 0.13-0.83 flop/B, far left of the ridge. The model is validated by the counters to 1 percent, so we can trust it to predict changes.}
+
+\begin{frame}{Baseline: already at the memory ceiling}
+  \begin{columns}[T]
+    \begin{column}{0.55\textwidth}
+      \footnotesize
+      \begin{tabular}{llrrr}
+        \toprule
+        kernels & layout & wall (s) & TB & \% of roof \\
+        \midrule
+        C & \textbf{64$\times$2} & \textbf{11.32} & 2.83 & \textbf{94} \\
+        C & 32$\times$4  & 11.46 & 2.79 & 91 \\
+        C & 128$\times$1 & 11.66 & 2.95 & 95 \\
+        C & 4$\times$32  & 13.00 & 2.87 & 83 \\
+        C & 1$\times$128 & 26.91 & 2.99 & 42 \\
+        C & 1$\times$128, THP off & 13.31 & 2.83 & 80 \\
+        \midrule
+        Fortran & 64$\times$2 & 9.33 & \textbf{2.36} & 95 \\
+        \bottomrule
+      \end{tabular}
+      \vspace{0.2cm}
+
+      \scriptsize bm3840, median of 5; roof $=$ 266.5\GBs{} hardware bytes
+      \vspace{0.1cm}
+
+      \normalsize
+      \begin{alertblock}{Consequence}
+        No headroom at the current byte count: every further gain has to come from \textbf{moving fewer bytes}.
+      \end{alertblock}
+    \end{column}
+    \begin{column}{0.45\textwidth}
+      \begin{itemize}
+        \item baseline 64$\times$2: 250\GBs{} over the whole run, start-up included: \textbf{94\,\% of the hardware ceiling}
+        \item memory floor at the current bytes: $2.83\,\text{TB} / 266.5\GBs = $ \textbf{10.6\,s}; the baseline is within 7\,\%
+        \item only 1$\times$128 cares about THP: first touch puts whole arrays on one NUMA domain ($1.66\times$ imbalance)
+        \item Fortran is 18\,\% faster at the \emph{same} bandwidth: it moves 0.47\,TB fewer bytes
+      \end{itemize}
+    \end{column}
+  \end{columns}
+\end{frame}
+\note{4:30. This is the pivot of the talk. Vectorising, fewer barriers, flags: none of it can pay until the bytes shrink.}
+
+% ======================================================================
+\section{Kernel improvements}
+% ======================================================================
+
+\begin{frame}{Plan: five byte reductions, predicted with the byte model}
+  \footnotesize
+  \begin{tabular}{p{8.2cm}rrr}
+    \toprule
+    change & DRAM bytes & cumulative & floor (s) \\
+    \midrule
+    (1) \kernel{advec\_mom}: direction-only helper loops once per sweep, not once per velocity component & $-12.8$\,\% & $-12.8$\,\% & 9.2 \\
+    (2) \kernel{advec\_cell}: four temporaries in registers instead of four full-mesh arrays & $-5.9$\,\% & $-18.7$\,\% & 9.9 \\
+    (3) dead stores \texttt{post\_vol} / \texttt{pre\_vol}: written over the haloed grid, never read & $-4.4$\,\% & $-21.6$\,\% & 10.1 \\
+    (4) Reset / Revert: swap the field allocations instead of copying 118\,MB per field & $-6.6$\,\% & $-28.2$\,\% & 9.8 \\
+    (5) \kernel{calc\_dt}: fuse the min reduction into the compute loop & $-1.1$\,\% & \good{$-29.3$\,\%} & \good{7.4} \\
+    \midrule
+    (6) streaming stores (no read-for-ownership), upper bound & $-22.8$\,\% & $-41.4$\,\% & -- \\
+    \bottomrule
+  \end{tabular}
+  \vspace{0.15cm}
+  \normalsize
+  \begin{itemize}
+    \item selection: the three kernels with the largest gain in the model; (3) and (5) fell out while reading the code
+    \item every change is an edit of the model's loop table, so prediction and measurement share one convention; time-only items (\texttt{nowait}, \texttt{-fno-math-errno}, branch-free upwind loop) come after the bytes
+  \end{itemize}
+\end{frame}
+\note{5:30. Floor = predicted bytes / 266.5 GB/s.}
+
+\begin{frame}[fragile]{The changes in code (1/2)}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \textbf{(2) \kernel{advec\_cell}: temporaries in registers}
+\begin{lstlisting}
+/* before: 4 full-mesh stores + reloads per sweep */
+pre_mass[i]  = density1[i]*pre_vol[i];
+post_mass[i] = pre_mass[i] + mass_flux_x[i] - mass_flux_x[i+1];
+post_ener[i] = (energy1[i]*pre_mass[i] + ener_flux[i] - ener_flux[i+1]) / post_mass[i];
+advec_vol[i] = pre_vol[i] + vol_flux_x[i] - vol_flux_x[i+1];
+density1[i]  = post_mass[i] / advec_vol[i];
+energy1[i]   = post_ener[i];
+
+/* after: same arithmetic, same order, no DRAM traffic */
+double pre_mass_s  = density1[i]*pre_vol[i];
+double post_mass_s = pre_mass_s + mass_flux_x[i] - mass_flux_x[i+1];
+double post_ener_s = (energy1[i]*pre_mass_s + ener_flux[i] - ener_flux[i+1]) / post_mass_s;
+double advec_vol_s = pre_vol[i] + vol_flux_x[i] - vol_flux_x[i+1];
+density1[i] = post_mass_s / advec_vol_s;
+energy1[i]  = post_ener_s;
+\end{lstlisting}
+      \vspace{0.2cm}
+      \textbf{(3) Dead stores.} Delete the \texttt{post\_vol} store in sweep 1 of \kernel{advec\_cell} and the \texttt{pre\_vol} store in \kernel{advec\_mom}; each was a full-mesh write plus its read-for-ownership, once per call.
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      \textbf{(4) Reset / Revert without copies}
+\begin{lstlisting}[language={[90]Fortran}]
+! reset_field.f90, C path: exchange the allocations,
+! reset_field_kernel_c is no longer called
+CALL swap_field(field%density0, field%density1)
+CALL swap_field(field%energy0,  field%energy1)
+CALL swap_field(field%xvel0,    field%xvel1)
+CALL swap_field(field%yvel0,    field%yvel1)
+
+SUBROUTINE swap_field(a,b)   ! three MOVE_ALLOCs: O(1)
+  CALL MOVE_ALLOC(a,t); CALL MOVE_ALLOC(b,a); CALL MOVE_ALLOC(t,b)
+END SUBROUTINE
+
+! PdV.f90: the C corrector rewrites density1/energy1
+! over the whole range that revert would copy
+IF ( predict .AND. .NOT. use_C_kernels ) CALL revert()
+\end{lstlisting}
+      \vspace{0.2cm}
+      Before: 4 fields $\times$ 118\,MB read, written and read-for-ownership, every step, for a copy no kernel needs at a fixed address.
+    \end{column}
+  \end{columns}
+\end{frame}
+\note{6:30. Stress: bit-identical arithmetic.}
+
+\begin{frame}[fragile]{The changes in code (2/2)}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \textbf{(1) \kernel{advec\_mom}: split prep and velocity part}
+\begin{lstlisting}[language={[90]Fortran}]
+! before: the kernel ran for xvel AND yvel; its first four
+! loops depend only on the sweep direction and rebuilt
+! identical arrays the second time (8 arrays streamed twice)
+DO tile=1,tiles_per_chunk
+  CALL advec_mom_prep_driver(tile,direction,sweep)  ! once per sweep
+  CALL advec_mom_driver(tile,xvel,direction,sweep)  ! velocity part
+  CALL advec_mom_driver(tile,yvel,direction,sweep)
+ENDDO
+\end{lstlisting}
+      \vspace{0.2cm}
+      \textbf{(5) \kernel{calc\_dt}: fused reduction}
+\begin{lstlisting}
+/* before: store dt_min[i] per cell, reload it in a second loop */
+#pragma omp for reduction(min:dt_min_val)
+for (k...) {
+#pragma omp simd reduction(min:dt_min_val)
+  for (j...) {
+    cell_dt_limits(j,k, ..., &dtct,&dtut,&dtvt,&dtdivt);
+    dt_min_val = MIN(dt_min_val, MIN(dtct,MIN(dtut,MIN(dtvt,dtdivt))));
+  } }   /* dt_min[] never written; the limiting cell is
+           located only on the failure path */
+\end{lstlisting}
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      \textbf{Time-only changes, done in \kernel{advec\_mom}}
+      \begin{itemize}
+        \item \texttt{-fno-math-errno -fno-trapping-math}: vector \texttt{sqrt}, if-converted loops; worth 3.6\,\% but they break the gate: dropped (correctness slide)
+        \item \texttt{nowait} between loops over the same rows with \texttt{schedule(static)}
+        \item branch-free upwind loop: load all four candidates, select instead of indirect loads (backup slide)
+      \end{itemize}
+      \vspace{0.1cm}
+      \textbf{(6) Streaming stores: left to the hardware.} No portable non-temporal store for AArch64 in GCC; the output loops keep the shape the write-streaming detector needs.
+    \end{column}
+  \end{columns}
+\end{frame}
+\note{7:30.}
+
+% ======================================================================
+\section{Results}
+% ======================================================================
+
+\begin{frame}{Ladder at 64$\times$2: the wall clock follows the bytes}
+  \begin{columns}[T]
+    \begin{column}{0.67\textwidth}
+      \footnotesize
+      \begin{tabular}{llrrrr}
+        \toprule
+        build & contents & wall (s) & TB & bytes & time \\
+        \midrule
+        base  & baseline source                    & 11.31 & 2.83 & -- & -- \\
+        flags & the two flags only                 & 11.28 & 2.85 & $+0.7$\,\% & $-0.2$\,\% \\
+        cell  & flags $+$ (2) (3) (4)              &  9.92 & 2.49 & $-12.1$\,\% & $-12.3$\,\% \\
+        mom   & flags $+$ (1) (3) (5)              &  9.54 & 2.41 & $-14.9$\,\% & $-15.7$\,\% \\
+        opt   & all, with the flags                & 8.25 & 2.04 & $-27.8$\,\% & $-27.0$\,\% \\
+        \textbf{optnf} & all, baseline flags         & \textbf{8.56} & \textbf{2.05} & \good{$-27.4$\,\%} & \good{$-24.3$\,\%} \\
+        \bottomrule
+      \end{tabular}
+      \vspace{0.2cm}
+
+      \scriptsize jobs 34938 and 35003 (optnf), one node, 5 repetitions per build (spread $\le 1$\,\%), every one under the DDR counters
+    \end{column}
+    \begin{column}{0.33\textwidth}
+      \begin{itemize}
+        \item the two kernel lines add up; merged: $-27.4$\,\% bytes against the \textbf{$-29.3$\,\% the model predicted}
+        \item every build sustains 240--252\GBs: still on the roof, so time $\propto$ bytes
+        \item the flags: nothing on the baseline, 3.6\,\% on the optimised kernels, and they break the gate (next slides); \textbf{optnf} is the final build
+        \item \good{1.32$\times$} at 64$\times$2: 11.32\,s to 8.56\,s
+      \end{itemize}
+    \end{column}
+  \end{columns}
+\end{frame}
+\note{8:00. The model predicted within two points. That is the main methodological result. opt is the flagged build, optnf the final one; the 0.3 s between them is what the flags buy.}
+
+\begin{frame}{Every layout, every kernel}
+  \begin{columns}[T]
+    \begin{column}{0.42\textwidth}
+      \includegraphics[width=0.9\textwidth]{figures/fig_m3_layouts.pdf}
+      \begin{center}\scriptsize\setlength{\tabcolsep}{3pt}
+        \begin{tabular}{lccccc}
+          \toprule
+          layout & 64$\times$2 & 32$\times$4 & 128$\times$1 & 4$\times$32 & 1$\times$128 \\
+          speed-up & 1.32 & 1.32 & 1.32 & 1.33 & 1.51 \\
+          \bottomrule
+        \end{tabular}
+      \end{center}
+    \end{column}
+    \begin{column}{0.58\textwidth}
+      \footnotesize
+      \begin{tabular}{lrrr}
+        \toprule
+        kernel & base (s) & opt (s) & ratio \\
+        \midrule
+        \kernel{advec\_mom}  & 4.19 & 2.67 & \textbf{1.57} \\
+        \kernel{advec\_cell} & 2.42 & 1.66 & \textbf{1.46} \\
+        \kernel{calc\_dt}    & 0.66 & 0.62 & 1.06 \\
+        \kernel{ideal\_gas}  & 0.58 & 0.54 & 1.07 \\
+        \kernel{reset} $+$ \kernel{revert} & 0.57 & -- & gone \\
+        \kernel{pdv} $+$ \kernel{accel.} $+$ \kernel{flux} & 2.27 & 2.38 & 0.95 \\
+        \bottomrule
+      \end{tabular}
+      \par\vspace{0.2cm}
+      \scriptsize PAPI region times at 64$\times$2, jobs 34798 and 35004 (optnf)
+      \vspace{0.2cm}
+
+      \normalsize
+      \begin{itemize}
+        \item the same quarter of the traffic gone at every layout, the same speed-up
+        \item optimised C is now \textbf{faster than the Fortran reference at every layout}
+        \item the application moved \emph{up} the roof, not off it: 90\,\% of the ceiling, 11\,\% above the floor of its own bytes
+      \end{itemize}
+    \end{column}
+  \end{columns}
+\end{frame}
+\note{8:45.}
+
+\begin{frame}{Correctness, and what is still open}
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \textbf{Gate on \texttt{clover\_bm.in} ($960^2$, 2955 steps)}
+      \begin{itemize}
+        \item the ladder's baseline binary reproduces the archived reference (0.0057\,\%) at every layout
+        \item every build with the two compiler flags, flags-only included, gives \emph{one and the same} other value (0.038\,\%): the flags alone move it
+        \item \textbf{optnf}, the kernel changes with the baseline flags, reproduces the reference at every layout (7 of 7)
+        \item the flags were worth 3.6\,\% on top (vectorised \texttt{sqrt} in \kernel{calc\_dt}, \kernel{ideal\_gas}): a measured trade-off, decided for reproducibility
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      \textbf{Limitations and next steps}
+      \begin{itemize}
+        \item still on the bandwidth roof: 90\,\% of 266.5\GBs, floor 7.7\,s; \kernel{pdv}, \kernel{accelerate}, \kernel{flux\_calc}, \kernel{viscosity} untouched: half of the remaining bytes
+        \item read-for-ownership of the C stores: up to $-23$\,\% more bytes with explicit streaming stores
+        \item \texttt{nowait} and branch-free upwind loop still open in \kernel{advec\_cell}: worth at most 11\,\%
+      \end{itemize}
+    \end{column}
+  \end{columns}
+\end{frame}
+\note{9:15. The base binary reproduces the reference, the flags-only build does not, every kernel change on top of the flags gives exactly the flags value: the flags are the cause. optnf (same kernels, baseline flags) passes 7 of 7. The flags are worth 3.6 percent, in calc_dt and ideal_gas, and we chose the gate over them.}
+
+\begin{frame}{Conclusions}
+  \begin{enumerate}
+    \item The C kernels are memory-bound (0.2\,flop/B against a 5\,flop/B ridge) and the baseline already sustains 94\,\% of the 266.5\GBs{} hardware ceiling: \textbf{only fewer bytes can make it faster}.
+    \item An analytic byte model, validated by the DDR counters to 1\,\%, predicted five changes at $-29$\,\% of the traffic; measured: $-27.4$\,\%.
+    \item The wall clock followed the bytes: \textbf{1.32$\times$ at 64$\times$2, 1.32--1.51$\times$ at every layout}; the optimised C build beats the Fortran reference everywhere and passes the gate.
+    \item The two compiler flags are worth 3.6\,\% on the optimised kernels but break bitwise reproducibility of the reference: dropped, as a measured trade-off. The next lever is the read-for-ownership of the stores, not instruction-side work.
+  \end{enumerate}
+  \vspace{0.8cm}
+  \begin{center}
+    \Large\color{rugred} Questions?
+  \end{center}
+\end{frame}
+\note{10:00. Stop here.}
+
+% ======================================================================
+\appendix
+\section{Backup}
+% ======================================================================
+
+\begin{frame}{Backup: per-kernel counters at 64$\times$2}
+  \centering\footnotesize
+  \input{../report/tables/tab_kernels_opt.tex}
+  \vspace{0.2cm}
+
+  \scriptsize baseline job 34798, optimised job 34939; time $=$ PAPI region time (max over threads); Reset and Revert have no C region any more
+\end{frame}
+
+\begin{frame}{Backup: correctness gate, all runs}
+  \centering\footnotesize
+  \input{../report/tables/tab_correctness.tex}
+  \vspace{0.3cm}
+
+  \scriptsize Kinetic-energy deviation on \texttt{clover\_bm.in} as reported by CloverLeaf; gate $=$ \texttt{qa\_check.py} against the archived baseline value (jobs 34729 and 34796).
+\end{frame}
+
+\begin{frame}{Backup: roofline before and after}
+  \centering
+  \includegraphics[width=0.9\textwidth]{figures/fig_roofline_opt.pdf}
+\end{frame}
+
+\begin{frame}{Backup: baseline layouts, THP and placement}
+  \centering\footnotesize
+  \input{../report/tables/tab_m3_baseline.tex}
+  \vspace{0.3cm}
+
+  \scriptsize THP $=$ 512\,MB pages on this system. With one rank, first touch places whole arrays on one NUMA domain; with four or more ranks every rank touches its own data and THP has no effect.
+\end{frame}
+
+\begin{frame}[fragile]{Backup: branch-free upwind loop (T3) in \kernel{advec\_mom}}
+\begin{lstlisting}
+const double nf  = node_flux[IDXN(j,k)];
+const int    neg = (nf < 0.0);                 /* flow in -j: upwind j+2, donor j+1, downwind j */
+const double v_m1 = vel1[IDXN(j-1,k)], v_0 = vel1[IDXN(j,k)], v_p1 = vel1[IDXN(j+1,k)], v_p2 = vel1[IDXN(j+2,k)];
+const double v_up  = neg ? v_p2 : v_m1;        /* selects replace the branch and the indirect loads */
+const double v_don = neg ? v_p1 : v_0;
+const double v_dwn = neg ? v_0  : v_p1;
+const double m_don = neg ? node_mass_pre[IDXN(j+1,k)] : node_mass_pre[IDXN(j,k)];
+const double sigma = fabs(nf)/m_don;
+const double vdiffuw = v_don - v_up, vdiffdw = v_dwn - v_don;
+const double auw = fabs(vdiffuw), adw = fabs(vdiffdw);
+const double wind = (vdiffdw <= 0.0) ? -1.0 : 1.0;
+const double lim  = wind*MIN(width*((2.0-sigma)*adw/width+(1.0+sigma)*auw/w_dif)/6.0, MIN(auw,adw));
+const double limiter = (vdiffuw*vdiffdw > 0.0) ? lim : 0.0;   /* evaluated, then selected (-fno-trapping-math) */
+mom_flux[IDXN(j,k)] = (v_don + (1.0-sigma)*limiter)*nf;
+\end{lstlisting}
+  \vspace{0.2cm}
+  Same arithmetic in the same order as the branchy original: bit-identical results; all 13 loops of the file vectorise.
+\end{frame}
+
+\end{document}
