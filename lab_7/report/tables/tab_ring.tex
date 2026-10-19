@@ -1,0 +1,19 @@
+\begin{table}[ht]
+\centering
+\small
+\begin{tabular}{rrrrrrrrr}
+\toprule
+ & \multicolumn{2}{c}{cn-ib, same node} & \multicolumn{2}{c}{cn-ib, two nodes} & \multicolumn{2}{c}{cn-eth, same node} & \multicolumn{2}{c}{cn-eth, two nodes} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}\cmidrule(lr){8-9}
+size [B] & $\mu$s & MB/s & $\mu$s & MB/s & $\mu$s & MB/s & $\mu$s & MB/s \\ \midrule
+128 & 0.29 & 435 & 1.33 & 96 & 0.30 & 432 & 2.04 & 63 \\
+256 & 0.32 & 805 & 1.77 & 145 & 0.32 & 791 & 2.46 & 104 \\
+512 & 0.39 & 1324 & 1.91 & 268 & 0.40 & 1282 & 2.60 & 197 \\
+1024 & 0.53 & 1936 & 2.27 & 450 & 0.55 & 1851 & 2.95 & 347 \\
+2048 & 0.77 & 2644 & 2.98 & 686 & 0.83 & 2457 & 3.72 & 550 \\
+4096 & 1.13 & 3610 & 4.01 & 1022 & 1.16 & 3544 & 4.87 & 841 \\
+\bottomrule
+\end{tabular}
+\caption{Ring benchmark with two ranks (\texttt{MPI\_Sendrecv}): median time per exchange in $\mu$s and bandwidth, i.e.\ payload one rank sends per second, in MB/s ($10^6$~B/s). Median of the 10 trials per message size.}
+\label{tab:ring}
+\end{table}

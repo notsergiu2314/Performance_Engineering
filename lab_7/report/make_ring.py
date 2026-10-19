@@ -9,6 +9,7 @@ import statistics
 from pathlib import Path
 
 import matplotlib
+import numpy as np
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
@@ -92,6 +93,10 @@ def main():
             ax.plot(sizes, y, ls, marker=mk, ms=5, lw=2, color=COLOR[p], mec="white", mew=1, label=label)
         ax.set_xscale("log", base=2)
         ax.set_yscale("log")
+        ticks = [0.3, 0.5, 1, 2, 3, 5] if what == "lat" else [50, 100, 200, 500, 1000, 2000, 4000]
+        ax.set_yticks(ticks)
+        ax.set_yticklabels([f"{t:g}" for t in ticks])
+        ax.minorticks_off()
         ax.set_xticks(sizes)
         ax.set_xticklabels([str(s) for s in sizes])
         ax.set_xlabel("message size [B]")
@@ -116,6 +121,14 @@ def main():
         spread = max((max(runs[(p, n)][1][s]["lat"]) - min(runs[(p, n)][1][s]["lat"])) /
                      med((p, n), s, "lat") for s in sizes)
         print(f"{h}: worst min-max spread of the trials {100 * spread:.1f} % of the median")
+    # least-squares fit  t(n) = alpha + n / beta  to the medians (alpha = latency, beta = asymptotic rate)
+    for p, n, h in CONFIGS:
+        ns = np.array(sizes, float)
+        ts = np.array([med((p, n), s, "lat") for s in sizes])
+        slope, alpha = np.polyfit(ns, ts, 1)
+        resid = np.max(np.abs(ts - (alpha + slope * ns)) / ts)
+        print(f"fit {h}: alpha = {alpha:.2f} us, 1/beta = {slope * 1e3:.3f} ns/B -> beta = {1e-3 / slope:.2f} GB/s,"
+              f" max residual {100 * resid:.0f} %")
     for s in (sizes[0], sizes[-1]):
         print(f"{s} B: two nodes / same node latency  ib {med(('cn-ib', 2), s, 'lat') / med(('cn-ib', 1), s, 'lat'):.1f}x"
               f"   eth {med(('cn-eth', 2), s, 'lat') / med(('cn-eth', 1), s, 'lat'):.1f}x;"

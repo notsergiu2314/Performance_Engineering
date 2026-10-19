@@ -224,4 +224,95 @@ completeness.
 
 \section{MPI Point-To-Point Communication Benchmarking}
 
+% ================================ a ==================================
+\subsection{a.}
+The benchmark (\texttt{ex2/mpi\_ring.c}) is started as
+\begin{center}
+    \texttt{mpiexec -n N ./mpi\_ring [M] [trials] [sizes\ldots]}
+\end{center}
+so $N$ is whatever \texttt{mpiexec} provides. Rank $i$ sends $n$ bytes to rank $(i+1) \bmod N$ and receives $n$
+bytes from rank $(i-1) \bmod N$. Both are posted in one \texttt{MPI\_Sendrecv}, so the ring cannot deadlock
+for any message size (a blocking \texttt{MPI\_Send} in every rank first could, once the messages are too large
+to be buffered).
+
+\begin{lstlisting}[language=C, caption={Timed part of the ring benchmark (all ranks execute it).}, label=lst:ring]
+right = (rank + 1) % nranks;  left = (rank - 1 + nranks) % nranks;
+
+for (long k = 0; k < iters; k++)
+    MPI_Sendrecv(sbuf, size, MPI_BYTE, right, 0,
+                 rbuf, size, MPI_BYTE, left,  0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
+MPI_Barrier(MPI_COMM_WORLD);                       // all ranks start together
+double dt = MPI_Wtime();
+exchange(size, M);                                 // the loop above, M times
+dt = MPI_Wtime() - dt;
+MPI_Allreduce(&dt, &T, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);   // slowest rank
+bw = (double)size * M / T / 1e6;                   // MB/s sent per rank
+\end{lstlisting}
+
+The time $T$ of $M$ exchanges is the maximum over the ranks, and the bandwidth is the payload one rank sends per
+second, $n \cdot M / T$ (1~MB $=10^6$~B). Every rank receives the same amount at the same time, so each link
+direction carries this rate. The time per exchange $T/M$ is reported as well, because for messages this small the
+latency is what is being measured. Before timing, every buffer is touched and $1000$ exchanges warm up the connection.
+$M$ is chosen per message size such that one run lasts about $0.2$~s ($4 \cdot 10^4$ to $7 \cdot 10^5$ exchanges here), and
+the whole measurement is repeated 10 times. One exchange of the largest message is also checked for the right content.
+
+% ================================ b ==================================
+\subsection{b.}
+\textbf{Setup:} Four jobs (\texttt{-{}-exclusive}, \texttt{mpiexec -{}-bind-to core}, Open~MPI 5.0.3, GCC~14.1.0,
+\texttt{-O2}) with the Slurm options of the assignment, on partition \texttt{cn-ib} and \texttt{cn-eth} (part~c):
+\texttt{-{}-nodes=1 -{}-ntasks-per-node=2} (cn15 resp.\ cn20) and \texttt{-{}-nodes=2 -{}-ntasks-per-node=1}
+(cn16/cn17 resp.\ cn20/cn21). The results are in Table~\ref{tab:ring} and Figure~\ref{fig:ring}.
+The 10 repetitions of a run lie within $2.5\,\%$ of the median (min--max, all sizes), so the
+medians are used.
+
+\input{tables/tab_ring.tex}
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=\linewidth]{figures/fig_ring.pdf}
+    \caption{Time per exchange and bandwidth of the ring benchmark with two ranks. The bands are the min--max over the
+        10 repetitions (barely visible). Both plots are logarithmic.}
+    \label{fig:ring}
+\end{figure}
+
+\textbf{Message size:} In this range the exchange is dominated by a fixed cost per message, not by the
+transfer of the data. A message that is $32\times$ larger (128 to 4096~B) takes only $2.4\times$ to $3.9\times$ longer,
+depending on the configuration, so the bandwidth grows almost proportionally with the size: from
+$96$ to $1022$~MB/s between two nodes on \texttt{cn-ib}, and from $435$ to $3610$~MB/s on one node. A straight
+line $t(n) = \alpha + n/\beta$ through the medians gives a start-up cost of $\alpha \approx 0.3\,\mu$s on one node
+and $1.5\,\mu$s (\texttt{cn-ib}) resp.\ $2.2\,\mu$s (\texttt{cn-eth}) between nodes, but it describes the points only
+within $7$--$21\,\%$: the curves for two nodes have a kink at 512~B, probably a change of protocol inside the MPI
+library, which we did not investigate. At 4096~B the measured bandwidth is still below the fitted
+asymptotic rates $\beta$ ($1.5$--$1.6$~GB/s between nodes, $4.5$--$4.7$~GB/s within a node).
+
+\textbf{Same node vs.\ two nodes:} Communication within a node is $4.5\times$ (cn-ib) to $6.9\times$ (cn-eth) faster
+for 128~B messages and still $3.5\times$ to $4.2\times$ at 4096~B. A ping between two cores costs
+$0.29\,\mu$s, where no network is involved, while a message that has to leave the node costs
+at least $1.3\,\mu$s, as it has to pass the network card and the switch. At 4096~B
+the bandwidth is $3.6$~GB/s within a node, but only $1.0$~GB/s between nodes, which is less than $10\,\%$ of the
+$12.5$~GB/s ($100$~Gb/s) line rate of the network. The link is therefore not the limit in this message size
+range; a bandwidth measurement of the network would need messages of several KiB or more.
+
+% ================================ c ==================================
+\subsection{c. (bonus)}
+Both partitions use the same software path: the log of every run (\texttt{ompi\_info}, \texttt{pml\_base\_verbose}) shows that
+Open~MPI selected the UCX component for all four jobs. The nodes also have the same NIC (a Mellanox \texttt{mlx5\_0} with
+an active $100$~Gb/s port); \texttt{cn-ib} nodes use it through the InfiniBand interface \texttt{ib0}, \texttt{cn-eth} nodes
+through an Ethernet interface (\texttt{eth4}). A pure TCP connection would have a latency of tens of microseconds, so
+\texttt{cn-eth} is presumably RDMA over Ethernet; we did not check the link layer of the port.
+
+\begin{itemize}
+    \item \textbf{Within a node} both partitions are identical within measurement error (within $8\,\%$ in time per exchange, e.g.\ $3610$
+        vs.\ $3544$~MB/s at 4096~B), as expected, because no network is involved.
+    \item \textbf{Between two nodes} \texttt{cn-ib} is faster: its latency is $0.7$--$0.9\,\mu$s
+        lower for every message size ($1.33$ vs.\ $2.04\,\mu$s at 128~B, $4.01$ vs.\ $4.87\,\mu$s at 4096~B). The
+        offset is nearly constant, i.e.\ it is a cost per message, not per byte. Relatively, \texttt{cn-eth} is
+        $1.53\times$ slower at 128~B, but only $1.22\times$ at 4096~B, and the bandwidth of the two
+        networks approaches each other for larger messages ($96$ vs.\ $63$~MB/s at 128~B, $1022$ vs.\ $841$~MB/s at 4096~B).
+\end{itemize}
+Each configuration was measured on one pair of nodes in one job, and the two partitions are measured on different nodes, so
+the repetitions (which agree within $2.5\,\%$) show that the measurement is reproducible in this job, but not the spread
+between node pairs or between jobs.
+
 \end{document}
