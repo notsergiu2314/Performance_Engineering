@@ -78,7 +78,7 @@
 \end{frame}
 \note{0:30. Working set is 25x the L3: every loop nest streams its arrays from DRAM.}
 
-\begin{frame}{Methodology: three independent sources, one convention}
+\begin{frame}{Methodology}
   \begin{columns}[T]
     \begin{column}{0.55\textwidth}
       \begin{enumerate}
@@ -111,23 +111,28 @@
       \small
       \textbf{Measured ceilings}
       \begin{itemize}
-        \item STREAM triad, 128 threads: \textbf{266.5\GBs} hardware bytes
-        \item FMA peak \textbf{1330\,GFLOP/s}: ridge at \textbf{5\,flop/B}
+        \item STREAM triad, 128 threads: \textbf{266.5\GBs}
+        \item FMA peak \textbf{1330\,GFLOP/s}
+        \item Ridge at \textbf{5\,flop/B}
       \end{itemize}
       \vspace{0.2cm}
-      \textbf{Analytic byte model} (arrays read and written per loop nest, write-allocate charged)
+    \end{column}
+    \begin{column}
+      \small
+      \textbf{Analytic byte model}: 
+        arrays read and written per loop nest, write-allocate charged
       \begin{itemize}
         \item 451\,flop, 2186\,B per cell and step: \textbf{0.21\,flop/B}
         \item predicts 2.80\,TB for bm3840; measured \textbf{2.83\,TB} ($+1$\,\%)
-        \item reads $= 1.34\times$ demand: the C stores pay a read-for-ownership
+        \item reads $= 1.34\times$ demand: the C stores add a read-for-ownership
       \end{itemize}
-    \end{column}
-    \begin{column}{0.6\textwidth}
-      \includegraphics[width=0.96\textwidth]{figures/fig_roofline.pdf}
     \end{column}
   \end{columns}
 \end{frame}
-\note{3:30. Every kernel sits at 0.13-0.83 flop/B, far left of the ridge. The model is validated by the counters to 1 percent, so we can trust it to predict changes.}
+
+\begin{frame}{Ceilings, byte model and roofline}
+      \includegraphics[width=0.96\textwidth]{figures/fig_roofline.pdf}
+\end{frame}
 
 \begin{frame}{Where the time goes}
   \begin{columns}[T]
