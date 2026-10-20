@@ -1,0 +1,132 @@
+% Schematics of the byte reductions in Sergiu's files (advec_cell, reset/revert, PdV).
+% Needs tikz (loaded by beamerthemeRUG) and the colours rugred, rugdark, ruggrey, ruglight.
+% Vocabulary: DRAM box left, core box right, arrows = memory traffic (red = traffic this change removes).
+% Every picture is 14.8 cm wide: before | after, each panel 7 cm. Use \resizebox{\textwidth}{!}{...}.
+\usetikzlibrary{arrows.meta}
+\tikzset{
+  sdram/.style={rounded corners=2pt, fill=ruglight, draw=ruggrey, line width=0.5pt},
+  score/.style={rounded corners=2pt, fill=white, draw=rugdark, line width=0.7pt},
+  sbar/.style={fill=ruggrey!35, draw=ruggrey, minimum height=0.4cm, minimum width=3.2cm, inner sep=0pt, font=\scriptsize},
+  sbarr/.style={sbar, fill=rugred!18, draw=rugred},
+  sgone/.style={sbar, dashed, fill=white, draw=ruggrey!70, text=ruggrey},
+  sreg/.style={fill=rugred!18, draw=rugred, minimum height=0.4cm, minimum width=2.0cm, inner sep=0pt, font=\scriptsize},
+  skeep/.style={-{Stealth[length=5pt,width=4pt]}, draw=ruggrey, line width=0.7pt},
+  scut/.style={-{Stealth[length=5pt,width=4pt]}, draw=rugred, line width=0.7pt},
+  stag/.style={draw=rugdark, fill=white, rounded corners=2pt, minimum height=0.5cm, minimum width=1.9cm, inner sep=1pt, font=\small\ttfamily},
+  sbuf/.style={draw=ruggrey, fill=ruggrey!35, minimum height=0.6cm, minimum width=3.2cm, inner sep=1pt, font=\scriptsize},
+  stitle/.style={font=\small\bfseries},
+  slab/.style={font=\scriptsize, text=ruggrey},
+  slabr/.style={font=\scriptsize, text=rugred},
+  scount/.style={font=\scriptsize, align=center, text width=7cm},
+}
+
+% one panel frame: DRAM box and core box, y from #1 to #2
+\newcommand{\sframe}[2]{%
+  \draw[sdram] (0,#1) rectangle (3.4,#2);
+  \draw[score] (4.8,#1) rectangle (7.0,#2);
+  \node[slab,anchor=north west] at (0.05,#2-0.02) {DRAM};
+  \node[slab,anchor=north] at (5.9,#2-0.02) {core};}
+
+% ---------------------------------------------------------------- (2) advec_cell temporaries
+\newcommand{\schemTemps}{%
+\begin{tikzpicture}[x=1cm,y=1cm]
+  % ---- before
+  \node[stitle] at (3.5,3.35) {before: four temporary arrays};
+  \sframe{-0.6}{2.95}
+  \node[sbar] at (1.7,2.3) {density1, energy1, \dots};
+  \draw[skeep] (3.3,2.38) -- (4.8,2.38);
+  \draw[skeep] (4.8,2.22) -- (3.3,2.22);
+  \foreach \y/\n in {1.4/pre\_mass, 0.9/post\_mass, 0.4/post\_ener, -0.1/advec\_vol}{
+    \node[sbarr] at (1.7,\y) {\texttt{\n}};
+    \draw[scut] (4.8,\y+0.11) -- (3.3,\y+0.11);
+    \draw[scut] (3.3,\y) -- (4.8,\y);
+    \draw[scut] (3.3,\y-0.11) -- (4.8,\y-0.11);
+  }
+  \node[slabr] at (4.05,1.88) {store $\cdot$ RFO $\cdot$ reload};
+  \node[scount] at (3.5,-1.15) {each array is written, read for ownership,\\then read back by the next statement};
+  % ---- after
+  \begin{scope}[xshift=7.8cm]
+    \node[stitle] at (3.5,3.35) {after: scalars in registers};
+    \sframe{-0.6}{2.95}
+    \node[sbar] at (1.7,2.3) {density1, energy1, \dots};
+    \draw[skeep] (3.3,2.38) -- (4.8,2.38);
+    \draw[skeep] (4.8,2.22) -- (3.3,2.22);
+    \foreach \y/\n/\r in {1.4/pre\_mass/pre\_mass\_s, 0.9/post\_mass/post\_mass\_s, 0.4/post\_ener/post\_ener\_s, -0.1/advec\_vol/advec\_vol\_s}{
+      \node[sgone] at (1.7,\y) {\texttt{\n}};
+      \node[sreg] at (5.9,\y) {\texttt{\r}};
+    }
+    \node[slab] at (4.05,0.65) {no traffic};
+    \node[scount] at (3.5,-1.15) {same arithmetic in the same order\\\textcolor{rugred}{\textbf{$-128$\,B per cell and step ($-5.9$\,\%)}}};
+  \end{scope}
+\end{tikzpicture}}
+
+% ---------------------------------------------------------------- (3) dead store, (7) PdV scalar
+% one row: #1 y position, #2 x shift, #3 array name, #4 mode (1 write only, 2 store+reload, 3 gone, 4 scalar), #5 scalar name
+\newcommand{\schemRow}[5]{%
+  \begin{scope}[shift={(#2,#1)}]
+    \sframe{-0.65}{0.65}
+    \ifcase#4\or
+      \node[sbarr] at (1.7,0) {\texttt{#3}};
+      \draw[scut] (4.8,0.1) -- (3.3,0.1);
+      \draw[scut] (3.3,-0.1) -- (4.8,-0.1);
+      \node[slabr] at (4.05,0.38) {store $\cdot$ RFO};
+      \node[slabr] at (4.05,-0.38) {never read};
+    \or
+      \node[sbarr] at (1.7,0) {\texttt{#3}};
+      \draw[scut] (4.8,0.14) -- (3.3,0.14);
+      \draw[scut] (3.3,0) -- (4.8,0);
+      \draw[scut] (3.3,-0.14) -- (4.8,-0.14);
+      \node[slabr,font=\tiny] at (4.05,0.4) {store $\cdot$ RFO $\cdot$ reload};
+    \or
+      \node[sgone] at (1.7,0) {\texttt{#3}};
+      \node[slab] at (4.05,0) {no traffic};
+    \or
+      \node[sgone] at (1.7,0) {\texttt{#3}};
+      \node[sreg] at (5.9,0) {\texttt{\tiny #5}};
+      \node[slab] at (4.05,0) {no traffic};
+    \fi
+  \end{scope}}
+
+\newcommand{\schemDead}{%
+\begin{tikzpicture}[x=1cm,y=1cm]
+  \node[stitle] at (3.5,3.7) {before};
+  \node[stitle] at (11.3,3.7) {after};
+  \schemRow{2.6}{0}{post\_vol}{1}{}
+  \schemRow{2.6}{7.8}{post\_vol}{3}{}
+  \node[font=\small,anchor=east,align=right] at (-0.2,2.6) {\textbf{(3)}\\dead\\store};
+  \schemRow{0.6}{0}{volume\_change}{2}{}
+  \schemRow{0.6}{7.8}{volume\_change}{4}{volume\_change\_s}
+  \node[font=\small,anchor=east,align=right] at (-0.2,0.6) {\textbf{(7)}\\PdV\\scalar};
+  \node[scount] at (3.5,-0.55) {(3) written, never read;\\(7) written and reloaded in the same iteration};
+  \node[scount] at (11.3,-0.55) {\textcolor{rugred}{\textbf{(3) $-96$\,B/cell/step ($-4.4$\,\%), with \texttt{pre\_vol}}}\\\textcolor{rugred}{\textbf{(7) $-32$\,B/cell/step ($-1.4$\,\%)}}};
+\end{tikzpicture}}
+
+% ---------------------------------------------------------------- (4) Reset / Revert
+\newcommand{\schemSwap}{%
+\begin{tikzpicture}[x=1cm,y=1cm]
+  % ---- before: copy
+  \node[stitle] at (3.5,3.35) {before: copy density1 into density0};
+  \sframe{-0.6}{2.95}
+  \node[sbarr,minimum height=0.6cm] at (1.7,1.95) {\texttt{density1} (118\,MB)};
+  \node[sbarr,minimum height=0.6cm] at (1.7,0.45) {\texttt{density0} (118\,MB)};
+  \draw[scut] (3.3,1.95) -- (4.8,1.95);
+  \draw[scut] (4.8,0.58) -- (3.3,0.58);
+  \draw[scut] (3.3,0.32) -- (4.8,0.32);
+  \node[slabr] at (4.05,2.22) {read};
+  \node[slabr] at (4.05,0.0) {write $\cdot$ RFO};
+  \node[scount] at (3.5,-1.15) {four fields (density, energy, two velocities),\\copied in every time step};
+  % ---- after: swap
+  \begin{scope}[xshift=7.8cm]
+    \node[stitle] at (3.5,3.35) {after: exchange the allocations};
+    \node[stag] at (1.0,1.95) {density1};
+    \node[stag] at (1.0,0.45) {density0};
+    \node[sbuf] at (5.4,1.95) {buffer A (new values)};
+    \node[sbuf] at (5.4,0.45) {buffer B (old values)};
+    \draw[skeep,dashed] (2.0,1.95) -- (3.75,1.95);
+    \draw[skeep,dashed] (2.0,0.45) -- (3.75,0.45);
+    \draw[scut] (2.0,0.5) -- (3.75,1.88);
+    \draw[scut] (2.0,1.9) -- (3.75,0.52);
+    \node[slab] at (2.9,2.45) {before the swap};
+    \node[scount] at (3.5,-1.15) {three \texttt{MOVE\_ALLOC} per field, no data moves\\\textcolor{rugred}{\textbf{$-144$\,B per cell and step ($-6.6$\,\%)}}};
+  \end{scope}
+\end{tikzpicture}}
