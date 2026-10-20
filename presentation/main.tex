@@ -18,6 +18,8 @@
   loop/.style={draw=rugdark, thick, rounded corners=5pt, fill=ruglight, minimum height=0.55cm, minimum width=1.3cm, align=center, inner sep=2pt},
   arr/.style={cylinder, shape border rotate=90, aspect=0.1, draw=rugdark, fill=white, minimum width=1.0cm, minimum height=0.4cm, align=center, inner xsep=5pt, inner ysep=1.5pt},
   reg/.style={circle, draw=rugred, thick, fill=white, minimum size=0.45cm, inner sep=1pt, align=center},
+  fname/.style={draw=rugdark, fill=white, font=\ttfamily\scriptsize, inner sep=2pt, minimum height=0.4cm, minimum width=1.1cm},
+  save/.style={font=\tiny\bfseries, text=rugred, align=center},
   dead/.style={draw=rugred, dashed, text=rugred, fill=white},
   flow/.style={->, line width=1.4pt, ruggrey},
   data/.style={->, thin, rugdark},
@@ -52,10 +54,12 @@
     \begin{column}{0.5\textwidth}
       \textbf{CloverLeaf (reference, MPI + OpenMP)}
       \begin{itemize}
-        \item 2D compressible Euler, Lagrangian--Eulerian step
-        \item 13 kernels, each a $\pm1$ stencil loop nest over the grid
-        \item we optimise the \emph{C kernels}; Fortran kernels only as reference
-        \item benchmark \textbf{bm3840}: $3840^2$ cells, 87 steps, $\approx$25 arrays of 118\,MB ($\approx$3\,GB working set, $25\times$ L3)
+        \item Fluid dynamics simulator
+        \item Large vectors, many nested loops
+        \item Forces computed for each cell every timestep
+        \item Compute-heavy \emph{kernels}, both FORTRAN and C implementations
+        \item We focus on C only, FORTRAN as reference
+        \item benchmark \textbf{bm3840}: $3840^2$ cells, 87 steps, $\approx$25 arrays of 118\,MB $\approx$3\,GB working set
       \end{itemize}
     \end{column}
     \begin{column}{0.5\textwidth}
@@ -70,7 +74,7 @@
     \end{column}
   \end{columns}
   \vspace{0.4cm}
-  \textbf{Question of the project:} how far is the baseline from what the hardware allows, and what does it take to close the gap?
+  \textbf{Research question:} how far is the baseline from what the hardware allows, and what does it take to close the gap?
 \end{frame}
 \note{0:30. Working set is 25x the L3: every loop nest streams its arrays from DRAM.}
 
@@ -90,7 +94,7 @@
         \begin{itemize}
           \item PAPI build costs $<$1\,\%; kernel times add up to the wall clock within 1\,\%
           \item DDR counters calibrated on STREAM: 32\,B per count, no read-for-ownership on streaming stores
-          \item placement verified: busiest controller group $= 1.00\times$ the mean
+          \item NUMA page distribution is fair, busiest DDR controller group has a mean of $1.00$
         \end{itemize}
       \end{block}
       \begin{block}{Correctness gate}
@@ -100,6 +104,30 @@
   \end{columns}
 \end{frame}
 \note{1:30. The key convention: hardware bytes, not model bytes, for every bandwidth number.}
+
+\begin{frame}{Ceilings, byte model and roofline}
+  \begin{columns}[T]
+    \begin{column}{0.4\textwidth}
+      \small
+      \textbf{Measured ceilings}
+      \begin{itemize}
+        \item STREAM triad, 128 threads: \textbf{266.5\GBs} hardware bytes
+        \item FMA peak \textbf{1330\,GFLOP/s}: ridge at \textbf{5\,flop/B}
+      \end{itemize}
+      \vspace{0.2cm}
+      \textbf{Analytic byte model} (arrays read and written per loop nest, write-allocate charged)
+      \begin{itemize}
+        \item 451\,flop, 2186\,B per cell and step: \textbf{0.21\,flop/B}
+        \item predicts 2.80\,TB for bm3840; measured \textbf{2.83\,TB} ($+1$\,\%)
+        \item reads $= 1.34\times$ demand: the C stores pay a read-for-ownership
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.6\textwidth}
+      \includegraphics[width=0.96\textwidth]{figures/fig_roofline.pdf}
+    \end{column}
+  \end{columns}
+\end{frame}
+\note{3:30. Every kernel sits at 0.13-0.83 flop/B, far left of the ridge. The model is validated by the counters to 1 percent, so we can trust it to predict changes.}
 
 \begin{frame}{Where the time goes}
   \begin{columns}[T]
@@ -136,33 +164,8 @@
     \end{column}
   \end{columns}
 \end{frame}
-\note{2:30. The picture is uniform: everything waits for DRAM. Instruction-side fixes cannot help yet.}
 
-\begin{frame}{Ceilings, byte model and roofline}
-  \begin{columns}[T]
-    \begin{column}{0.4\textwidth}
-      \small
-      \textbf{Measured ceilings}
-      \begin{itemize}
-        \item STREAM triad, 128 threads: \textbf{266.5\GBs} hardware bytes
-        \item FMA peak \textbf{1330\,GFLOP/s}: ridge at \textbf{5\,flop/B}
-      \end{itemize}
-      \vspace{0.2cm}
-      \textbf{Analytic byte model} (arrays read and written per loop nest, write-allocate charged)
-      \begin{itemize}
-        \item 451\,flop, 2186\,B per cell and step: \textbf{0.21\,flop/B}
-        \item predicts 2.80\,TB for bm3840; measured \textbf{2.83\,TB} ($+1$\,\%)
-        \item reads $= 1.34\times$ demand: the C stores pay a read-for-ownership
-      \end{itemize}
-    \end{column}
-    \begin{column}{0.6\textwidth}
-      \includegraphics[width=0.96\textwidth]{figures/fig_roofline.pdf}
-    \end{column}
-  \end{columns}
-\end{frame}
-\note{3:30. Every kernel sits at 0.13-0.83 flop/B, far left of the ridge. The model is validated by the counters to 1 percent, so we can trust it to predict changes.}
-
-\begin{frame}{Baseline: already at the memory ceiling}
+\begin{frame}{Baseline}
   \begin{columns}[T]
     \begin{column}{0.55\textwidth}
       \footnotesize
@@ -182,24 +185,25 @@
       \end{tabular}
       \vspace{0.2cm}
 
-      \scriptsize bm3840, median of 5; roof $=$ 266.5\GBs{} hardware bytes
+      \scriptsize On the bm3840 test set, roof $=$ 266.5\GBs{}
       \vspace{0.1cm}
 
       \normalsize
-      \begin{alertblock}{Consequence}
-        No headroom at the current byte count: every further gain has to come from \textbf{moving fewer bytes}.
+      \begin{alertblock}{Finding}
+        Memory performance already optimized, further gain has to come from \textbf{moving fewer bytes}, like the FORTRAN kernel.
       \end{alertblock}
     \end{column}
     \begin{column}{0.45\textwidth}
       \begin{itemize}
         \item baseline 64$\times$2: 250\GBs{} over the whole run, start-up included: \textbf{94\,\% of the hardware ceiling}
-        \item memory floor at the current bytes: $2.83\,\text{TB} / 266.5\GBs = $ \textbf{10.6\,s}; the baseline is within 7\,\%
+        \item time floor for memory: $2.83\,\text{TB} / 266.5\GBs = $ \textbf{10.6\,s}. Baseline is close to maximum memory performance.
         \item only 1$\times$128 cares about THP: first touch puts whole arrays on one NUMA domain ($1.66\times$ imbalance)
-        \item Fortran is 18\,\% faster at the \emph{same} bandwidth: it moves 0.47\,TB fewer bytes
+        \item Fortran is 18\,\% faster, because it moves \emph{fewer bytes}.
       \end{itemize}
     \end{column}
   \end{columns}
 \end{frame}
+\note{Remove THP if time constraint}
 \note{4:30. This is the pivot of the talk. Vectorising, fewer barriers, flags: none of it can pay until the bytes shrink.}
 
 % ======================================================================
@@ -231,97 +235,6 @@
 \note{5:30. Floor = predicted bytes / 266.5 GB/s.}
 
 \input{schematics}
-
-\begin{frame}[fragile]{The changes in code (1/2)}
-  \begin{columns}[T]
-    \begin{column}{0.5\textwidth}
-      \textbf{(2) \kernel{advec\_cell}: temporaries in registers}
-\begin{lstlisting}
-/* before: 4 full-mesh stores + reloads per sweep */
-pre_mass[i]  = density1[i]*pre_vol[i];
-post_mass[i] = pre_mass[i] + mass_flux_x[i] - mass_flux_x[i+1];
-post_ener[i] = (energy1[i]*pre_mass[i] + ener_flux[i] - ener_flux[i+1]) / post_mass[i];
-advec_vol[i] = pre_vol[i] + vol_flux_x[i] - vol_flux_x[i+1];
-density1[i]  = post_mass[i] / advec_vol[i];
-energy1[i]   = post_ener[i];
-
-/* after: same arithmetic, same order, no DRAM traffic */
-double pre_mass_s  = density1[i]*pre_vol[i];
-double post_mass_s = pre_mass_s + mass_flux_x[i] - mass_flux_x[i+1];
-double post_ener_s = (energy1[i]*pre_mass_s + ener_flux[i] - ener_flux[i+1]) / post_mass_s;
-double advec_vol_s = pre_vol[i] + vol_flux_x[i] - vol_flux_x[i+1];
-density1[i] = post_mass_s / advec_vol_s;
-energy1[i]  = post_ener_s;
-\end{lstlisting}
-      \vspace{0.2cm}
-      \textbf{(3) Dead stores.} Delete the \texttt{post\_vol} store in sweep 1 of \kernel{advec\_cell} and the \texttt{pre\_vol} store in \kernel{advec\_mom}; each was a full-mesh write plus its read-for-ownership, once per call.
-    \end{column}
-    \begin{column}{0.5\textwidth}
-      \textbf{(4) Reset / Revert without copies}
-\begin{lstlisting}[language={[90]Fortran}]
-! reset_field.f90, C path: exchange the allocations,
-! reset_field_kernel_c is no longer called
-CALL swap_field(field%density0, field%density1)
-CALL swap_field(field%energy0,  field%energy1)
-CALL swap_field(field%xvel0,    field%xvel1)
-CALL swap_field(field%yvel0,    field%yvel1)
-
-SUBROUTINE swap_field(a,b)   ! three MOVE_ALLOCs: O(1)
-  CALL MOVE_ALLOC(a,t); CALL MOVE_ALLOC(b,a); CALL MOVE_ALLOC(t,b)
-END SUBROUTINE
-
-! PdV.f90: the C corrector rewrites density1/energy1
-! over the whole range that revert would copy
-IF ( predict .AND. .NOT. use_C_kernels ) CALL revert()
-\end{lstlisting}
-      \vspace{0.2cm}
-      Before: 4 fields $\times$ 118\,MB read, written and read-for-ownership, every step, for a copy no kernel needs at a fixed address.
-    \end{column}
-  \end{columns}
-\end{frame}
-\note{7:30. Stress: bit-identical arithmetic.}
-
-\begin{frame}[fragile]{The changes in code (2/2)}
-  \begin{columns}[T]
-    \begin{column}{0.5\textwidth}
-      \textbf{(1) \kernel{advec\_mom}: split prep and velocity part}
-\begin{lstlisting}[language={[90]Fortran}]
-! before: the kernel ran for xvel AND yvel; its first four
-! loops depend only on the sweep direction and rebuilt
-! identical arrays the second time (8 arrays streamed twice)
-DO tile=1,tiles_per_chunk
-  CALL advec_mom_prep_driver(tile,direction,sweep)  ! once per sweep
-  CALL advec_mom_driver(tile,xvel,direction,sweep)  ! velocity part
-  CALL advec_mom_driver(tile,yvel,direction,sweep)
-ENDDO
-\end{lstlisting}
-      \vspace{0.2cm}
-      \textbf{(5) \kernel{calc\_dt}: fused reduction}
-\begin{lstlisting}
-/* before: store dt_min[i] per cell, reload it in a second loop */
-#pragma omp for reduction(min:dt_min_val)
-for (k...) {
-#pragma omp simd reduction(min:dt_min_val)
-  for (j...) {
-    cell_dt_limits(j,k, ..., &dtct,&dtut,&dtvt,&dtdivt);
-    dt_min_val = MIN(dt_min_val, MIN(dtct,MIN(dtut,MIN(dtvt,dtdivt))));
-  } }   /* dt_min[] never written; the limiting cell is
-           located only on the failure path */
-\end{lstlisting}
-    \end{column}
-    \begin{column}{0.5\textwidth}
-      \textbf{Time-only changes, done in \kernel{advec\_mom}}
-      \begin{itemize}
-        \item \texttt{-fno-math-errno -fno-trapping-math}: vector \texttt{sqrt}, if-converted loops; worth 3.6\,\% but they break the gate: dropped (correctness slide)
-        \item \texttt{nowait} between loops over the same rows with \texttt{schedule(static)}
-        \item branch-free upwind loop: load all four candidates, select instead of indirect loads (bit-identical, all 13 loops vectorise)
-      \end{itemize}
-      \vspace{0.1cm}
-      \textbf{(6) Streaming stores: left to the hardware.} No portable non-temporal store for AArch64 in GCC; the output loops keep the shape the write-streaming detector needs.
-    \end{column}
-  \end{columns}
-\end{frame}
-\note{8:30.}
 
 % ======================================================================
 \section{Results}

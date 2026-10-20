@@ -6,11 +6,12 @@
 \newcommand{\schemalegend}{%
   \begin{tikzpicture}[baseline=(l1.base)]
     \node[loop, minimum width=0.9cm, minimum height=0.4cm] (l1) {loop nest};
-    \node[arr] (l2) at (2.1,0) {array in DRAM};
-    \node[reg] (l3) at (3.7,0) {reg};
-    \draw[flow] (4.4,0) -- (5.1,0) node[lbl, right] {program order};
-    \draw[data] (6.9,0) -- (7.6,0) node[lbl, right] {bytes through DRAM};
-    \draw[gone] (9.9,0) -- (10.6,0) node[lbl, right] {removed by the change};
+    \node[arr] (l2) at (2.0,0) {array in DRAM};
+    \node[reg] (l3) at (3.5,0) {reg};
+    \node[fname] (l4) at (4.6,0) {name};
+    \draw[flow] (5.4,0) -- (6.0,0) node[lbl, right] {program order};
+    \draw[data] (7.6,0) -- (8.2,0) node[lbl, right] {bytes through DRAM};
+    \draw[gone] (10.7,0) -- (11.3,0) node[lbl, right] {removed by the change};
   \end{tikzpicture}}
 
 \begin{frame}{Data flow (1/2): work that was done twice}
@@ -32,7 +33,7 @@
         \draw[data] (A.north) -- (x.south);
         \draw[gone] (p2.south) -- (B.north);
         \draw[gone] (B.north) -- (y.south);
-        \node[lbl, anchor=west] at (5.3,-0.95) {node\_flux, node\_mass\_*:\\full mesh, streamed\\twice per sweep};
+        \node[lbl, anchor=west] at (5.3,-0.95) {full mesh, streamed\\twice per sweep};
       \end{tikzpicture}
       \par\vspace{0.15cm}
       \begin{tikzpicture}
@@ -59,22 +60,26 @@
         \node[arr]       (d0) at (4.0,0) {density0};
         \draw[gone] (d1) -- (cp);
         \draw[gone] (cp) -- (d0);
-        \node[lbl] at (2.0,-0.7) {$\times$4 fields, 118\,MB each, every step:\\read $+$ write $+$ read-for-ownership};
+        \node[lbl] at (2.0,-0.7) {$\times$4 fields, every step:\\read $+$ write $+$ read-for-ownership};
       \end{tikzpicture}
       \par\vspace{0.15cm}
       \begin{tikzpicture}
-        \node[tag] at (-0.65,0.45) {after};
-        \node[arr] (d1) at (0,0)   {density1};
-        \node[arr] (d0) at (3.0,0) {density0};
-        \draw[flow, <->, rugdark] (d1.east) -- (d0.west);
-        \node[lbl, text=rugdark] at (1.5,0.55) {swap the allocations};
-        \node[lbl] at (1.5,-0.65) {three \texttt{MOVE\_ALLOC}s, no bytes:\\the kernels find the field under its new name};
+        \node[tag] at (-0.65,0.62) {after};
+        \node[fname] (n1) at (0,0.35)  {density1};
+        \node[fname] (n0) at (0,-0.35) {density0};
+        \node[arr] (bA) at (2.9,0.35)  {buffer A (new)};
+        \node[arr] (bB) at (2.9,-0.35) {buffer B (old)};
+        \draw[data, dashed, ruggrey] (n1.east) -- (bA.west);
+        \draw[data, dashed, ruggrey] (n0.east) -- (bB.west);
+        \draw[data] (n1.east) -- (bB.west);
+        \draw[data] (n0.east) -- (bA.west);
+                \node[lbl] at (2.0,-0.95) {dashed: before the swap, solid: after. Three \texttt{MOVE\_ALLOC}s\\per field, no bytes move; the kernels find the field under its new name};
       \end{tikzpicture}
       \par\vspace{0.15cm}
-      \scriptsize Revert goes the same way: the C corrector overwrites the whole range the copy would restore, so the copy is skipped.
+      \scriptsize Same for the \texttt{revert} kernel, this one is skipped as well.
     \end{column}
   \end{columns}
-  \vspace{0.3cm}
+  \vspace{0.15cm}
   \centering\schemalegend
 \end{frame}
 \note{6:00. Two changes that remove whole loop nests: the helper loops of advec\_mom ran once per velocity component and rebuilt the same arrays; Reset copied four fields that only needed a new name.}
@@ -89,11 +94,10 @@
         \node[tag] at (-0.65,0.42) {before};
         \node[arr]      (O) at (0,0)   {density1, energy1};
         \node[loop]     (L) at (2.4,0) {sweep\\loop};
-        \node[arr,dead] (T) at (4.7,0) {4 temporaries};
+        \node[arr,dead] (T) at (5.0,0) {4 temporaries};
         \draw[data] (L.west) -- (O.east);
-        \draw[gone] ([yshift=5pt]L.east) -- node[lbl, above=1pt] {store} ([yshift=5pt]T.west);
+        \draw[gone] ([yshift=5pt]L.east) -- node[lbl, above=1pt] {store $\cdot$ RFO} ([yshift=5pt]T.west);
         \draw[gone] ([yshift=-5pt]T.west) -- node[lbl, below=1pt] {reload} ([yshift=-5pt]L.east);
-        \node[lbl] at (4.5,-0.8) {pre\_mass, post\_mass,\\post\_ener, advec\_vol: written and\\read back in the same iteration};
       \end{tikzpicture}
       \par\vspace{0.15cm}
       \begin{tikzpicture}
@@ -109,16 +113,16 @@
       \par\vspace{0.15cm}
       \scriptsize Same in both PdV passes: \texttt{volume\_change}, stored and reloaded in one iteration, now a scalar.
       \par\vspace{0.15cm}
-      \textbf{(3) Dead stores}
+      \textbf{(3) Dead stores (advec\_cell \& advec\_mom)}
       \par\vspace{0.1cm}
       \begin{tikzpicture}
         \node[tag] at (-0.65,0.5) {before};
         \node[loop]     (L) at (0,0)   {sweep 1\\loop};
-        \node[arr,dead] (P) at (2.7,0) {post\_vol};
+        \node[arr,dead] (P) at (2.9,0) {unused\_var};
         \draw[gone] (L.east) -- node[lbl, above=1pt] {write $+$ RFO} (P.west);
-        \draw[gone] (P.east) -- (4.0,0) node[lbl, anchor=west] {never read\\(\texttt{pre\_vol} in\\\kernel{advec\_mom} too)};
-        \node[tag] at (5.6,0.42) {after};
-        \node[lbl, anchor=west, text=rugdark, align=left] at (5.6,0) {store deleted,\\value stays\\in a register};
+        \draw[gone] (P.east) -- (4.0,0) node[lbl, anchor=west] {never read};
+        \node[tag] at (5.4,0.42) {after};
+        \node[lbl, anchor=west, text=rugdark, align=left] at (5.4,0) {store deleted,\\value stays\\in a register};
       \end{tikzpicture}
     \end{column}
     % ---------------------------------------------------------- (5) calc_dt
@@ -143,10 +147,9 @@
         \node[loop] (A)  at (0.5,0) {per-cell limits\\$+$ \texttt{min} reduction};
         \node[reg]  (dt) at (4.2,0) {dt};
         \draw[data] (A) -- node[lbl, above=2pt] {OpenMP\\\texttt{reduction(min)}} (dt);
-        \node[lbl] at (1.7,-0.7) {one pass over the grid; the limiting cell\\is located only on the failure path};
+        \node[lbl] at (1.7,-0.7) {one pass over the grid};
       \end{tikzpicture}
       \par\vspace{0.3cm}
-      \scriptsize\textbf{In common.} Every red cylinder is a full-mesh write (118\,MB) plus its read-for-ownership and, where it existed, the reload: two or three passes over DRAM per cell and step for a value that fits in a register.
     \end{column}
   \end{columns}
 \end{frame}
