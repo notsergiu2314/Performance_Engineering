@@ -5,10 +5,10 @@ SLIDES = main
 
 all: $(SLIDES).pdf
 
-$(SLIDES).pdf: $(SLIDES).tex beamerthemeRUG.sty
+$(SLIDES).pdf: $(SLIDES).tex schematics.tex beamerthemeRUG.sty
 	latexmk -pdf -interaction=nonstopmode -halt-on-error $(SLIDES).tex
 
-notes: $(SLIDES).tex beamerthemeRUG.sty
+notes: $(SLIDES).tex schematics.tex beamerthemeRUG.sty
 	latexmk -pdf -interaction=nonstopmode -halt-on-error -jobname=$(SLIDES)_notes \
 	  -usepretex='\PassOptionsToPackage{}{beamer}\AtBeginDocument{\setbeameroption{show notes on second screen=right}}' $(SLIDES).tex
 

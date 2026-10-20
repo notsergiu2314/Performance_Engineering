@@ -1,0 +1,153 @@
+% Schematic data-flow views of the byte reductions (presentation only; not in the report).
+% Shapes: rounded box = loop nest over the grid, cylinder = full-mesh array in DRAM (118 MB),
+% circle = register / scalar; grey arrow = program order, thin arrow = bytes through DRAM,
+% red dashed = traffic and work that the change removes.
+
+\newcommand{\schemalegend}{%
+  \begin{tikzpicture}[baseline=(l1.base)]
+    \node[loop, minimum width=0.9cm, minimum height=0.4cm] (l1) {loop nest};
+    \node[arr] (l2) at (2.1,0) {array in DRAM};
+    \node[reg] (l3) at (3.7,0) {reg};
+    \draw[flow] (4.4,0) -- (5.1,0) node[lbl, right] {program order};
+    \draw[data] (6.9,0) -- (7.6,0) node[lbl, right] {bytes through DRAM};
+    \draw[gone] (9.9,0) -- (10.6,0) node[lbl, right] {removed by the change};
+  \end{tikzpicture}}
+
+\begin{frame}{Data flow (1/2): work that was done twice}
+  \begin{columns}[T]
+    % ---------------------------------------------------------- (1) advec_mom
+    \begin{column}{0.56\textwidth}
+      \textbf{(1) \kernel{advec\_mom}: helper loops once per sweep}
+      \par\vspace{0.1cm}
+      \begin{tikzpicture}
+        \node[tag] at (-0.65,0.42) {before};
+        \node[loop] (p1) at (0,0)    {prep\\4 loops};
+        \node[loop] (x)  at (1.55,0) {\kernel{xvel}\\loop};
+        \node[loop,dead] (p2) at (3.1,0)  {prep\\4 loops};
+        \node[loop] (y)  at (4.65,0) {\kernel{yvel}\\loop};
+        \draw[flow] (p1) -- (x); \draw[flow] (x) -- (p2); \draw[flow] (p2) -- (y);
+        \node[arr] (A) at (0.8,-0.95)  {8 node arrays};
+        \node[arr,dead] (B) at (3.9,-0.95) {the same 8, rebuilt};
+        \draw[data] (p1.south) -- (A.north);
+        \draw[data] (A.north) -- (x.south);
+        \draw[gone] (p2.south) -- (B.north);
+        \draw[gone] (B.north) -- (y.south);
+        \node[lbl, anchor=west] at (5.3,-0.95) {node\_flux, node\_mass\_*:\\full mesh, streamed\\twice per sweep};
+      \end{tikzpicture}
+      \par\vspace{0.15cm}
+      \begin{tikzpicture}
+        \node[tag] at (-0.65,0.42) {after};
+        \node[loop] (p1) at (0,0)    {prep\\4 loops};
+        \node[loop] (x)  at (1.55,0) {\kernel{xvel}\\loop};
+        \node[loop] (y)  at (3.1,0)  {\kernel{yvel}\\loop};
+        \draw[flow] (p1) -- (x); \draw[flow] (x) -- (y);
+        \node[arr] (A) at (1.55,-0.95) {8 node arrays};
+        \draw[data] (p1.south) -- (A.north);
+        \draw[data] (A.north) -- (x.south);
+        \draw[data] (A.north) -- (y.south);
+        \node[lbl, anchor=west] at (2.8,-0.95) {built once per sweep,\\read by both\\velocity passes};
+      \end{tikzpicture}
+    \end{column}
+    % ---------------------------------------------------------- (4) reset / revert
+    \begin{column}{0.44\textwidth}
+      \textbf{(4) Reset / Revert: swap, not copy}
+      \par\vspace{0.1cm}
+      \begin{tikzpicture}
+        \node[tag] at (-0.65,0.45) {before};
+        \node[arr]       (d1) at (0,0)   {density1};
+        \node[loop,dead] (cp) at (2.0,0) {copy loop\\(\kernel{reset\_field})};
+        \node[arr]       (d0) at (4.0,0) {density0};
+        \draw[gone] (d1) -- (cp);
+        \draw[gone] (cp) -- (d0);
+        \node[lbl] at (2.0,-0.7) {$\times$4 fields, 118\,MB each, every step:\\read $+$ write $+$ read-for-ownership};
+      \end{tikzpicture}
+      \par\vspace{0.15cm}
+      \begin{tikzpicture}
+        \node[tag] at (-0.65,0.45) {after};
+        \node[arr] (d1) at (0,0)   {density1};
+        \node[arr] (d0) at (3.0,0) {density0};
+        \draw[flow, <->, rugdark] (d1.east) -- (d0.west);
+        \node[lbl, text=rugdark] at (1.5,0.55) {swap the allocations};
+        \node[lbl] at (1.5,-0.65) {three \texttt{MOVE\_ALLOC}s, no bytes:\\the kernels find the field under its new name};
+      \end{tikzpicture}
+      \par\vspace{0.15cm}
+      \scriptsize Revert goes the same way: the C corrector overwrites the whole range the copy would restore, so the copy is skipped.
+    \end{column}
+  \end{columns}
+  \vspace{0.3cm}
+  \centering\schemalegend
+\end{frame}
+\note{6:00. Two changes that remove whole loop nests: the helper loops of advec\_mom ran once per velocity component and rebuilt the same arrays; Reset copied four fields that only needed a new name.}
+
+\begin{frame}{Data flow (2/2): round trips through DRAM}
+  \begin{columns}[T]
+    % ---------------------------------------------------------- (2) advec_cell + PdV
+    \begin{column}{0.5\textwidth}
+      \textbf{(2) \kernel{advec\_cell}: temporaries in registers}
+      \par\vspace{0.1cm}
+      \begin{tikzpicture}
+        \node[tag] at (-0.65,0.42) {before};
+        \node[arr]      (O) at (0,0)   {density1, energy1};
+        \node[loop]     (L) at (2.4,0) {sweep\\loop};
+        \node[arr,dead] (T) at (4.7,0) {4 temporaries};
+        \draw[data] (L.west) -- (O.east);
+        \draw[gone] ([yshift=5pt]L.east) -- node[lbl, above=1pt] {store} ([yshift=5pt]T.west);
+        \draw[gone] ([yshift=-5pt]T.west) -- node[lbl, below=1pt] {reload} ([yshift=-5pt]L.east);
+        \node[lbl] at (4.5,-0.8) {pre\_mass, post\_mass,\\post\_ener, advec\_vol: written and\\read back in the same iteration};
+      \end{tikzpicture}
+      \par\vspace{0.15cm}
+      \begin{tikzpicture}
+        \node[tag] at (-0.65,0.42) {after};
+        \node[arr]  (O) at (0,0)   {density1, energy1};
+        \node[loop] (L) at (2.4,0) {sweep\\loop};
+        \node[reg] (r1) at (3.9,0) {}; \node[reg] (r2) at (4.5,0) {};
+        \node[reg] (r3) at (5.1,0) {}; \node[reg] (r4) at (5.7,0) {};
+        \draw[data] (L.west) -- (O.east);
+        \draw[data, <->] (L.east) -- (r1.west);
+        \node[lbl] at (4.8,-0.55) {4 scalars per cell:\\same arithmetic, same order};
+      \end{tikzpicture}
+      \par\vspace{0.15cm}
+      \scriptsize Same in both PdV passes: \texttt{volume\_change}, stored and reloaded in one iteration, now a scalar.
+      \par\vspace{0.15cm}
+      \textbf{(3) Dead stores}
+      \par\vspace{0.1cm}
+      \begin{tikzpicture}
+        \node[tag] at (-0.65,0.5) {before};
+        \node[loop]     (L) at (0,0)   {sweep 1\\loop};
+        \node[arr,dead] (P) at (2.7,0) {post\_vol};
+        \draw[gone] (L.east) -- node[lbl, above=1pt] {write $+$ RFO} (P.west);
+        \draw[gone] (P.east) -- (4.0,0) node[lbl, anchor=west] {never read\\(\texttt{pre\_vol} in\\\kernel{advec\_mom} too)};
+        \node[tag] at (5.6,0.42) {after};
+        \node[lbl, anchor=west, text=rugdark, align=left] at (5.6,0) {store deleted,\\value stays\\in a register};
+      \end{tikzpicture}
+    \end{column}
+    % ---------------------------------------------------------- (5) calc_dt
+    \begin{column}{0.5\textwidth}
+      \textbf{(5) \kernel{calc\_dt}: fused reduction}
+      \par\vspace{0.1cm}
+      \begin{tikzpicture}
+        \node[tag] at (-0.65,0.7) {before};
+        \node[loop]     (A)  at (0,0)   {per-cell\\limits};
+        \node[arr,dead] (D)  at (1.8,0) {dt\_min};
+        \node[loop]     (B)  at (3.6,0) {min over\\cells};
+        \node[reg]      (dt) at (5.0,0) {dt};
+        \draw[flow] (A.north) to[bend left=28] (B.north);
+        \draw[gone] (A) -- (D);
+        \draw[gone] (D) -- (B);
+        \draw[data] (B) -- (dt);
+        \node[lbl] at (1.8,-0.7) {one full-mesh array written,\\then read once by a second loop};
+      \end{tikzpicture}
+      \par\vspace{0.15cm}
+      \begin{tikzpicture}
+        \node[tag] at (-0.65,0.5) {after};
+        \node[loop] (A)  at (0.5,0) {per-cell limits\\$+$ \texttt{min} reduction};
+        \node[reg]  (dt) at (4.2,0) {dt};
+        \draw[data] (A) -- node[lbl, above=2pt] {OpenMP\\\texttt{reduction(min)}} (dt);
+        \node[lbl] at (1.7,-0.7) {one pass over the grid; the limiting cell\\is located only on the failure path};
+      \end{tikzpicture}
+      \par\vspace{0.3cm}
+      \scriptsize\textbf{In common.} Every red cylinder is a full-mesh write (118\,MB) plus its read-for-ownership and, where it existed, the reload: two or three passes over DRAM per cell and step for a value that fits in a register.
+    \end{column}
+  \end{columns}
+\end{frame}
+\note{6:30. Three flavours of the same waste: a value stored to a full-mesh array and reloaded in the same iteration, a store nothing reads, and a reduction split into two passes over the grid.}

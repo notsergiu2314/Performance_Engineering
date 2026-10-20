@@ -8,11 +8,23 @@
 \usepackage{booktabs}
 \usepackage{graphicx}
 \usepackage{listings}
-\usepackage{appendixnumberbeamer}   % backup slides do not count in the page total
 
 \lstset{basicstyle=\ttfamily\tiny, columns=fullflexible, keepspaces=true, breaklines=true,
   language=C, commentstyle=\color{ruggrey}, keywordstyle=\color{rugdark}, stringstyle=\color{rugdark},
   aboveskip=2pt, belowskip=2pt, xleftmargin=0.2em}
+\usetikzlibrary{shapes.geometric,arrows.meta,positioning,calc}
+\tikzset{
+  every picture/.style={font=\scriptsize, >={Stealth[length=4pt]}},
+  loop/.style={draw=rugdark, thick, rounded corners=5pt, fill=ruglight, minimum height=0.55cm, minimum width=1.3cm, align=center, inner sep=2pt},
+  arr/.style={cylinder, shape border rotate=90, aspect=0.1, draw=rugdark, fill=white, minimum width=1.0cm, minimum height=0.4cm, align=center, inner xsep=5pt, inner ysep=1.5pt},
+  reg/.style={circle, draw=rugred, thick, fill=white, minimum size=0.45cm, inner sep=1pt, align=center},
+  dead/.style={draw=rugred, dashed, text=rugred, fill=white},
+  flow/.style={->, line width=1.4pt, ruggrey},
+  data/.style={->, thin, rugdark},
+  gone/.style={->, thin, rugred, dashed},
+  lbl/.style={font=\tiny, text=ruggrey, align=center},
+  tag/.style={font=\tiny\bfseries, text=rugred, anchor=south west, inner sep=0pt},
+}
 \newcommand{\kernel}[1]{\texttt{#1}}
 \newcommand{\GBs}{\,GB/s}
 \newcommand{\good}[1]{\textcolor{rugred}{\textbf{#1}}}
@@ -218,6 +230,8 @@
 \end{frame}
 \note{5:30. Floor = predicted bytes / 266.5 GB/s.}
 
+\input{schematics}
+
 \begin{frame}[fragile]{The changes in code (1/2)}
   \begin{columns}[T]
     \begin{column}{0.5\textwidth}
@@ -265,7 +279,7 @@ IF ( predict .AND. .NOT. use_C_kernels ) CALL revert()
     \end{column}
   \end{columns}
 \end{frame}
-\note{6:30. Stress: bit-identical arithmetic.}
+\note{7:30. Stress: bit-identical arithmetic.}
 
 \begin{frame}[fragile]{The changes in code (2/2)}
   \begin{columns}[T]
@@ -300,14 +314,14 @@ for (k...) {
       \begin{itemize}
         \item \texttt{-fno-math-errno -fno-trapping-math}: vector \texttt{sqrt}, if-converted loops; worth 3.6\,\% but they break the gate: dropped (correctness slide)
         \item \texttt{nowait} between loops over the same rows with \texttt{schedule(static)}
-        \item branch-free upwind loop: load all four candidates, select instead of indirect loads (backup slide)
+        \item branch-free upwind loop: load all four candidates, select instead of indirect loads (bit-identical, all 13 loops vectorise)
       \end{itemize}
       \vspace{0.1cm}
       \textbf{(6) Streaming stores: left to the hardware.} No portable non-temporal store for AArch64 in GCC; the output loops keep the shape the write-streaming detector needs.
     \end{column}
   \end{columns}
 \end{frame}
-\note{7:30.}
+\note{8:30.}
 
 % ======================================================================
 \section{Results}
@@ -343,7 +357,7 @@ for (k...) {
     \end{column}
   \end{columns}
 \end{frame}
-\note{8:00. The model predicted within two points. That is the main methodological result. opt is the flagged build; optnf drops the flags, pdv adds Sergiu's PdV scalar and is the final one. The 0.3 s the flags bought, the PdV bytes buy back.}
+\note{9:00. The model predicted within two points. That is the main methodological result. opt is the flagged build; optnf drops the flags, pdv adds Sergiu's PdV scalar and is the final one. The 0.3 s the flags bought, the PdV bytes buy back.}
 
 \begin{frame}{Every layout, every kernel}
   \begin{columns}[T]
@@ -386,7 +400,7 @@ for (k...) {
     \end{column}
   \end{columns}
 \end{frame}
-\note{8:45.}
+\note{9:45.}
 
 \begin{frame}{Correctness, and what is still open}
   \begin{columns}[T]
@@ -409,7 +423,7 @@ for (k...) {
     \end{column}
   \end{columns}
 \end{frame}
-\note{9:15. The base binary reproduces the reference, the flags-only build does not, every kernel change on top of the flags gives exactly the flags value: the flags are the cause. optnf (same kernels, baseline flags) passes 7 of 7. The flags are worth 3.6 percent, in calc\_dt and ideal\_gas, and we chose the gate over them. Sergiu's bisect with contraction off shows the mechanism: FMA fusion. Sergiu's PdV scalar passed the gate too and is the final build.}
+\note{10:15. The base binary reproduces the reference, the flags-only build does not, every kernel change on top of the flags gives exactly the flags value: the flags are the cause. optnf (same kernels, baseline flags) passes 7 of 7. The flags are worth 3.6 percent, in calc\_dt and ideal\_gas, and we chose the gate over them. Sergiu's bisect with contraction off shows the mechanism: FMA fusion. Sergiu's PdV scalar passed the gate too and is the final build.}
 
 \begin{frame}{Conclusions}
   \begin{enumerate}
@@ -423,61 +437,6 @@ for (k...) {
     \Large\color{rugred} Questions?
   \end{center}
 \end{frame}
-\note{10:00. Stop here.}
-
-% ======================================================================
-\appendix
-\section{Backup}
-% ======================================================================
-
-\begin{frame}{Backup: per-kernel counters at 64$\times$2}
-  \centering\footnotesize
-  \input{../report/tables/tab_kernels_opt.tex}
-  \vspace{0.2cm}
-
-  \scriptsize baseline job 34798, optimised job 34939; time $=$ PAPI region time (max over threads); Reset and Revert have no C region any more
-\end{frame}
-
-\begin{frame}{Backup: correctness gate, all runs}
-  \centering\footnotesize
-  \input{../report/tables/tab_correctness.tex}
-  \vspace{0.3cm}
-
-  \scriptsize Kinetic-energy deviation on \texttt{clover\_bm.in} as reported by CloverLeaf; gate $=$ \texttt{qa\_check.py} against the archived baseline value (jobs 34729 and 34796).
-\end{frame}
-
-\begin{frame}{Backup: roofline before and after}
-  \centering
-  \includegraphics[width=0.9\textwidth]{figures/fig_roofline_opt.pdf}
-\end{frame}
-
-\begin{frame}{Backup: baseline layouts, THP and placement}
-  \centering\footnotesize
-  \input{../report/tables/tab_m3_baseline.tex}
-  \vspace{0.3cm}
-
-  \scriptsize THP $=$ 512\,MB pages on this system. With one rank, first touch places whole arrays on one NUMA domain; with four or more ranks every rank touches its own data and THP has no effect.
-\end{frame}
-
-\begin{frame}[fragile]{Backup: branch-free upwind loop (T3) in \kernel{advec\_mom}}
-\begin{lstlisting}
-const double nf  = node_flux[IDXN(j,k)];
-const int    neg = (nf < 0.0);                 /* flow in -j: upwind j+2, donor j+1, downwind j */
-const double v_m1 = vel1[IDXN(j-1,k)], v_0 = vel1[IDXN(j,k)], v_p1 = vel1[IDXN(j+1,k)], v_p2 = vel1[IDXN(j+2,k)];
-const double v_up  = neg ? v_p2 : v_m1;        /* selects replace the branch and the indirect loads */
-const double v_don = neg ? v_p1 : v_0;
-const double v_dwn = neg ? v_0  : v_p1;
-const double m_don = neg ? node_mass_pre[IDXN(j+1,k)] : node_mass_pre[IDXN(j,k)];
-const double sigma = fabs(nf)/m_don;
-const double vdiffuw = v_don - v_up, vdiffdw = v_dwn - v_don;
-const double auw = fabs(vdiffuw), adw = fabs(vdiffdw);
-const double wind = (vdiffdw <= 0.0) ? -1.0 : 1.0;
-const double lim  = wind*MIN(width*((2.0-sigma)*adw/width+(1.0+sigma)*auw/w_dif)/6.0, MIN(auw,adw));
-const double limiter = (vdiffuw*vdiffdw > 0.0) ? lim : 0.0;   /* evaluated, then selected (-fno-trapping-math) */
-mom_flux[IDXN(j,k)] = (v_don + (1.0-sigma)*limiter)*nf;
-\end{lstlisting}
-  \vspace{0.2cm}
-  Same arithmetic in the same order as the branchy original: bit-identical results; all 13 loops of the file vectorise.
-\end{frame}
+\note{11:00. Stop here.}
 
 \end{document}
