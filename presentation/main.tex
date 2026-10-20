@@ -83,22 +83,22 @@
     \begin{column}{0.55\textwidth}
       \begin{enumerate}
         \item CloverLeaf's own profiler: wall clock per phase
-        \item PAPI per kernel (\texttt{papi\_prof}, one event set per thread): IPC, instruction mix, stalls
+        \item PAPI per kernel, one set per core/thread: IPC, instruction mix, stalls
         \item Linux \texttt{perf} and the DDR-controller PMU: \textbf{bytes that cross the memory interface}, read around every run
       \end{enumerate}
       \vspace{0.3cm}
-      \textbf{Protocol.} 5 repetitions, median and min--max, every one under the DDR counters: time and bytes from the same run. All bandwidths are \emph{hardware bytes} / wall clock, for STREAM and for the application alike.
+      \textbf{Protocol.} 5 repetitions, median and min-max, every one under the DDR counters. All bandwidths are \emph{hardware bytes} / wall clock, for both STREAM and Cloverleaf.
     \end{column}
     \begin{column}{0.45\textwidth}
       \begin{block}{Checks of the tools}
         \begin{itemize}
-          \item PAPI build costs $<$1\,\%; kernel times add up to the wall clock within 1\,\%
+          \item Kernel times add up to the wall clock within 1\,\%
           \item DDR counters calibrated on STREAM: 32\,B per count, no read-for-ownership on streaming stores
           \item NUMA page distribution is fair, busiest DDR controller group has a mean of $1.00$
         \end{itemize}
       \end{block}
       \begin{block}{Correctness gate}
-        \texttt{PASSED} on bm3840; deviation of the long deck \texttt{clover\_bm.in} reproduced to $10^{-6}$\,\%
+        \texttt{PASSED} means deviation of baseline run reproduced to $10^{-6}$\,\%.
       \end{block}
     \end{column}
   \end{columns}
