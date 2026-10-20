@@ -78,6 +78,13 @@ report:
   - same images / tables as baseline, with improved code results
   - for roofline kernel plot, decide how to plot based on results
 
+presentation:
+
+- where the time goes
+- byte reductions
+- correctness
+- conclusions
+
 **Sergiu**:
 
 - advec_cell
