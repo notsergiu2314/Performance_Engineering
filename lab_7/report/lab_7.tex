@@ -77,9 +77,8 @@ Which of the following techniques can be used for optimizing the data structures
 \begin{itemize}
     \item \textbf{Data packing}
         \begin{itemize}
-            \item \textbf{Small:} No. Merging the flags into one bit-field saves one byte, which the 8-byte
-                alignment of \texttt{x} rounds away again (the record stays 64~B after
-                re-ordering). Forcing packed chars misaligns the doubles, which reduces
+            \item \textbf{Small:} No, merging the flags into one bit-field saves one byte, which the 8-byte
+                alignment of \texttt{x} undoes, making the structure 64~B again. Forcing packed chars misaligns the doubles, which reduces
                 performance.
             \item \textbf{Big:} No, but \texttt{rank} could be a 16-bit \texttt{short},
                 because its value is always $< n$, which saves only 2 bytes in a huge structure.
@@ -177,10 +176,10 @@ step then makes the end state identical to the original benchmark, so the compar
 
 % ================================ c ==================================
 \subsection{c.}
-\textbf(Setup:) One cn-ib node of HAICGU (cn15, Kunpeng 920 at 2.6~GHz: 64~KB
+\textbf{Setup:} One cn-ib node of HAICGU (cn15, Kunpeng 920 at 2.6~GHz: 64~KB
 L1d, 512~KB private L2, 32~MB L3, 64~KiB pages), GCC~8.5.0 \texttt{-O2 -mcpu=native},
-\texttt{perf}~4.18, with the process pinned to one core. Every configuration runs three times
-with two event groups of at most six events, so that \texttt{perf} does not have to make estimates by multiplexing counters.
+\texttt{perf}~4.18, with the process pinned to one core. \\
+Every configuration runs three times with two event groups of at most six events, so that \texttt{perf} does not have to make estimates by multiplexing counters.
 The results were all within a margin of $<1\%$ of each other.
 The counters of a run with $R$ sorts minus those of a run with
 $R=0$ (allocate and initialise only), divided by $R$, give the values per sort below.
@@ -226,7 +225,7 @@ completeness.
 
 % ================================ a ==================================
 \subsection{a.}
-The benchmark (\texttt{ex2/mpi\_ring.c}) is started as
+The benchmark is started as
 \begin{center}
     \texttt{mpiexec -n N ./mpi\_ring [M] [trials] [sizes\ldots]}
 \end{center}
@@ -272,19 +271,22 @@ medians are used.
     \centering
     \includegraphics[width=\linewidth]{figures/fig_ring.pdf}
     \caption{Time per exchange and bandwidth of the ring benchmark with two ranks. The bands are the min--max over the
-        10 repetitions (barely visible). Both plots are logarithmic.}
+        10 repetitions. Both plots are logarithmic.}
     \label{fig:ring}
 \end{figure}
 
 \textbf{Message size:} In this range the exchange is dominated by a fixed cost per message, not by the
 transfer of the data. A message that is $32\times$ larger (128 to 4096~B) takes only $2.4\times$ to $3.9\times$ longer,
 depending on the configuration, so the bandwidth grows almost proportionally with the size: from
-$96$ to $1022$~MB/s between two nodes on \texttt{cn-ib}, and from $435$ to $3610$~MB/s on one node. A straight
+$96$ to $1022$~MB/s between two nodes on \texttt{cn-ib}, and from $435$ to $3610$~MB/s on one node.\\
+A straight
 line $t(n) = \alpha + n/\beta$ through the medians gives a start-up cost of $\alpha \approx 0.3\,\mu$s on one node
-and $1.5\,\mu$s (\texttt{cn-ib}) resp.\ $2.2\,\mu$s (\texttt{cn-eth}) between nodes, but it describes the points only
-within $7$--$21\,\%$: the curves for two nodes have a kink at 512~B, probably a change of protocol inside the MPI
-library, which we did not investigate. At 4096~B the measured bandwidth is still below the fitted
-asymptotic rates $\beta$ ($1.5$--$1.6$~GB/s between nodes, $4.5$--$4.7$~GB/s within a node).
+and $1.5\,\mu$s (\texttt{cn-ib}) and \ $2.2\,\mu$s (\texttt{cn-eth}) between nodes.
+% , but it describes the points only
+% within $7$--$21\,\%$: the curves for two nodes have a kink at 512~B, probably a change of protocol inside the MPI
+% library, which we did not investigate. 
+At 4096~B the measured bandwidth is still below the fitted
+asymptotic rates $\beta$ ($1.5$--$1.6$~GB/s between nodes, $4.5$--$4.7$~GB/s within a node).\\
 
 \textbf{Same node vs.\ two nodes:} Communication within a node is $4.5\times$ (cn-ib) to $6.9\times$ (cn-eth) faster
 for 128~B messages and still $3.5\times$ to $4.2\times$ at 4096~B. A ping between two cores costs
@@ -297,22 +299,22 @@ range; a bandwidth measurement of the network would need messages of several KiB
 % ================================ c ==================================
 \subsection{c. (bonus)}
 Both partitions use the same software path: the log of every run (\texttt{ompi\_info}, \texttt{pml\_base\_verbose}) shows that
-Open~MPI selected the UCX component for all four jobs. The nodes also have the same NIC (a Mellanox \texttt{mlx5\_0} with
-an active $100$~Gb/s port); \texttt{cn-ib} nodes use it through the InfiniBand interface \texttt{ib0}, \texttt{cn-eth} nodes
-through an Ethernet interface (\texttt{eth4}). A pure TCP connection would have a latency of tens of microseconds, so
-\texttt{cn-eth} is presumably RDMA over Ethernet; we did not check the link layer of the port.
+Open~MPI selected the UCX component for all four jobs. The nodes also have the same NIC. \texttt{cn-ib} nodes use it through the InfiniBand interface \texttt{ib0}, \texttt{cn-eth} nodes
+through an Ethernet interface (\texttt{eth4}). The link is RoCE.
 
 \begin{itemize}
-    \item \textbf{Within a node} both partitions are identical within measurement error (within $8\,\%$ in time per exchange, e.g.\ $3610$
+    \item \textbf{Within a node}:
+        Both partitions are identical within measurement error (within $8\,\%$ in time per exchange, e.g.\ $3610$
         vs.\ $3544$~MB/s at 4096~B), as expected, because no network is involved.
-    \item \textbf{Between two nodes} \texttt{cn-ib} is faster: its latency is $0.7$--$0.9\,\mu$s
+    \item \textbf{Between two nodes}:
+        \texttt{cn-ib} latency is $0.7$--$0.9\,\mu$s
         lower for every message size ($1.33$ vs.\ $2.04\,\mu$s at 128~B, $4.01$ vs.\ $4.87\,\mu$s at 4096~B). The
         offset is nearly constant, i.e.\ it is a cost per message, not per byte. Relatively, \texttt{cn-eth} is
         $1.53\times$ slower at 128~B, but only $1.22\times$ at 4096~B, and the bandwidth of the two
         networks approaches each other for larger messages ($96$ vs.\ $63$~MB/s at 128~B, $1022$ vs.\ $841$~MB/s at 4096~B).
 \end{itemize}
 Each configuration was measured on one pair of nodes in one job, and the two partitions are measured on different nodes, so
-the repetitions (which agree within $2.5\,\%$) show that the measurement is reproducible in this job, but not the spread
+the repetitions show that the measurement is reproducible in this job, but not the spread
 between node pairs or between jobs.
 
 \end{document}
