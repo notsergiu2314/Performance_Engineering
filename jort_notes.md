@@ -48,6 +48,9 @@
 - Why 64x2 is best vs 32x4 and other layouts?
 - everything with a rank count that can be evenly split over the 4 numa domains (at least 4, max 128) will be efficient for first-touch. The 64x2 layout happens to balance OMP synchronization barrier cost, and is very close to 4x32. We tried nowait, but did not have much impact.
 
+- what is the THP effect?
+- when we have less than 4 ranks, the threads of one rank are split across NUMA domains. The array is then won by different threads, so the entire array is put in one of the NUMA domains, causing load imbalance. Smaller pages allow the individual rows of the array to be placed in the same domain as the thread that will use them. If we use 4 or more ranks, the threads are split inside of one NUMA domain, removing this race entirely, since the pages will always get placed in the correct NUMA domain.
+
 - How have we handled cache usage?
 - we use the large 3840♤2 problem, we modelled the byte model for cache misses. We focus on the larger problems
 

@@ -80,6 +80,8 @@ report:
 
 presentation:
 
+- 5-8, 11-13
+
 - where the time goes
 - byte reductions
 - correctness
