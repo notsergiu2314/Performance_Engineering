@@ -26,6 +26,8 @@
   gone/.style={->, thin, rugred, dashed},
   lbl/.style={font=\tiny, text=ruggrey, align=center},
   tag/.style={font=\tiny\bfseries, text=rugred, anchor=south west, inner sep=0pt},
+  kern/.style={loop, minimum width=1.7cm, minimum height=0.7cm, inner xsep=1pt},
+  halo/.style={draw=rugred, line width=1.2pt},
 }
 \newcommand{\kernel}[1]{\texttt{#1}}
 \newcommand{\GBs}{\,GB/s}
@@ -55,7 +57,6 @@
       \textbf{CloverLeaf (reference, MPI + OpenMP)}
       \begin{itemize}
         \item Fluid dynamics simulator
-        \item Large vectors, many nested loops
         \item Forces computed for each cell every timestep
         \item Compute-heavy \emph{kernels}, both FORTRAN and C implementations
         \item We focus on C only, FORTRAN as reference
@@ -77,6 +78,89 @@
   \textbf{Research question:} how far is the baseline from what the hardware allows, and what does it take to close the gap?
 \end{frame}
 \note{0:30. Working set is 25x the L3: every loop nest streams its arrays from DRAM.}
+
+% ================================================================
+% Cloverleaf time step calculations
+% ================================================================
+
+% One hydro step (hydro.f90): kernel order, and where update_halo exchanges the halo cells.
+\newcommand{\halobar}[2]{\draw[halo] ($(#1.east)!0.5!(#2.west)+(0,-0.15)$) -- ++(0,0.3);}
+
+\begin{frame}{What CloverLeaf computes in one time step}
+  \begin{columns}[T]
+    \begin{column}{0.26\textwidth}
+      \textbf{Staggered grid}
+      \par\vspace{0.15cm}
+      \begin{tikzpicture}[x=1cm,y=1cm]
+        \fill[ruglight] (0,0) rectangle (2.0,2.0);
+        \draw[ruggrey] (0,0) grid[step=1.0] (2.0,2.0);
+        \foreach \x in {0.5,1.5} \foreach \y in {0.5,1.5} \fill[rugdark] (\x,\y) circle (1.8pt);
+        \foreach \x in {0,1.0,2.0} \foreach \y in {0,1.0,2.0} \fill[rugred] (\x-0.06,\y-0.06) rectangle ++(0.12,0.12);
+        \draw[->, thick, rugdark] (0.78,1.5) -- (1.22,1.5);
+        \draw[->, thick, rugdark] (1.5,0.78) -- (1.5,1.22);
+        \begin{scope}[every node/.style={anchor=west, align=left, inner sep=1pt, font=\scriptsize}]
+          \fill[rugdark] (0.08,-0.45) circle (1.8pt);
+          \node at (0.3,-0.45) {cell: density $\rho$, energy $e$,\\pressure $p$, viscosity $q$};
+          \fill[rugred] (0.02,-1.06) rectangle ++(0.12,0.12);
+          \node at (0.3,-1.0) {node: velocity $u, v$};
+          \draw[->, thick, rugdark] (-0.05,-1.45) -- (0.22,-1.45);
+          \node at (0.3,-1.45) {face: volume, mass flux};
+        \end{scope}
+      \end{tikzpicture}
+      \par\vspace{0.1cm}
+      \scriptsize
+      \begin{itemize}
+        \item two time levels per field: 0 at $t$, 1 at $t{+}\Delta t$
+        \item compressible Euler, explicit, second order
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.74\textwidth}
+      \begin{tikzpicture}[x=1cm,y=1cm]
+        % 1: stable time step from the state at t
+        \node[kern] (a1) at (0,0)   {\kernel{ideal\_gas}\\\tiny $p, c$ from $\rho, e$};
+        \node[kern] (a2) at (1.9,0) {\kernel{viscosity}\\\tiny $q$ at shocks};
+        \node[kern] (a3) at (3.8,0) {\kernel{calc\_dt}\\\tiny CFL limit};
+        \node[reg]  (dt) at (5.3,0) {$\Delta t$};
+        \node[lbl, anchor=west] at (5.6,0) {min over all cells\\and MPI ranks};
+        \draw[flow] (a1) -- (a2); \draw[flow] (a2) -- (a3); \draw[flow] (a3) -- (dt);
+        \halobar{a1}{a2} \halobar{a2}{a3}
+        \node[tag] at ([yshift=3pt]a1.north west) {1\quad time step $\Delta t$};
+        % 2: Lagrangian predictor-corrector, the mesh moves with the fluid
+        \node[kern] (b1) at (0,-1.4)   {\kernel{pdv\_predict}\\\tiny $\rho, e$ at $t{+}\Delta t/2$};
+        \node[kern] (b2) at (1.9,-1.4) {\kernel{ideal\_gas}\\\tiny $p$ at $t{+}\Delta t/2$};
+        \node[kern] (b3) at (3.8,-1.4) {\kernel{revert}\\\tiny back to $\rho_0, e_0$};
+        \node[kern] (b4) at (5.7,-1.4) {\kernel{accelerate}\\\tiny $\nabla(p{+}q) \to u_1, v_1$};
+        \node[kern] (b5) at (7.6,-1.4) {\kernel{pdv\_correct}\\\tiny $\rho, e$ at $t{+}\Delta t$};
+        \draw[flow] (b1) -- (b2); \draw[flow] (b2) -- (b3); \draw[flow] (b3) -- (b4); \draw[flow] (b4) -- (b5);
+        \halobar{b2}{b3}
+        \node[tag] at ([yshift=3pt]b1.north west) {2\quad Lagrangian step: the mesh moves with the fluid};
+        % 3: advection, remap back onto the fixed mesh in two directional sweeps
+        \node[kern] (c1) at (0,-2.8)   {\kernel{flux\_calc}\\\tiny flux per face};
+        \node[kern] (c2) at (1.9,-2.8) {\kernel{advec\_cell}\\\tiny $\rho, e$ along $x$};
+        \node[kern] (c3) at (3.8,-2.8) {\kernel{advec\_mom}\\\tiny $u, v$ along $x$};
+        \node[kern] (c4) at (5.7,-2.8) {\kernel{advec\_cell}\\\tiny $\rho, e$ along $y$};
+        \node[kern] (c5) at (7.6,-2.8) {\kernel{advec\_mom}\\\tiny $u, v$ along $y$};
+        \draw[flow] (c1) -- (c2); \draw[flow] (c2) -- (c3); \draw[flow] (c3) -- (c4); \draw[flow] (c4) -- (c5);
+        \halobar{c1}{c2} \halobar{c2}{c3} \halobar{c4}{c5}
+        \node[tag] at ([yshift=3pt]c1.north west) {3\quad advection: remap onto the fixed mesh ($x$ and $y$ swap order every step)};
+        % 4: the new state becomes the old one
+        \node[kern] (d1) at (0,-4.2) {\kernel{reset\_field}\\\tiny copy level 1 $\to$ 0};
+        \node[tag] at ([yshift=3pt]d1.north west) {4\quad reset};
+        % program order between the rows, and back to the next step
+        \draw[flow] (a3.south) -- ++(0,-0.2) -| (-1.15,-1.4) -- (b1.west);
+        \draw[flow] (b5.south) -- ++(0,-0.2) -| (-1.15,-2.8) -- (c1.west);
+        \draw[flow] (c5.south) -- ++(0,-0.2) -| (-1.15,-4.2) -- (d1.west);
+        \draw[flow] (d1.east) -- node[lbl, above=1pt] {$t \leftarrow t{+}\Delta t$, next step (87 in bm3840)}
+          (8.9,-4.2) |- (-1.15,0.75) -- (-1.15,0) -- (a1.west);
+        \node[lbl, anchor=west] at (1.1,-4.5) {every box is one kernel: a few loop nests over all $3840^2$ cells};
+        % legend
+        \draw[flow] (1.25,-4.85) -- ++(0.5,0) node[lbl, right] {program order};
+        \draw[halo] (3.4,-5.0) -- ++(0,0.3);
+        \node[lbl, right] at (3.45,-4.85) {halo exchange between MPI ranks (\kernel{update\_halo})};
+      \end{tikzpicture}
+    \end{column}
+  \end{columns}
+\end{frame}
 
 \begin{frame}{Methodology}
   \begin{columns}[T]
@@ -105,6 +189,10 @@
 \end{frame}
 \note{1:30. The key convention: hardware bytes, not model bytes, for every bandwidth number.}
 
+
+\note{1:00. Each step: a stable dt from the sound speed, a Lagrangian predictor-corrector that moves the mesh with the fluid, then advection maps everything back onto the fixed mesh. Eleven kernel calls, each streams whole 118 MB arrays: that is why the rest of the talk is about bytes.}
+
+
 \begin{frame}{Ceilings, byte model and roofline}
   \begin{columns}[T]
     \begin{column}{0.4\textwidth}
@@ -123,8 +211,8 @@
         arrays read and written per loop nest, write-allocate charged
       \begin{itemize}
         \item 451\,flop, 2186\,B per cell and step: \textbf{0.21\,flop/B}
+        \item stencil neighbours at j+1, k+1 hit in L2
         \item predicts 2.80\,TB for bm3840; measured \textbf{2.83\,TB} ($+1$\,\%)
-        \item reads $= 1.34\times$ demand: the C stores add a read-for-ownership
       \end{itemize}
     \end{column}
   \end{columns}
@@ -156,15 +244,15 @@
       \end{tabular}
       \vspace{0.2cm}
 
-      \scriptsize bm3840, PAPI; 128 cores $=1\times128$; stall = back-end stall cycles
+      \scriptsize bm3840, PAPI, 128 cores $=1\times128$; stall = back-end stall cycles
     \end{column}
     \begin{column}{0.43\textwidth}
       \begin{itemize}
-        \item advection $=$ 63\,\% of the node-level time; \kernel{advec\_mom} scales worst ($14\times$ on 128 cores)
-        \item at 64$\times$2: IPC 0.1--0.5, \textbf{81--96\,\% back-end stalls}: the cores wait for memory
-        \item \kernel{calc\_dt}, \kernel{ideal\_gas}, \kernel{viscosity} run \emph{scalar}: \texttt{sqrt} stays a libm call without \texttt{-fno-math-errno}
+        \item advection heaviest, \kernel{advec\_mom} scales worst ($14\times$ on 128 cores)
+        \item \textbf{back-end stalls}: the cores wait for memory
+        \item \kernel{calc\_dt}, \kernel{ideal\_gas}, \kernel{viscosity} run \emph{scalar}, cannot vectorize.
         \item advection upwind loops: data-dependent indices, only 12--16\,\% vector instructions
-        \item 12.5\,\% of all cycles in the OpenMP barrier (one per worksharing loop)
+        \item IPC includes OpenMP barrier, about 12.5\,\% per loop
       \end{itemize}
     \end{column}
   \end{columns}
@@ -202,7 +290,6 @@
       \begin{itemize}
         \item baseline 64$\times$2: 250\GBs{} over the whole run, start-up included: \textbf{94\,\% of the hardware ceiling}
         \item time floor for memory: $2.83\,\text{TB} / 266.5\GBs = $ \textbf{10.6\,s}. Baseline is close to maximum memory performance.
-        \item only 1$\times$128 cares about THP: first touch puts whole arrays on one NUMA domain ($1.66\times$ imbalance)
         \item Fortran is 18\,\% faster, because it moves \emph{fewer bytes}.
       \end{itemize}
     \end{column}
@@ -223,18 +310,18 @@
     \midrule
     (1) \kernel{advec\_mom}: direction-only helper loops once per sweep, not once per velocity component & $-12.8$\,\% & $-12.8$\,\% & 9.2 \\
     (2) \kernel{advec\_cell}: four temporaries in registers instead of four full-mesh arrays & $-5.9$\,\% & $-18.7$\,\% & 9.9 \\
-    (3) dead stores \texttt{post\_vol} / \texttt{pre\_vol}: written over the haloed grid, never read & $-4.4$\,\% & $-21.6$\,\% & 10.1 \\
-    (4) Reset / Revert: swap the field allocations instead of copying 118\,MB per field & $-6.6$\,\% & $-28.2$\,\% & 9.8 \\
-    (5) \kernel{calc\_dt}: fuse the min reduction into the compute loop & $-1.1$\,\% & \good{$-29.3$\,\%} & \good{7.4} \\
+    (3) dead stores \texttt{post\_vol} / \texttt{pre\_vol}: written over the haloed grid, never read & $-4.4$\,\% & $-23.1$\,\% & 10.1 \\
+    (4) Reset / Revert: swap the field allocations instead of copying 118\,MB per field & $-6.6$\,\% & $-29.7$\,\% & 9.8 \\
+    (5) \kernel{calc\_dt}: fuse the min reduction into the compute loop & $-1.1$\,\% & \good{$-30.8$\,\%} & \good{7.4} \\
     \midrule
-    (6) streaming stores (no read-for-ownership), upper bound & $-22.8$\,\% & $-41.4$\,\% & -- \\
+    (6) streaming stores (no read-for-ownership), upper bound & ? & ? & -- \\
     \bottomrule
   \end{tabular}
   \vspace{0.15cm}
   \normalsize
   \begin{itemize}
-    \item selection: the three kernels with the largest gain in the model; (3) and (5) fell out while reading the code
-    \item every change is an edit of the model's loop table, so prediction and measurement share one convention; time-only items (\texttt{nowait}, \texttt{-fno-math-errno}, branch-free upwind loop) come after the bytes
+    \item selection: the three kernels with the largest gain in the model. (3) and (5) stood out
+    \item time-only items (flags \texttt{-fno-math-errno} \texttt{-fno-trapping-math}) come after the bytes
   \end{itemize}
 \end{frame}
 \note{5:30. Floor = predicted bytes / 266.5 GB/s.}
@@ -263,7 +350,7 @@
         \bottomrule
       \end{tabular}
       \par\vspace{0.1cm}
-      \scriptsize jobs 34938, 35003 (optnf), 35016 (pdv): one node, 5 repetitions per build (spread $\le 1$\,\%), DDR counters on
+      \scriptsize one node, 5 repetitions per build (spread $\le 1$\,\%), DDR counters on
     \end{column}
     \begin{column}{0.33\textwidth}
       \begin{itemize}
@@ -320,35 +407,50 @@
 \end{frame}
 \note{9:45.}
 
-\begin{frame}{Correctness, and what is still open}
+\begin{frame}{Correctness}
+  \textbf{Correctness test on \texttt{clover\_bm.in} ($960^2$, 2955 steps)}
   \begin{columns}[T]
-    \begin{column}{0.5\textwidth}
-      \textbf{Gate on \texttt{clover\_bm.in} ($960^2$, 2955 steps)}
+    \begin{column}{0.7\textwidth}
       \begin{itemize}
-        \item the ladder's baseline binary reproduces the archived reference (0.0057\,\%) at every layout
-        \item every build with the two compiler flags, flags-only included, gives \emph{one and the same} other value (0.038\,\%): the flags alone move it (GCC's multiply-add contraction; bisect, job 34936)
-        \item \textbf{optnf} (kernel changes, baseline flags) and \textbf{pdv} (optnf $+$ PdV scalar) reproduce the reference at every layout (7 of 7 each)
-        \item the flags were worth 3.6\,\% on top (vectorised \texttt{sqrt} in \kernel{calc\_dt}, \kernel{ideal\_gas}): a measured trade-off, decided for reproducibility
+        \item the ladder's baseline binary reproduces Cloverleaf reference solution within (0.0057\,\%) at every layout
+        \item optimization flags \texttt{-fno-math-errno} and \texttt{-fno-trapping-math} deviated from the reference more (0.038\,\%)
+        \item \textbf{optnf} and \textbf{pdv} reproduce the baseline exactly at all layouts
+        \item flags add small performance increase on \textbf{opt}, consistent results, but tradeoff for baseline reproducability
       \end{itemize}
     \end{column}
-    \begin{column}{0.5\textwidth}
-      \textbf{Limitations and next steps}
-      \begin{itemize}
-        \item still on the bandwidth roof: 91\,\% of 266.5\GBs, floor 7.6\,s; \kernel{accelerate}, \kernel{flux\_calc}, \kernel{viscosity} untouched: the next bytes to remove
-        \item read-for-ownership of the C stores: up to $-23$\,\% more bytes with explicit streaming stores
-        \item \texttt{nowait} and branch-free upwind loop still open in \kernel{advec\_cell}: worth at most 9\,\%
-      \end{itemize}
+    \begin{column}{0.3\textwidth}
     \end{column}
   \end{columns}
 \end{frame}
 \note{10:15. The base binary reproduces the reference, the flags-only build does not, every kernel change on top of the flags gives exactly the flags value: the flags are the cause. optnf (same kernels, baseline flags) passes 7 of 7. The flags are worth 3.6 percent, in calc\_dt and ideal\_gas, and we chose the gate over them. Sergiu's bisect with contraction off shows the mechanism: FMA fusion. Sergiu's PdV scalar passed the gate too and is the final build.}
 
+% ===============================================
+% Future work
+% ===============================================
+
+\begin{frame}{Limitations \& Future work}
+    \begin{columns}
+        \begin{column}{0.7\textwidth}
+          \begin{itemize}
+            \item optimized binary still at bandwidth roof: 91\,\% of 266.5\GBs, floor 7.6\,s. \kernel{accelerate}, \kernel{flux\_calc}, \kernel{viscosity} are the next subjects
+            \item explicit streaming stores for the C stores to remove more read-for-ownership
+            \item \texttt{nowait} and branch-free upwind loop in \kernel{advec\_cell} to allow vectorization.
+            \item Fuse kernels to increase work per kernel, reduce communication between kernels and reduce stall cycles per kernel.
+            \item Loop tiling for multiple sequential computation loops within kernels
+          \end{itemize}
+        \end{column}
+        \begin{column}{0.3\textwidth}
+        \end{column}
+    \end{columns}
+\end{frame}
+
 \begin{frame}{Conclusions}
   \begin{enumerate}
-    \item The C kernels are memory-bound (0.2\,flop/B against a 5\,flop/B ridge) and the baseline already sustains 94\,\% of the 266.5\GBs{} hardware ceiling: \textbf{only fewer bytes can make it faster}.
-    \item An analytic byte model, validated by the DDR counters to 1\,\%, predicted five changes at $-29$\,\% of the traffic, six at $-31$\,\%; measured: $-28.8$\,\%.
-    \item The wall clock followed the bytes: \textbf{1.37$\times$ at 64$\times$2, 1.33--1.37$\times$ at every layout}; the optimised C build beats the Fortran reference everywhere and passes the gate.
-    \item The two compiler flags are worth 3.6\,\% on the optimised kernels but break bitwise reproducibility of the reference: dropped, as a measured trade-off. The next lever is the read-for-ownership of the stores, not instruction-side work.
+    \item The C kernels are memory-bound (\textbf{0.2\,flop/B} vs. \textbf{5\,flop/B} ridge). Most performance has and will come from byte reduction.
+    \item The analytic byte model, validated by the DDR counters, predicted five changes at \textbf{-30.8\,\%}; measured: \textbf{-28.8\,\%}.
+    \item The wall clock followed bytes almost exactly: \textbf{37\,\%} speedup at \textbf{64$\times$2}. 
+    \item The optimised C build beats the Fortran reference on all layouts and reproduces baseline error.
+    \item The two compiler flags add 3.6\,\% in terms of speed, but do not reproduce baseline, tradeoff.
   \end{enumerate}
   \vspace{0.8cm}
   \begin{center}

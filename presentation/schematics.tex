@@ -82,7 +82,7 @@
   \vspace{0.15cm}
   \centering\schemalegend
 \end{frame}
-\note{6:00. Two changes that remove whole loop nests: the helper loops of advec\_mom ran once per velocity component and rebuilt the same arrays; Reset copied four fields that only needed a new name.}
+\note{9:30. Two changes that remove whole loop nests: the helper loops of advec\_mom ran once per velocity component and rebuilt the same arrays; Reset copied four fields that only needed a new name.}
 
 \begin{frame}{Data flow (2/2): round trips through DRAM}
   \begin{columns}[T]
@@ -153,4 +153,4 @@
     \end{column}
   \end{columns}
 \end{frame}
-\note{6:30. Three flavours of the same waste: a value stored to a full-mesh array and reloaded in the same iteration, a store nothing reads, and a reduction split into two passes over the grid.}
+\note{10:30. Three flavours of the same waste: a value stored to a full-mesh array and reloaded in the same iteration, a store nothing reads, and a reduction split into two passes over the grid.}

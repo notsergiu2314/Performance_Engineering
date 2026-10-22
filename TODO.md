@@ -80,7 +80,7 @@ report:
 
 presentation:
 
-- 5-8, 11-13
+- where the time goes - data flow (1/2) , correctness - conclusion
 
 - where the time goes
 - byte reductions
