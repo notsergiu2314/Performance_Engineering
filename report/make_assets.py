@@ -8,6 +8,7 @@ by main.tex; nothing in them is typed by hand. The per-kernel flop and byte coun
 come from the analytic model in ../CloverLeaf_ref/perf/analysis/kernel_model.py.
 """
 
+import re
 import csv
 import math
 import statistics
@@ -497,7 +498,8 @@ def tab_ladder():
         dram = f"{float(r['dram_TB']):.3f}" if r["dram_TB"] else "--"
         b = f"${float(r['bytes_vs_base_pct']):+.1f}$" if r["bytes_vs_base_pct"] else "--"
         t = f"${float(r['time_vs_base_pct']):+.1f}$" if r["time_vs_base_pct"] else "--"
-        lines.append(f"{esc(r['variant'])} & {esc(r['description'])} & {float(r['median_s']):.2f} "
+        desc = re.sub(r"\s*\(measured in jobs? [^)]*\)", "", r["description"])  # no job ids in the report
+        lines.append(f"{esc(r['variant'])} & {esc(desc)} & {float(r['median_s']):.2f} "
                      f"({float(r['min_s']):.2f}--{float(r['max_s']):.2f}) & {dram} & {b} & {t} \\\\")
     lines += [r"\bottomrule", r"\end{tabular}"]
     tex("tab_ladder.tex", "\n".join(lines) + "\n")

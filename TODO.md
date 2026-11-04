@@ -77,6 +77,7 @@ report:
 - write results section
   - same images / tables as baseline, with improved code results
   - for roofline kernel plot, decide how to plot based on results
+- write conclusion / future work
 
 presentation:
 
