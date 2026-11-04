@@ -65,8 +65,14 @@ DIV_CORE, DIV_NODE = C["div_core"], C["div_node"]
 
 # --------------------------------------------------------------- kernels
 import os
-OPT_VARIANT = os.environ.get("OPT_VARIANT", "opt")   # the build the Results section shows (perf/variants.conf);
-                                                     # OPT_VARIANT=optnf python3 make_assets.py once that build is measured
+OPT_VARIANT = os.environ.get("OPT_VARIANT", "pdv")   # the build the Results section shows (perf/variants.conf)
+# The report shows only the final build, under the name optnf: the measured variant pdv (all byte changes
+# incl. the PdV scalar, baseline CFLAGS). opt (with the T2 flags) and the earlier optnf (without the PdV
+# scalar) stay in data/ but are not shown.
+HIDDEN_VARIANTS = {"opt", "optnf"}
+REPORT_NAME = {"pdv": "optnf"}
+LAYOUT_ORDER = ["64x2", "128x1", "32x4", "4x32", "1x128"]   # order of the layouts in the tables
+REPORT_DESC = {"pdv": "all five byte changes, PdV scalar included, with the baseline CFLAGS (no T2 flags)"}
 KP = {r["kernel"]: r for r in rows("kernels_papi.csv")}
 MODEL = {k.name: k for k in kernel_model.KERNELS}
 WA = 1
@@ -371,7 +377,10 @@ def tab_correctness():
     if a variant's rows disagree, every value is listed and the gate column says MISMATCH."""
     groups = {}
     for r in rows("correctness.csv"):
-        key = (r["kernels"], r.get("variant") or "base")
+        v = r.get("variant") or "base"
+        if v in HIDDEN_VARIANTS:
+            continue
+        key = (r["kernels"], REPORT_NAME.get(v, v))
         g = groups.setdefault(key, dict(qa=[], layouts=[], runs=0, jobs=set(), gate=set()))
         if r["qa_pct"] not in g["qa"]:
             g["qa"].append(r["qa_pct"])
@@ -388,7 +397,7 @@ def tab_correctness():
     for (k, v), g in groups.items():
         gate = "ok" if g["gate"] == {"ok"} else esc("/".join(sorted(g["gate"])))
         lines.append(f"{k} & " + (f"{esc(v)} & " if multi else "") + f"{g['runs']} & {esc(' / '.join(g['qa']))} & "
-                     f"{esc(', '.join(g['layouts']))}" + (f" & {gate}" if multi else "") + r" \\")
+                     f"{esc(', '.join(sorted(g['layouts'], key=LAYOUT_ORDER.index)))}" + (f" & {gate}" if multi else "") + r" \\")
     lines += [r"\bottomrule", r"\end{tabular}"]
     tex("tab_correctness.tex", "\n".join(lines) + "\n")
 
@@ -495,11 +504,13 @@ def tab_ladder():
     if not lad:
         lines.append(r"\multicolumn{6}{l}{not measured yet (perf/jobs/m3\_opt.sbatch writes data/ladder.csv)} \\")
     for r in lad:
+        if r["variant"] in HIDDEN_VARIANTS:
+            continue
         dram = f"{float(r['dram_TB']):.3f}" if r["dram_TB"] else "--"
         b = f"${float(r['bytes_vs_base_pct']):+.1f}$" if r["bytes_vs_base_pct"] else "--"
         t = f"${float(r['time_vs_base_pct']):+.1f}$" if r["time_vs_base_pct"] else "--"
-        desc = re.sub(r"\s*\(measured in jobs? [^)]*\)", "", r["description"])  # no job ids in the report
-        lines.append(f"{esc(r['variant'])} & {esc(desc)} & {float(r['median_s']):.2f} "
+        desc = REPORT_DESC.get(r["variant"], re.sub(r"\s*\(measured in jobs? [^)]*\)", "", r["description"]))
+        lines.append(f"{esc(REPORT_NAME.get(r['variant'], r['variant']))} & {esc(desc)} & {float(r['median_s']):.2f} "
                      f"({float(r['min_s']):.2f}--{float(r['max_s']):.2f}) & {dram} & {b} & {t} \\\\")
     lines += [r"\bottomrule", r"\end{tabular}"]
     tex("tab_ladder.tex", "\n".join(lines) + "\n")
@@ -513,7 +524,8 @@ def tab_kernels_opt(variant=OPT_VARIANT):
         return
     lines = [r"\begin{tabular}{lrrrrrrr}", r"\toprule",
              r"kernel & \multicolumn{3}{c}{time (s)} & \multicolumn{2}{c}{IPC} & \multicolumn{2}{c}{back-end stall (\%)} \\",
-             r" & base & " + esc(variant) + r" & ratio & base & " + esc(variant) + r" & base & " + esc(variant) + r" \\", r"\midrule"]
+             r" & base & " + esc(REPORT_NAME.get(variant, variant)) + r" & ratio & base & " + esc(REPORT_NAME.get(variant, variant))
+             + r" & base & " + esc(REPORT_NAME.get(variant, variant)) + r" \\", r"\midrule"]
     for k, r in sorted(KP.items(), key=lambda kv: -float(kv[1]["time_64x2"] or 0)):
         tb, to = float(r["time_64x2"] or "nan"), float(r.get(tcol) or "nan")
         cell = lambda v, nd=2: f"{float(v):.{nd}f}" if v not in ("", None) else "--"
